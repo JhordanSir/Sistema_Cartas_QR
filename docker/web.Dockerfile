@@ -22,9 +22,13 @@ RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS build
 
+ARG API_INTERNAL_URL=http://api:3001
+ENV API_INTERNAL_URL=${API_INTERNAL_URL}
+
 COPY . .
 
-RUN pnpm --filter ./apps/web... build
+RUN pnpm --filter @sirio/shared build \
+    && pnpm --filter @sirio/web build
 
 FROM node:24-bookworm-slim AS runner
 
@@ -44,4 +48,3 @@ USER node
 EXPOSE 3000
 
 CMD ["node", "apps/web/server.js"]
-

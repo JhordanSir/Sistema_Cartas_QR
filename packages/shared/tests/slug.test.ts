@@ -54,7 +54,16 @@ describe("reserved slugs", () => {
     expect(new Set(RESERVED_SLUGS).size).toBe(RESERVED_SLUGS.length);
   });
 
-  test.each(["admin", "BACKOFFICE", "/api/", "  Login  ", "_next"])(
+  test.each([
+    "admin",
+    "BACKOFFICE",
+    "/api/",
+    "  Login  ",
+    "_next",
+    "favicon.ico",
+    "robots.txt",
+    "sitemap.xml"
+  ])(
     "recognizes %s after normalization",
     (value) => {
       expect(isReservedSlug(value)).toBe(true);

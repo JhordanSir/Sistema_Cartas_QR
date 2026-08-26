@@ -6,15 +6,14 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
 import { parseCorsOrigins } from './config/cors.js';
-import type { Environment } from './config/environment.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  const config = app.get(ConfigService<Environment, true>);
+  const config = app.get(ConfigService);
 
   app.enableCors({
     credentials: true,
-    origin: parseCorsOrigins(config.get('CORS_ORIGINS', { infer: true })),
+    origin: parseCorsOrigins(config.getOrThrow<string>('CORS_ORIGINS')),
   });
   app.setGlobalPrefix('api', {
     exclude: [
@@ -25,7 +24,7 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   await app.listen(
-    config.get('API_PORT', { infer: true }),
+    config.getOrThrow<number>('API_PORT'),
     '0.0.0.0',
   );
 }

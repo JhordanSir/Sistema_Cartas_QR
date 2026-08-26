@@ -7,7 +7,11 @@ import type { NextConfig } from "next";
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(appDirectory, "../..");
 
-loadEnv({ path: path.join(workspaceRoot, ".env"), override: false });
+loadEnv({
+  path: path.join(workspaceRoot, ".env"),
+  override: false,
+  quiet: true,
+});
 
 const apiInternalUrl = (process.env.API_INTERNAL_URL ?? "http://api:3001").replace(
   /\/$/,

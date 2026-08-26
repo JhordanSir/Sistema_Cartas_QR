@@ -24,7 +24,7 @@ export function validateEnvironment(
     CORS_ORIGINS: parseCorsOrigins(rawEnvironment.CORS_ORIGINS),
     DATABASE_URL: parseDatabaseUrl(rawEnvironment.DATABASE_URL),
     NODE_ENV: parseNodeEnvironment(rawEnvironment.NODE_ENV),
-  } as Environment;
+  };
 }
 
 export function resolveRootEnvFile(currentDirectory: string): string {

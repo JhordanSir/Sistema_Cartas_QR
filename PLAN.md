@@ -6,6 +6,11 @@ El documento [`Requerimientos_Sistema_Cartas_QR.md`](e:\Sistema_Cartas_QR\Requer
 
 Antes de planificar se resolvieron por conversación todas las decisiones de arquitectura y los vacíos de interpretación que el documento no cubre, para que ninguna fase avance sobre supuestos. Este plan divide el trabajo en 9 fases (0 a 8); **al final de cada fase me detengo y espero tu confirmación explícita antes de continuar con la siguiente**.
 
+## Estado de ejecución
+
+- **Fase 0 — completada el 26 de agosto de 2026**: monorepo, schema y migración Prisma, slugs reservados, Jest, Playwright, Dockerfiles, healthchecks y Compose para Dokploy verificados localmente.
+- **Fase 1 — pendiente de confirmación**: no se ha iniciado autenticación ni bootstrap del administrador.
+
 ## Decisiones de arquitectura confirmadas
 
 | Decisión | Elección |

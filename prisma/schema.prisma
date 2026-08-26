@@ -14,7 +14,7 @@ enum RestaurantStatus {
 }
 
 model Restaurant {
-  id              String           @id @default(uuid()) @db.Uuid
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug            String           @unique @db.VarChar(160)
   name            String           @db.VarChar(160)
   logoPath        String?          @db.VarChar(512)
@@ -43,7 +43,7 @@ model Restaurant {
 }
 
 model Owner {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String   @unique @db.VarChar(320)
   passwordHash String   @db.VarChar(255)
   isActive     Boolean  @default(true)
@@ -54,7 +54,7 @@ model Owner {
 }
 
 model Admin {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String   @unique @db.VarChar(320)
   passwordHash String   @db.VarChar(255)
   isActive     Boolean  @default(true)
@@ -75,7 +75,7 @@ model RestaurantOwner {
 }
 
 model Category {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   name         String   @db.VarChar(160)
   sortOrder    Int      @default(0)
@@ -90,7 +90,7 @@ model Category {
 }
 
 model Product {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   categoryId   String   @db.Uuid
   name         String   @db.VarChar(200)
@@ -113,7 +113,7 @@ model Product {
 }
 
 model ProductVariant {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   productId    String   @db.Uuid
   name         String   @db.VarChar(160)
@@ -129,7 +129,7 @@ model ProductVariant {
 }
 
 model ProductExtra {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   productId    String   @db.Uuid
   name         String   @db.VarChar(160)
@@ -145,7 +145,7 @@ model ProductExtra {
 }
 
 model ViewEvent {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   viewedAt     DateTime @default(now()) @db.Timestamptz(3)
   viewDate     DateTime @db.Date
@@ -159,7 +159,7 @@ model ViewEvent {
 }
 
 model ViewSummary {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   restaurantId String   @db.Uuid
   summaryDate  DateTime @db.Date
   viewHour     Int      @db.SmallInt

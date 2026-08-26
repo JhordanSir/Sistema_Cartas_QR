@@ -4,7 +4,13 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['coverage/**', 'dist/**', 'src/generated/prisma/**'],
+    ignores: [
+      'coverage/**',
+      'dist/**',
+      'eslint.config.js',
+      'jest.config.cjs',
+      'src/generated/prisma/**',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,

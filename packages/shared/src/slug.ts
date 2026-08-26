@@ -9,13 +9,16 @@ export const RESERVED_SLUGS = Object.freeze([
   "auth",
   "backoffice",
   "favicon",
+  "favicon-ico",
   "health",
   "login",
   "logout",
   "next",
   "register",
   "robots",
+  "robots-txt",
   "sitemap",
+  "sitemap-xml",
   "static",
   "uploads"
 ] as const);

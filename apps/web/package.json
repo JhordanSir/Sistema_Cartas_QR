@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "jest --runInBand",
     "test:coverage": "jest --coverage --runInBand"
   },
@@ -26,10 +26,10 @@
     "@types/node": "26.3.0",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
-    "eslint": "10.9.1",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.3.3",
     "jest": "30.4.2",
     "jest-environment-jsdom": "30.4.1",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
   }
 }

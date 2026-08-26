@@ -13,8 +13,8 @@
     "dev": "pnpm --parallel --filter @sirio/api --filter @sirio/web dev",
     "lint": "pnpm -r --if-present lint",
     "typecheck": "pnpm db:generate && pnpm -r --if-present typecheck",
-    "test": "pnpm -r --if-present test",
-    "test:coverage": "pnpm -r --if-present test:coverage",
+    "test": "pnpm db:generate && pnpm -r --if-present test",
+    "test:coverage": "pnpm db:generate && pnpm -r --if-present test:coverage",
     "test:e2e": "playwright test",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -23,12 +23,14 @@
     "db:studio": "prisma studio",
     "compose:config": "docker compose --env-file .env config --quiet",
     "compose:up": "docker compose --env-file .env up -d --build --wait",
-    "compose:down": "docker compose --env-file .env down"
+    "compose:down": "docker compose --env-file .env down",
+    "compose:dev": "docker compose --env-file .env -f compose.yml -f compose.dev.yml up -d --build --wait",
+    "compose:dev:down": "docker compose --env-file .env -f compose.yml -f compose.dev.yml down"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "dotenv": "17.4.2",
     "prisma": "7.10.0",
-    "typescript": "7.0.2"
+    "typescript": "6.0.3"
   }
 }

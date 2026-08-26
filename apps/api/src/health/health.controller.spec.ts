@@ -10,12 +10,14 @@ describe('HealthController', () => {
       status: 'ok' as const,
       timestamp: '2026-08-26T05:00:00.000Z',
     })),
-    getReadiness: jest.fn(async () => ({
-      database: 'up' as const,
-      service: 'api' as const,
-      status: 'ok' as const,
-      timestamp: '2026-08-26T05:00:00.000Z',
-    })),
+    getReadiness: jest.fn(() =>
+      Promise.resolve({
+        database: 'up' as const,
+        service: 'api' as const,
+        status: 'ok' as const,
+        timestamp: '2026-08-26T05:00:00.000Z',
+      }),
+    ),
   };
   let controller: HealthController;
 

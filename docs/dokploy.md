@@ -20,6 +20,7 @@ POSTGRES_DB=cartas_qr
 POSTGRES_USER=cartas_qr
 POSTGRES_PASSWORD=<secreto-largo-y-unico>
 DATABASE_URL_DOCKER=postgresql://cartas_qr:<password-url-encoded>@postgres:5432/cartas_qr?schema=public
+API_INTERNAL_URL_DOCKER=http://api:3001
 JWT_ACCESS_SECRET=<secreto-aleatorio>
 JWT_REFRESH_SECRET=<otro-secreto-aleatorio>
 JWT_ACCESS_TTL=15m
@@ -33,11 +34,9 @@ INITIAL_ADMIN_EMAIL=admin@example.com
 INITIAL_ADMIN_PASSWORD=<password-inicial>
 VIEW_IP_HASH_SECRET=<secreto-aleatorio>
 PUBLIC_APP_URL=https://cartas.example.com
-API_INTERNAL_URL=http://api:3001
 APP_TIMEZONE=America/Lima
 LOG_LEVEL=info
 TZ=UTC
-WEB_PORT=3000
 API_PORT=3001
 ```
 
@@ -55,7 +54,7 @@ Genera secretos JWT independientes y suficientemente largos. Cambia `INITIAL_ADM
 6. Pega las variables anteriores en **Environment** y revisa **Preview Compose**. No debe aparecer ningún secreto en el servicio `web`.
 7. Ejecuta el primer despliegue.
 
-El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `pnpm db:deploy` y después inicia `apps/api/dist/main.js`. Si una migración falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
+El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma migrate deploy` y después inicia `apps/api/dist/main.js`. Si una migración falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
 
 ## Dominio y HTTPS
 
@@ -69,7 +68,7 @@ Usa la pestaña **Domains** de la aplicación Compose:
 
 No añadas etiquetas de Traefik ni la red `dokploy-network` manualmente al archivo. Dokploy Native Domains incorpora el routing durante el despliegue. Tampoco publiques `api` ni `postgres`: el navegador entra por `web`, y Next.js se comunica con la API mediante `http://api:3001` dentro de `app_network`.
 
-`WEB_PORT` publica el frontend en el host para pruebas locales. En el VPS elige un puerto libre si `3000` ya está ocupado; Native Domains dirige tráfico al puerto interno `3000` y no depende de ese puerto del host.
+El Compose de producción no publica ningún puerto del host. `web` expone internamente `3000` y `api` expone `3001` solo en sus redes de contenedores; Native Domains dirige el tráfico al puerto interno `3000` de `web`. Para desarrollo local, `compose.dev.yml` publica los puertos necesarios en loopback y el frontend queda en `WEB_BIND_ADDRESS:WEB_PORT` (por defecto `127.0.0.1:3000`).
 
 ## Persistencia y copias de seguridad
 

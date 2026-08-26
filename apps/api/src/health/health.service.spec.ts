@@ -1,36 +1,39 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 
-import { PrismaService } from '../prisma/prisma.service.js';
+import type { PrismaService } from '../prisma/prisma.service.js';
 import { HealthService } from './health.service.js';
 
 describe('HealthService', () => {
-  const prisma = {
-    checkConnection: jest.fn<() => Promise<void>>(),
-  };
+  const checkConnection = jest.fn<Promise<void>, []>();
+  const prisma = { checkConnection };
   let service: HealthService;
 
   beforeEach(() => {
-    service = new HealthService(prisma as PrismaService);
+    service = new HealthService(prisma as unknown as PrismaService);
   });
 
   it('reports a live process without querying PostgreSQL', () => {
-    expect(service.getLiveness()).toEqual({
+    const response = service.getLiveness();
+
+    expect(response).toMatchObject({
       service: 'api',
       status: 'ok',
-      timestamp: expect.any(String),
     });
+    expect(Number.isNaN(Date.parse(response.timestamp))).toBe(false);
     expect(prisma.checkConnection).not.toHaveBeenCalled();
   });
 
   it('reports readiness when PostgreSQL responds', async () => {
-    prisma.checkConnection.mockResolvedValueOnce();
+    prisma.checkConnection.mockResolvedValueOnce(undefined);
 
-    await expect(service.getReadiness()).resolves.toEqual({
+    const response = await service.getReadiness();
+
+    expect(response).toMatchObject({
       database: 'up',
       service: 'api',
       status: 'ok',
-      timestamp: expect.any(String),
     });
+    expect(Number.isNaN(Date.parse(response.timestamp))).toBe(false);
     expect(prisma.checkConnection).toHaveBeenCalledTimes(1);
   });
 

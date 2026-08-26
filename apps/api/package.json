@@ -17,6 +17,7 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage --runInBand",
+    "test:coverage": "jest --coverage --runInBand",
     "prisma:generate": "prisma generate --schema ../../prisma/schema.prisma"
   },
   "dependencies": {
@@ -26,24 +27,25 @@
     "@nestjs/platform-express": "11.2.3",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@sirio/shared": "workspace:*",
     "pg": "8.23.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"
   },
   "devDependencies": {
-    "@eslint/js": "10.0.1",
+    "@eslint/js": "9.39.5",
     "@nestjs/testing": "11.2.3",
     "@swc/core": "1.16.1",
     "@swc/jest": "0.2.39",
     "@types/jest": "30.0.0",
     "@types/node": "26.3.0",
     "@types/pg": "8.23.1",
-    "eslint": "10.0.1",
+    "eslint": "9.39.5",
     "globals": "17.11.0",
     "jest": "30.4.2",
     "prisma": "7.10.0",
     "tsx": "4.23.12",
-    "typescript": "7.0.2",
+    "typescript": "6.0.3",
     "typescript-eslint": "8.68.0"
   }
 }

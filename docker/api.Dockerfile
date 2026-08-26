@@ -24,8 +24,9 @@ FROM dependencies AS build
 
 COPY . .
 
-RUN pnpm db:generate \
-    && pnpm --filter ./apps/api... build
+RUN DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm db:generate \
+    && pnpm --filter @sirio/shared build \
+    && pnpm --filter @sirio/api build
 
 FROM base AS runner
 
@@ -52,4 +53,4 @@ USER node
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "pnpm db:deploy && exec node apps/api/dist/main.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && exec node apps/api/dist/main.js"]

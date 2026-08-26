@@ -28,6 +28,7 @@ coverage
 playwright-report
 test-results
 *.tsbuildinfo
+**/*.tsbuildinfo
 
 # Logs and local OS files
 *.log
@@ -35,4 +36,3 @@ npm-debug.log*
 pnpm-debug.log*
 .DS_Store
 Thumbs.db
-
