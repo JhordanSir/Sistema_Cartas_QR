@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 
-import { RequestMethod } from '@nestjs/common';
+import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 
@@ -15,6 +15,13 @@ async function bootstrap(): Promise<void> {
     credentials: true,
     origin: parseCorsOrigins(config.getOrThrow<string>('CORS_ORIGINS')),
   });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      forbidNonWhitelisted: true,
+      transform: true,
+      whitelist: true,
+    }),
+  );
   app.setGlobalPrefix('api', {
     exclude: [
       { method: RequestMethod.GET, path: 'health' },

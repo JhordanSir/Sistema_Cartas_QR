@@ -7,13 +7,24 @@ import {
 
 const VALID_DATABASE_URL =
   'postgresql://cartas:secret@localhost:5432/cartas_qr';
+const VALID_ENVIRONMENT = {
+  DATABASE_URL: VALID_DATABASE_URL,
+  INITIAL_ADMIN_EMAIL: 'admin@example.com',
+  INITIAL_ADMIN_PASSWORD: 'strong-password',
+  JWT_ACCESS_SECRET: 'access-secret-with-at-least-32-characters',
+  JWT_REFRESH_SECRET: 'refresh-secret-with-at-least-32-characters',
+};
 
 describe('validateEnvironment', () => {
   it('normalizes a valid environment', () => {
     const environment = validateEnvironment({
+      ...VALID_ENVIRONMENT,
       API_PORT: '4100',
       CORS_ORIGINS: 'http://localhost:3000, https://menu.example.com',
-      DATABASE_URL: VALID_DATABASE_URL,
+      JWT_ACCESS_TTL: '20m',
+      JWT_AUDIENCE: 'custom-audience',
+      JWT_ISSUER: 'custom-issuer',
+      JWT_REFRESH_TTL: '10d',
       NODE_ENV: 'production',
     });
 
@@ -21,18 +32,27 @@ describe('validateEnvironment', () => {
       API_PORT: 4100,
       CORS_ORIGINS: 'http://localhost:3000,https://menu.example.com',
       DATABASE_URL: VALID_DATABASE_URL,
+      INITIAL_ADMIN_EMAIL: 'admin@example.com',
+      JWT_ACCESS_TTL_SECONDS: 1_200,
+      JWT_AUDIENCE: 'custom-audience',
+      JWT_ISSUER: 'custom-issuer',
+      JWT_REFRESH_TTL_SECONDS: 864_000,
       NODE_ENV: 'production',
     });
   });
 
   it('applies safe local defaults', () => {
     const environment = validateEnvironment({
-      DATABASE_URL: VALID_DATABASE_URL,
+      ...VALID_ENVIRONMENT,
     });
 
     expect(environment).toMatchObject({
       API_PORT: 3001,
       CORS_ORIGINS: 'http://localhost:3000',
+      JWT_ACCESS_TTL_SECONDS: 900,
+      JWT_AUDIENCE: 'sirio-cartas-qr-api',
+      JWT_ISSUER: 'sirio-cartas-qr',
+      JWT_REFRESH_TTL_SECONDS: 604_800,
       NODE_ENV: 'development',
     });
   });
@@ -40,20 +60,32 @@ describe('validateEnvironment', () => {
   it.each([
     [{}, 'DATABASE_URL is required'],
     [
-      { DATABASE_URL: 'https://localhost/database' },
+      { ...VALID_ENVIRONMENT, DATABASE_URL: 'https://localhost/database' },
       'DATABASE_URL must use the postgres or postgresql protocol',
     ],
     [
-      { API_PORT: '70000', DATABASE_URL: VALID_DATABASE_URL },
+      { ...VALID_ENVIRONMENT, API_PORT: '70000' },
       'API_PORT must be an integer between 1 and 65535',
     ],
     [
-      { DATABASE_URL: VALID_DATABASE_URL, NODE_ENV: 'staging' },
+      { ...VALID_ENVIRONMENT, NODE_ENV: 'staging' },
       'NODE_ENV must be one of: development, test, production',
     ],
     [
-      { CORS_ORIGINS: 'menu.example.com', DATABASE_URL: VALID_DATABASE_URL },
+      { ...VALID_ENVIRONMENT, CORS_ORIGINS: 'menu.example.com' },
       'CORS_ORIGINS contains an invalid URL: menu.example.com',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, JWT_ACCESS_SECRET: 'short' },
+      'JWT_ACCESS_SECRET must contain at least 32 characters',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, JWT_ACCESS_TTL: 'fifteen-minutes' },
+      'JWT_ACCESS_TTL must use a duration such as 15m or 7d',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, INITIAL_ADMIN_PASSWORD: 'short' },
+      'INITIAL_ADMIN_PASSWORD must contain between 8 and 128 characters',
     ],
   ])('rejects invalid values', (rawEnvironment, message) => {
     expect(() => validateEnvironment(rawEnvironment)).toThrow(message);

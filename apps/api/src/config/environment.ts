@@ -3,6 +3,13 @@ import { basename, dirname, resolve } from 'node:path';
 const NODE_ENVIRONMENTS = ['development', 'test', 'production'] as const;
 const DEFAULT_API_PORT = 3001;
 const DEFAULT_CORS_ORIGINS = 'http://localhost:3000';
+const DEFAULT_JWT_ACCESS_TTL = '15m';
+const DEFAULT_JWT_REFRESH_TTL = '7d';
+const DEFAULT_JWT_ISSUER = 'sirio-cartas-qr';
+const DEFAULT_JWT_AUDIENCE = 'sirio-cartas-qr-api';
+const MIN_SECRET_LENGTH = 32;
+const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 128;
 
 type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
 
@@ -10,6 +17,14 @@ export interface Environment extends Record<string, unknown> {
   API_PORT: number;
   CORS_ORIGINS: string;
   DATABASE_URL: string;
+  INITIAL_ADMIN_EMAIL: string;
+  INITIAL_ADMIN_PASSWORD: string;
+  JWT_ACCESS_SECRET: string;
+  JWT_ACCESS_TTL_SECONDS: number;
+  JWT_AUDIENCE: string;
+  JWT_ISSUER: string;
+  JWT_REFRESH_SECRET: string;
+  JWT_REFRESH_TTL_SECONDS: number;
   NODE_ENV: NodeEnvironment;
 }
 
@@ -18,11 +33,53 @@ export const ROOT_ENV_FILE = resolveRootEnvFile(process.cwd());
 export function validateEnvironment(
   rawEnvironment: Record<string, unknown>,
 ): Environment {
+  const databaseUrl = parseDatabaseUrl(rawEnvironment.DATABASE_URL);
+  const jwtAccessSecret = parseSecret(
+    rawEnvironment.JWT_ACCESS_SECRET,
+    'JWT_ACCESS_SECRET',
+  );
+  const jwtRefreshSecret = parseSecret(
+    rawEnvironment.JWT_REFRESH_SECRET,
+    'JWT_REFRESH_SECRET',
+  );
+  if (jwtAccessSecret === jwtRefreshSecret) {
+    throw new Error('JWT access and refresh secrets must be different');
+  }
+
   return {
     ...rawEnvironment,
     API_PORT: parsePort(rawEnvironment.API_PORT),
     CORS_ORIGINS: parseCorsOrigins(rawEnvironment.CORS_ORIGINS),
-    DATABASE_URL: parseDatabaseUrl(rawEnvironment.DATABASE_URL),
+    DATABASE_URL: databaseUrl,
+    INITIAL_ADMIN_EMAIL: parseEmail(
+      rawEnvironment.INITIAL_ADMIN_EMAIL,
+      'INITIAL_ADMIN_EMAIL',
+    ),
+    INITIAL_ADMIN_PASSWORD: parsePassword(
+      rawEnvironment.INITIAL_ADMIN_PASSWORD,
+    ),
+    JWT_ACCESS_SECRET: jwtAccessSecret,
+    JWT_ACCESS_TTL_SECONDS: parseDurationSeconds(
+      rawEnvironment.JWT_ACCESS_TTL,
+      DEFAULT_JWT_ACCESS_TTL,
+      'JWT_ACCESS_TTL',
+    ),
+    JWT_AUDIENCE: parseNonEmptyString(
+      rawEnvironment.JWT_AUDIENCE,
+      DEFAULT_JWT_AUDIENCE,
+      'JWT_AUDIENCE',
+    ),
+    JWT_ISSUER: parseNonEmptyString(
+      rawEnvironment.JWT_ISSUER,
+      DEFAULT_JWT_ISSUER,
+      'JWT_ISSUER',
+    ),
+    JWT_REFRESH_SECRET: jwtRefreshSecret,
+    JWT_REFRESH_TTL_SECONDS: parseDurationSeconds(
+      rawEnvironment.JWT_REFRESH_TTL,
+      DEFAULT_JWT_REFRESH_TTL,
+      'JWT_REFRESH_TTL',
+    ),
     NODE_ENV: parseNodeEnvironment(rawEnvironment.NODE_ENV),
   };
 }
@@ -107,6 +164,77 @@ function parseDatabaseUrl(value: unknown): string {
   }
 
   return databaseUrl;
+}
+
+function parseSecret(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.length < MIN_SECRET_LENGTH) {
+    throw new Error(`${name} must contain at least ${MIN_SECRET_LENGTH} characters`);
+  }
+  return value;
+}
+
+function parseEmail(value: unknown, name: string): string {
+  if (typeof value !== 'string') {
+    throw new Error(`${name} must be a valid email address`);
+  }
+  const email = value.trim().toLowerCase();
+  if (
+    email.length > 320 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  ) {
+    throw new Error(`${name} must be a valid email address`);
+  }
+  return email;
+}
+
+function parsePassword(value: unknown): string {
+  if (
+    typeof value !== 'string' ||
+    value.length < MIN_PASSWORD_LENGTH ||
+    value.length > MAX_PASSWORD_LENGTH
+  ) {
+    throw new Error(
+      `INITIAL_ADMIN_PASSWORD must contain between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+    );
+  }
+  return value;
+}
+
+function parseDurationSeconds(
+  value: unknown,
+  defaultValue: string,
+  name: string,
+): number {
+  const duration = value === undefined || value === '' ? defaultValue : value;
+  if (typeof duration !== 'string') {
+    throw new Error(`${name} must use a duration such as 15m or 7d`);
+  }
+  const match = /^(\d+)(s|m|h|d)$/.exec(duration);
+  if (!match) {
+    throw new Error(`${name} must use a duration such as 15m or 7d`);
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2];
+  const multiplier =
+    unit === 's' ? 1 : unit === 'm' ? 60 : unit === 'h' ? 3_600 : 86_400;
+  const seconds = amount * multiplier;
+  if (!Number.isSafeInteger(seconds) || seconds < 1) {
+    throw new Error(`${name} must be a positive duration`);
+  }
+  return seconds;
+}
+
+function parseNonEmptyString(
+  value: unknown,
+  defaultValue: string,
+  name: string,
+): string {
+  const parsed = value === undefined || value === '' ? defaultValue : value;
+  if (typeof parsed !== 'string' || parsed.trim() === '') {
+    throw new Error(`${name} must be a non-empty string`);
+  }
+  return parsed.trim();
 }
 
 function parseNodeEnvironment(value: unknown): NodeEnvironment {

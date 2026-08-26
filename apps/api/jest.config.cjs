@@ -6,6 +6,7 @@ module.exports = {
     '!src/**/*.spec.ts',
     '!src/generated/prisma/**',
     '!src/main.ts',
+    '!src/testing/**',
   ],
   coverageDirectory: 'coverage',
   coverageProvider: 'v8',

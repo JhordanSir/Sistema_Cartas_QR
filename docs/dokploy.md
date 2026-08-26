@@ -25,6 +25,8 @@ JWT_ACCESS_SECRET=<secreto-aleatorio>
 JWT_REFRESH_SECRET=<otro-secreto-aleatorio>
 JWT_ACCESS_TTL=15m
 JWT_REFRESH_TTL=7d
+JWT_ISSUER=sirio-cartas-qr
+JWT_AUDIENCE=sirio-cartas-qr-api
 CORS_ORIGINS=https://cartas.example.com
 GEMINI_API_KEY=<api-key>
 GEMINI_MODEL=<modelo-configurado>
@@ -42,7 +44,7 @@ API_PORT=3001
 
 `DATABASE_URL_DOCKER` usa `postgres` como hostname porque ese es el nombre DNS del servicio dentro de Compose. La variable local `DATABASE_URL` no se pasa al contenedor y puede seguir apuntando a `localhost`. Si la contraseña contiene caracteres reservados de una URL, codifícalos al construir `DATABASE_URL_DOCKER`.
 
-Genera secretos JWT independientes y suficientemente largos. Cambia `INITIAL_ADMIN_PASSWORD` después del primer acceso y no guardes valores reales en `.env.example` ni en Git.
+Genera secretos JWT independientes y suficientemente largos. Tras el primer acceso cambia la contraseña del administrador mediante `POST /api/auth/admin/password`; el seed es idempotente y no reemplaza una cuenta existente. Sustituye luego `INITIAL_ADMIN_PASSWORD` en Dokploy por otro valor aleatorio que no reutilices. No guardes valores reales en `.env.example` ni en Git.
 
 ## Crear la aplicación Compose
 
@@ -54,7 +56,7 @@ Genera secretos JWT independientes y suficientemente largos. Cambia `INITIAL_ADM
 6. Pega las variables anteriores en **Environment** y revisa **Preview Compose**. No debe aparecer ningún secreto en el servicio `web`.
 7. Ejecuta el primer despliegue.
 
-El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma migrate deploy` y después inicia `apps/api/dist/main.js`. Si una migración falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
+El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma migrate deploy`, crea de forma idempotente el administrador inicial y después inicia `apps/api/dist/main.js`. Si una migración o el seed falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
 
 ## Dominio y HTTPS
 
@@ -92,6 +94,7 @@ Después de cada despliegue comprueba:
 5. El menú público y las rutas `/admin` y `/backoffice` cargan por HTTPS.
 6. La API accede a PostgreSQL y los archivos subidos aparecen bajo el volumen `uploads_data`.
 7. Tras recrear `api` y `postgres`, tanto los registros como un archivo de prueba siguen disponibles.
+8. El login del administrador funciona y un refresh token rotado no puede reutilizarse.
 
 Antes de subir cambios al VPS valida la interpolación sin mostrarla en logs públicos:
 

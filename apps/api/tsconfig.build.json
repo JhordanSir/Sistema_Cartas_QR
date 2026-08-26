@@ -6,5 +6,11 @@
     "sourceMap": true,
     "types": ["node"]
   },
-  "exclude": ["dist", "coverage", "node_modules", "src/**/*.spec.ts"]
+  "exclude": [
+    "dist",
+    "coverage",
+    "node_modules",
+    "src/**/*.spec.ts",
+    "src/testing/**/*.ts"
+  ]
 }

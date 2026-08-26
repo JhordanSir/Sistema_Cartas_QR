@@ -42,6 +42,8 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET is required}
       JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-15m}
       JWT_REFRESH_TTL: ${JWT_REFRESH_TTL:-7d}
+      JWT_ISSUER: ${JWT_ISSUER:-sirio-cartas-qr}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-sirio-cartas-qr-api}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-}

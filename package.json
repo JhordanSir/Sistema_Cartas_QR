@@ -21,6 +21,7 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
+    "seed:admin": "pnpm db:generate && pnpm --filter @sirio/api seed:admin",
     "compose:config": "docker compose --env-file .env config --quiet",
     "compose:up": "docker compose --env-file .env up -d --build --wait",
     "compose:down": "docker compose --env-file .env down",

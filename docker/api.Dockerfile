@@ -53,4 +53,4 @@ USER node
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && exec node apps/api/dist/main.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node apps/api/dist/bootstrap/seed-initial-admin.js && exec node apps/api/dist/main.js"]

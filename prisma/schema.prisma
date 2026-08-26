@@ -13,6 +13,11 @@ enum RestaurantStatus {
   DISABLED
 }
 
+enum AuthRole {
+  OWNER
+  ADMIN
+}
+
 model Restaurant {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug            String           @unique @db.VarChar(160)
@@ -51,6 +56,7 @@ model Owner {
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
 
   restaurants RestaurantOwner[]
+  authSessions AuthSession[]      @relation("OwnerAuthSessions")
 }
 
 model Admin {
@@ -60,6 +66,28 @@ model Admin {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  authSessions AuthSession[] @relation("AdminAuthSessions")
+}
+
+model AuthSession {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role               AuthRole
+  ownerId            String?   @db.Uuid
+  adminId            String?   @db.Uuid
+  refreshTokenDigest String    @db.Char(64)
+  expiresAt          DateTime  @db.Timestamptz(3)
+  revokedAt          DateTime? @db.Timestamptz(3)
+  lastUsedAt         DateTime  @default(now()) @db.Timestamptz(3)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(3)
+
+  owner Owner? @relation("OwnerAuthSessions", fields: [ownerId], references: [id], onDelete: Cascade)
+  admin Admin? @relation("AdminAuthSessions", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, revokedAt, expiresAt])
+  @@index([adminId, revokedAt, expiresAt])
+  @@index([expiresAt])
 }
 
 model RestaurantOwner {
