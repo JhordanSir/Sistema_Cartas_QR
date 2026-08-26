@@ -1,0 +1,40 @@
+{
+  "name": "@sirio/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./slug": {
+      "types": "./dist/slug.d.ts",
+      "import": "./dist/slug.js",
+      "default": "./dist/slug.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.mjs --runInBand",
+    "test:coverage": "pnpm test --coverage",
+    "test:watch": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config ./jest.config.mjs --watch",
+    "typecheck": "tsc -p tsconfig.test.json"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "typescript": "^7.0.0"
+  }
+}

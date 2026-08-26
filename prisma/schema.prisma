@@ -1,0 +1,174 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../apps/api/src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RestaurantStatus {
+  ENABLED
+  DISABLED
+}
+
+model Restaurant {
+  id              String           @id @default(uuid()) @db.Uuid
+  slug            String           @unique @db.VarChar(160)
+  name            String           @db.VarChar(160)
+  logoPath        String?          @db.VarChar(512)
+  contactPhone    String?          @db.VarChar(32)
+  whatsapp        String?          @db.VarChar(32)
+  address         String?          @db.VarChar(500)
+  instagramUrl    String?          @db.VarChar(2048)
+  facebookUrl     String?          @db.VarChar(2048)
+  tiktokUrl       String?          @db.VarChar(2048)
+  backgroundColor String           @default("#ffffff") @db.VarChar(32)
+  textColor       String           @default("#111827") @db.VarChar(32)
+  fontFamily      String           @default("Inter") @db.VarChar(100)
+  status          RestaurantStatus @default(ENABLED)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+
+  owners          RestaurantOwner[]
+  categories      Category[]
+  products        Product[]
+  productVariants ProductVariant[]
+  productExtras   ProductExtra[]
+  viewEvents      ViewEvent[]
+  viewSummaries   ViewSummary[]
+
+  @@index([status])
+}
+
+model Owner {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(320)
+  passwordHash String   @db.VarChar(255)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurants RestaurantOwner[]
+}
+
+model Admin {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique @db.VarChar(320)
+  passwordHash String   @db.VarChar(255)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model RestaurantOwner {
+  restaurantId String   @db.Uuid
+  ownerId      String   @db.Uuid
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  owner      Owner      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@id([restaurantId, ownerId])
+  @@index([ownerId])
+}
+
+model Category {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  name         String   @db.VarChar(160)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  products   Product[]
+
+  @@unique([id, restaurantId])
+  @@index([restaurantId, sortOrder])
+}
+
+model Product {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  categoryId   String   @db.Uuid
+  name         String   @db.VarChar(200)
+  description  String?  @db.Text
+  basePrice    Decimal  @db.Decimal(10, 2)
+  imagePath    String?  @db.VarChar(512)
+  isAvailable  Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category   Category         @relation(fields: [categoryId, restaurantId], references: [id, restaurantId], onDelete: Cascade)
+  variants   ProductVariant[]
+  extras     ProductExtra[]
+
+  @@unique([id, restaurantId])
+  @@index([restaurantId, categoryId, sortOrder])
+  @@index([restaurantId, isAvailable])
+}
+
+model ProductVariant {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  productId    String   @db.Uuid
+  name         String   @db.VarChar(160)
+  price        Decimal  @db.Decimal(10, 2)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId, restaurantId], references: [id, restaurantId], onDelete: Cascade)
+
+  @@index([restaurantId, productId, sortOrder])
+}
+
+model ProductExtra {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  productId    String   @db.Uuid
+  name         String   @db.VarChar(160)
+  price        Decimal  @db.Decimal(10, 2)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId, restaurantId], references: [id, restaurantId], onDelete: Cascade)
+
+  @@index([restaurantId, productId, sortOrder])
+}
+
+model ViewEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  viewedAt     DateTime @default(now()) @db.Timestamptz(3)
+  viewDate     DateTime @db.Date
+  viewHour     Int      @db.SmallInt
+  visitorHash  String   @db.VarChar(64)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, viewDate, visitorHash])
+  @@index([restaurantId, viewDate, viewHour])
+}
+
+model ViewSummary {
+  id           String   @id @default(uuid()) @db.Uuid
+  restaurantId String   @db.Uuid
+  summaryDate  DateTime @db.Date
+  viewHour     Int      @db.SmallInt
+  viewCount    Int
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([restaurantId, summaryDate, viewHour])
+  @@index([restaurantId, summaryDate])
+}

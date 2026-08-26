@@ -1,0 +1,38 @@
+# Version control and local tooling
+.git
+.gitignore
+.agents
+.claude
+.gemini
+.idea
+.vscode
+
+# Secrets and local environment overrides
+.env
+.env.*
+!.env.example
+
+# Dependencies and package-manager caches
+node_modules
+**/node_modules
+.pnpm-store
+**/.pnpm-store
+
+# Build, test, and framework output
+dist
+**/dist
+.next
+**/.next
+coverage
+**/coverage
+playwright-report
+test-results
+*.tsbuildinfo
+
+# Logs and local OS files
+*.log
+npm-debug.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+
