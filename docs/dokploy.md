@@ -95,6 +95,13 @@ Después de cada despliegue comprueba:
 6. La API accede a PostgreSQL y los archivos subidos aparecen bajo el volumen `uploads_data`.
 7. Tras recrear `api` y `postgres`, tanto los registros como un archivo de prueba siguen disponibles.
 8. El login del administrador funciona y un refresh token rotado no puede reutilizarse.
+9. `/backoffice` permite crear un restaurante, deshabilitarlo y reactivarlo; `/{slug}` responde 404 mientras está deshabilitado.
+10. Una eliminación definitiva quita el restaurante y deja en cero las tareas pendientes de `AssetDeletionJob` cuando el volumen está disponible.
+11. El dueño inicia sesión en `/admin/login`, completa el perfil, sube un logo válido y conserva ambos después de recargar y recrear el contenedor `api`.
+
+La sesión del backoffice se almacena en cookies HTTP-only. `PUBLIC_APP_URL` debe coincidir exactamente con el origen HTTPS que usará el operador, ya que también participa en la validación CSRF y en el atributo `Secure` de las cookies.
+
+Los archivos de cada restaurante deben guardarse bajo `/app/storage/restaurants/<uuid>`. El logo del perfil ocupa `profile/logo` dentro de ese directorio y admite PNG, JPG o WebP de hasta 2 MB. La baja definitiva elimina el directorio completo; si la operación del volumen falla, queda una tarea durable en PostgreSQL y el contenedor `api` reintenta la limpieza en el siguiente arranque.
 
 Antes de subir cambios al VPS valida la interpolación sin mostrarla en logs públicos:
 

@@ -10,7 +10,9 @@ Antes de planificar se resolvieron por conversación todas las decisiones de arq
 
 - **Fase 0 — completada el 26 de agosto de 2026**: monorepo, schema y migración Prisma, slugs reservados, Jest, Playwright, Dockerfiles, healthchecks y Compose para Dokploy verificados localmente.
 - **Fase 1 — completada el 26 de agosto de 2026**: JWT access/refresh con rotación y revocación de sesiones, Argon2id, roles, pertenencia, cambio/reset de contraseña y bootstrap idempotente del administrador verificados localmente.
-- **Fase 2 — pendiente de confirmación**: no se ha iniciado el ciclo de vida de restaurantes ni el backoffice.
+- **Fase 2 — completada el 26 de agosto de 2026**: alta transaccional, slugs únicos e inmutables, deshabilitación/reactivación, eliminación durable de datos/archivos y backoffice responsivo verificados localmente.
+- **Fase 3 — completada el 26 de agosto de 2026**: login y panel responsivo del dueño, perfil de contacto/redes, logo persistente con validación binaria y aislamiento por pertenencia verificados localmente.
+- **Fase 4 — pendiente de confirmación**: no se ha iniciado la digitalización de cartas mediante Gemini.
 
 ## Decisiones de arquitectura confirmadas
 

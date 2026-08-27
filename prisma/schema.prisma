@@ -47,6 +47,18 @@ model Restaurant {
   @@index([status])
 }
 
+model AssetDeletionJob {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurantId String   @unique @db.Uuid
+  relativePath String   @unique @db.VarChar(512)
+  attempts     Int      @default(0)
+  lastError    String?  @db.Text
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([createdAt])
+}
+
 model Owner {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email        String   @unique @db.VarChar(320)

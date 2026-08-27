@@ -38,7 +38,7 @@ import { RolesGuard } from './presentation/roles.guard.js';
 
 @Module({
   controllers: [AuthController],
-  exports: [AUTH_APPLICATION, OwnerRestaurantGuard],
+  exports: [AUTH_APPLICATION, OwnerRestaurantGuard, PASSWORD_HASHER],
   imports: [JwtModule.register({})],
   providers: [
     {

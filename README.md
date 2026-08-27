@@ -2,14 +2,14 @@
 
 Monorepo para digitalizar cartas de restaurantes y publicarlas mediante un QR fijo. El backend es una API NestJS, la interfaz usa Next.js y los datos se almacenan en PostgreSQL mediante Prisma.
 
-Las **Fases 0 y 1 están implementadas**: fundamentos, modelo de datos, autenticación JWT, roles, sesiones revocables, pruebas e imágenes Docker compatibles con Dokploy. La Fase 2 todavía no ha comenzado.
+Las **Fases 0 a 3 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes y perfil del dueño con logo persistente, con pruebas e imágenes Docker compatibles con Dokploy. La Fase 4 todavía no ha comenzado.
 
 ## Estructura
 
 ```text
 apps/
-  api/                 API NestJS, autenticación y healthchecks
-  web/                 Next.js App Router
+  api/                 API NestJS, autenticación, restaurantes y healthchecks
+  web/                 Next.js App Router, panel del dueño y backoffice
 packages/
   shared/              utilidades y tipos compartidos
 prisma/
@@ -48,6 +48,8 @@ compose.dev.yml        puertos loopback solo para desarrollo local
    - Web: `http://127.0.0.1:3000`
    - Health de web: `http://127.0.0.1:3000/health`
    - Health de API mediante el proxy: `http://127.0.0.1:3000/api/health`
+   - Login del backoffice: `http://127.0.0.1:3000/login`
+   - Login del dueño: `http://127.0.0.1:3000/admin/login`
 
 `compose.yml` ejecuta las migraciones y el seed idempotente del administrador inicial antes de iniciar la API; después espera los healthchecks de PostgreSQL, API y web. `compose.dev.yml` publica los puertos necesarios únicamente en loopback. Para detener los contenedores sin borrar datos:
 
@@ -116,7 +118,37 @@ Endpoints disponibles bajo `/api/auth`:
 - `POST /admin/password`: cambio propio del administrador inicial.
 - `POST /admin/owners/:ownerId/reset-password`: reseteo de un dueño, exclusivo del administrador.
 
-Las contraseñas usan Argon2id. Cambiar o resetear una contraseña revoca todas las sesiones de esa cuenta. Todas las rutas son privadas por defecto; healthchecks, login, refresh y logout son las únicas rutas públicas actuales.
+Las contraseñas usan Argon2id. Cambiar o resetear una contraseña revoca todas las sesiones de esa cuenta. Todas las rutas son privadas por defecto; solo healthchecks, autenticación y consulta de un restaurante público están marcadas explícitamente como públicas.
+
+La web conserva access y refresh tokens en cookies `HttpOnly`, `SameSite=Strict`; el navegador no expone los JWT a JavaScript. Los Route Handlers de Next.js actúan como BFF, validan el origen de las mutaciones y renuevan la sesión cuando corresponde.
+
+## Backoffice y restaurantes
+
+El administrador ingresa por `/login` y gestiona los restaurantes en `/backoffice`. El alta solicita nombre, correo del dueño y contraseña inicial; crea transaccionalmente la cuenta, la relación y un slug único e inmutable.
+
+Endpoints de administración bajo `/api/backoffice/restaurants`:
+
+- `GET /`: listado, búsqueda y filtro por estado.
+- `POST /`: alta de restaurante y dueño.
+- `PATCH /:id/status`: deshabilitar o reactivar sin bloquear el panel del dueño.
+- `DELETE /:id`: eliminación definitiva; exige `acknowledgePermanentDeletion: true` y el texto exacto `ELIMINAR <slug>`.
+
+`GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados. La ruta web `/{slug}` muestra una vista base de la carta durante esta fase y responde con la página 404 cuando el local está deshabilitado o eliminado.
+
+La eliminación usa cascadas de PostgreSQL, elimina al dueño si ya no administra otro restaurante y registra primero una tarea durable de limpieza del directorio `restaurants/<uuid>`. Si el volumen falla, la API conserva la tarea y la reintenta al arrancar, evitando archivos sin seguimiento.
+
+## Panel del dueño y perfil
+
+El dueño ingresa por `/admin/login` y administra su perfil en `/admin`. La sesión usa el mismo BFF seguro del backoffice, pero conserva y valida explícitamente el rol `OWNER` para impedir cruces entre paneles.
+
+Endpoints del propietario:
+
+- `GET /api/owner/restaurants`: restaurantes asociados a la cuenta autenticada.
+- `GET /api/owner/restaurants/:restaurantId/profile`: perfil, protegido por rol y pertenencia.
+- `PATCH /api/owner/restaurants/:restaurantId/profile`: actualización multipart de teléfono, WhatsApp, dirección, redes y logo.
+- `GET /api/owner/restaurants/:restaurantId/logo`: lectura autenticada del logo.
+
+El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el MIME declarado como la firma binaria y guarda el archivo en `restaurants/<uuid>/profile/logo`. Las redes sociales son opcionales, requieren HTTPS y se restringen al dominio de la plataforma indicada.
 
 ## Persistencia
 

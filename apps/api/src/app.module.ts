@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ROOT_ENV_FILE, validateEnvironment } from './config/environment.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { RestaurantsModule } from './restaurants/restaurants.module.js';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
     }),
     PrismaModule,
     AuthModule,
+    RestaurantsModule,
     HealthModule,
   ],
 })

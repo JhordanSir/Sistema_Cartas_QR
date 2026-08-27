@@ -12,6 +12,7 @@ module.exports = {
   coverageProvider: 'v8',
   moduleFileExtensions: ['js', 'json', 'ts'],
   moduleNameMapper: {
+    '^@sirio/shared$': '<rootDir>/../../packages/shared/src/index.ts',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   roots: ['<rootDir>/src'],

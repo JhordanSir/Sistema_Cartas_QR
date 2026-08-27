@@ -33,8 +33,8 @@ const nextConfig: NextConfig = {
         destination: `${apiInternalUrl}/health/:path*`,
       },
       {
-        source: "/api/:path*",
-        destination: `${apiInternalUrl}/api/:path*`,
+        source: "/api/auth/:path*",
+        destination: `${apiInternalUrl}/api/auth/:path*`,
       },
     ];
   },

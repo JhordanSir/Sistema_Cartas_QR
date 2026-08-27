@@ -1,6 +1,7 @@
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 import {
+  ROOT_ENV_FILE,
   resolveRootEnvFile,
   validateEnvironment,
 } from './environment.js';
@@ -13,6 +14,7 @@ const VALID_ENVIRONMENT = {
   INITIAL_ADMIN_PASSWORD: 'strong-password',
   JWT_ACCESS_SECRET: 'access-secret-with-at-least-32-characters',
   JWT_REFRESH_SECRET: 'refresh-secret-with-at-least-32-characters',
+  STORAGE_PATH: './storage',
 };
 
 describe('validateEnvironment', () => {
@@ -26,6 +28,7 @@ describe('validateEnvironment', () => {
       JWT_ISSUER: 'custom-issuer',
       JWT_REFRESH_TTL: '10d',
       NODE_ENV: 'production',
+      STORAGE_PATH: resolve(dirname(ROOT_ENV_FILE), 'storage'),
     });
 
     expect(environment).toMatchObject({
@@ -54,6 +57,7 @@ describe('validateEnvironment', () => {
       JWT_ISSUER: 'sirio-cartas-qr',
       JWT_REFRESH_TTL_SECONDS: 604_800,
       NODE_ENV: 'development',
+      STORAGE_PATH: resolve(dirname(ROOT_ENV_FILE), 'storage'),
     });
   });
 
@@ -86,6 +90,10 @@ describe('validateEnvironment', () => {
     [
       { ...VALID_ENVIRONMENT, INITIAL_ADMIN_PASSWORD: 'short' },
       'INITIAL_ADMIN_PASSWORD must contain between 8 and 128 characters',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, STORAGE_PATH: '' },
+      'STORAGE_PATH is required',
     ],
   ])('rejects invalid values', (rawEnvironment, message) => {
     expect(() => validateEnvironment(rawEnvironment)).toThrow(message);

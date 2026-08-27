@@ -1,0 +1,29 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+
+import { hasSessionForRole } from '@/lib/api-server';
+
+import { LoginForm } from './login-form';
+
+export default async function LoginPage() {
+  if (await hasSessionForRole('ADMIN')) {
+    redirect('/backoffice');
+  }
+
+  return (
+    <main className="login-shell">
+      <Link className="brand-lockup" href="/" aria-label="Sirio Automatiza, inicio">
+        <span className="brand-mark" aria-hidden="true">S</span>
+        <span>Sirio Automatiza</span>
+      </Link>
+      <section className="login-card" aria-labelledby="login-title">
+        <span className="kicker">Acceso de plataforma</span>
+        <h1 id="login-title">Tu mesa de control.</h1>
+        <p className="supporting-copy">
+          Administra altas, disponibilidad y bajas definitivas de restaurantes.
+        </p>
+        <LoginForm />
+      </section>
+    </main>
+  );
+}

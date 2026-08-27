@@ -26,6 +26,7 @@ export interface Environment extends Record<string, unknown> {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_TTL_SECONDS: number;
   NODE_ENV: NodeEnvironment;
+  STORAGE_PATH: string;
 }
 
 export const ROOT_ENV_FILE = resolveRootEnvFile(process.cwd());
@@ -81,7 +82,15 @@ export function validateEnvironment(
       'JWT_REFRESH_TTL',
     ),
     NODE_ENV: parseNodeEnvironment(rawEnvironment.NODE_ENV),
+    STORAGE_PATH: parseStoragePath(rawEnvironment.STORAGE_PATH),
   };
+}
+
+function parseStoragePath(value: unknown): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error('STORAGE_PATH is required');
+  }
+  return resolve(dirname(ROOT_ENV_FILE), value.trim());
 }
 
 export function resolveRootEnvFile(currentDirectory: string): string {
