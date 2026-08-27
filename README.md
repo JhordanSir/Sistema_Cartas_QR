@@ -2,7 +2,7 @@
 
 Monorepo para digitalizar cartas de restaurantes y publicarlas mediante un QR fijo. El backend es una API NestJS, la interfaz usa Next.js y los datos se almacenan en PostgreSQL mediante Prisma.
 
-Las **Fases 0 a 3 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes y perfil del dueño con logo persistente, con pruebas e imágenes Docker compatibles con Dokploy. La Fase 4 todavía no ha comenzado.
+Las **Fases 0 a 4 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes, perfil del dueño y digitalización/publicación de cartas con Gemini, con pruebas e imágenes Docker compatibles con Dokploy.
 
 ## Estructura
 
@@ -133,7 +133,7 @@ Endpoints de administración bajo `/api/backoffice/restaurants`:
 - `PATCH /:id/status`: deshabilitar o reactivar sin bloquear el panel del dueño.
 - `DELETE /:id`: eliminación definitiva; exige `acknowledgePermanentDeletion: true` y el texto exacto `ELIMINAR <slug>`.
 
-`GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados. La ruta web `/{slug}` muestra una vista base de la carta durante esta fase y responde con la página 404 cuando el local está deshabilitado o eliminado.
+`GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados con sus categorías y productos disponibles. La ruta web `/{slug}` muestra la carta publicada y responde con la página 404 cuando el local está deshabilitado o eliminado.
 
 La eliminación usa cascadas de PostgreSQL, elimina al dueño si ya no administra otro restaurante y registra primero una tarea durable de limpieza del directorio `restaurants/<uuid>`. Si el volumen falla, la API conserva la tarea y la reintenta al arrancar, evitando archivos sin seguimiento.
 
@@ -150,10 +150,24 @@ Endpoints del propietario:
 
 El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el MIME declarado como la firma binaria y guarda el archivo en `restaurants/<uuid>/profile/logo`. Las redes sociales son opcionales, requieren HTTPS y se restringen al dominio de la plataforma indicada.
 
+## Digitalización con Gemini
+
+El dueño digitaliza su carta desde `/admin/menu`. Puede enviar de 1 a 5 fotografías JPG, PNG o WebP, con un máximo de 3 MB por archivo y 12 MB totales. La API valida también la firma binaria antes de enviar las imágenes inline a Gemini. Las fotos se procesan en memoria y no se almacenan en Sirio.
+
+Gemini devuelve un objeto estructurado con categorías, productos, descripciones, precios, variantes, adicionales y una estimación de colores/tipografía. El núcleo valida y normaliza ese objeto; luego reemplaza la carta y el estilo en una sola transacción de PostgreSQL. Si algo falla, la carta anterior permanece intacta. El panel permite corregir nombre, descripción y precio de un producto y refleja el cambio inmediatamente en `/{slug}`.
+
+Endpoints del propietario:
+
+- `GET /api/owner/restaurants/:restaurantId/menu`: carta publicada.
+- `POST /api/owner/restaurants/:restaurantId/menu/digitize`: carga multipart bajo el campo `photos` y publicación síncrona.
+- `PATCH /api/owner/restaurants/:restaurantId/menu/products/:productId`: corrección posterior de un producto.
+
+`GEMINI_TIMEOUT_MS` controla el timeout por intento y `GEMINI_MAX_RETRIES` limita los reintentos. Solo se reintentan fallos transitorios (408, 429, 5xx, timeout o red), con backoff exponencial y jitter. Tras fallos repetidos se abre temporalmente el circuito para proteger la API y entregar un mensaje claro al dueño.
+
 ## Persistencia
 
 - `postgres_data`: datos de PostgreSQL.
-- `uploads_data`: logos, cartas e imágenes bajo `/app/storage`.
+- `uploads_data`: logos y futuras imágenes de productos bajo `/app/storage`; las fotos fuente de la carta no se conservan.
 
 Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedores.
 

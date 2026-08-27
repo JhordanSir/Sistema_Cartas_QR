@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -13,6 +12,8 @@ import {
 } from 'react';
 
 import type { RestaurantProfile } from '@/lib/restaurant-types';
+
+import { OwnerNavigation } from './owner-navigation';
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_LOGOS = ['image/jpeg', 'image/png', 'image/webp'];
@@ -106,31 +107,9 @@ export function RestaurantProfilePanel() {
     setSaving(false);
   }
 
-  async function logout() {
-    await fetch('/api/session/logout', { method: 'POST' });
-    router.replace('/admin/login');
-    router.refresh();
-  }
-
   return (
     <main className="backoffice-shell owner-admin-shell">
-      <aside className="side-rail">
-        <Link className="brand-lockup" href="/">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>Sirio</span>
-        </Link>
-        <nav aria-label="Panel del restaurante">
-          <Link className="nav-item nav-item-active" href="/admin">
-            <span aria-hidden="true">◇</span> Perfil
-          </Link>
-          <span className="nav-item nav-item-coming" aria-disabled="true">
-            <span aria-hidden="true">≡</span> Carta <small>Próximamente</small>
-          </span>
-        </nav>
-        <button className="nav-item nav-button" onClick={logout} type="button">
-          <span aria-hidden="true">↗</span> Cerrar sesión
-        </button>
-      </aside>
+      <OwnerNavigation active="profile" />
 
       <section className="workspace owner-workspace">
         <header className="workspace-header owner-workspace-header">

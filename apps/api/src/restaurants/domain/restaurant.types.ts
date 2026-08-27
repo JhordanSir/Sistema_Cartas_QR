@@ -18,12 +18,34 @@ export interface RestaurantSummary {
 
 export interface PublicRestaurant {
   backgroundColor: string;
+  categories: PublicMenuCategory[];
   fontFamily: string;
   id: string;
   logoPath: string | null;
   name: string;
   slug: string;
   textColor: string;
+}
+
+export interface PublicMenuOption {
+  id: string;
+  name: string;
+  price: string;
+}
+
+export interface PublicMenuProduct {
+  basePrice: string;
+  description: string | null;
+  extras: PublicMenuOption[];
+  id: string;
+  name: string;
+  variants: PublicMenuOption[];
+}
+
+export interface PublicMenuCategory {
+  id: string;
+  name: string;
+  products: PublicMenuProduct[];
 }
 
 export interface RestaurantProfile {

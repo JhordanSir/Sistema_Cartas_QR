@@ -29,7 +29,7 @@ JWT_ISSUER=sirio-cartas-qr
 JWT_AUDIENCE=sirio-cartas-qr-api
 CORS_ORIGINS=https://cartas.example.com
 GEMINI_API_KEY=<api-key>
-GEMINI_MODEL=<modelo-configurado>
+GEMINI_MODEL=gemini-2.5-flash
 GEMINI_TIMEOUT_MS=60000
 GEMINI_MAX_RETRIES=2
 INITIAL_ADMIN_EMAIL=admin@example.com
@@ -98,10 +98,13 @@ Después de cada despliegue comprueba:
 9. `/backoffice` permite crear un restaurante, deshabilitarlo y reactivarlo; `/{slug}` responde 404 mientras está deshabilitado.
 10. Una eliminación definitiva quita el restaurante y deja en cero las tareas pendientes de `AssetDeletionJob` cuando el volumen está disponible.
 11. El dueño inicia sesión en `/admin/login`, completa el perfil, sube un logo válido y conserva ambos después de recargar y recrear el contenedor `api`.
+12. El dueño abre `/admin/menu`, sube de 1 a 5 fotos válidas, espera la publicación síncrona y verifica que una corrección posterior aparece en `/{slug}`.
 
 La sesión del backoffice se almacena en cookies HTTP-only. `PUBLIC_APP_URL` debe coincidir exactamente con el origen HTTPS que usará el operador, ya que también participa en la validación CSRF y en el atributo `Secure` de las cookies.
 
 Los archivos de cada restaurante deben guardarse bajo `/app/storage/restaurants/<uuid>`. El logo del perfil ocupa `profile/logo` dentro de ese directorio y admite PNG, JPG o WebP de hasta 2 MB. La baja definitiva elimina el directorio completo; si la operación del volumen falla, queda una tarea durable en PostgreSQL y el contenedor `api` reintenta la limpieza en el siguiente arranque.
+
+Las fotos fuente de digitalización no se escriben en el volumen: se validan, se envían inline a Gemini y se descartan al completar la solicitud. El límite de producto es 5 fotos, 3 MB por archivo y 12 MB totales. Gemini usa timeout y reintentos acotados configurables; un 429 o un fallo 5xx puede reintentarse, mientras que credenciales o solicitudes inválidas fallan inmediatamente.
 
 Antes de subir cambios al VPS valida la interpolación sin mostrarla en logs públicos:
 

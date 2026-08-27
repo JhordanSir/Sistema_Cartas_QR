@@ -23,12 +23,45 @@ export interface PaginatedRestaurants {
 
 export interface PublicRestaurant {
   backgroundColor: string;
+  categories: MenuCategory[];
   fontFamily: string;
   id: string;
   logoPath: string | null;
   name: string;
   slug: string;
   textColor: string;
+}
+
+export interface MenuOption {
+  id?: string;
+  name: string;
+  price: string;
+}
+
+export interface MenuProduct {
+  basePrice: string;
+  description: string | null;
+  extras: MenuOption[];
+  id?: string;
+  name: string;
+  variants: MenuOption[];
+}
+
+export interface MenuCategory {
+  id?: string;
+  name: string;
+  products: MenuProduct[];
+}
+
+export interface PublishedMenu {
+  categories: MenuCategory[];
+  restaurantId: string;
+  style: {
+    backgroundColor: string;
+    fontFamily: string;
+    textColor: string;
+  };
+  updatedAt: string;
 }
 
 export interface RestaurantProfile {

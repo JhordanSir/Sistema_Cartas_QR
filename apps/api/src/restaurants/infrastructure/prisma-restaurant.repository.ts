@@ -172,6 +172,21 @@ export class PrismaRestaurantRepository
 
   async findPublicBySlug(slug: string): Promise<PublicRestaurant | null> {
     const restaurant = await this.prisma.restaurant.findFirst({
+      include: {
+        categories: {
+          include: {
+            products: {
+              include: {
+                extras: { orderBy: { sortOrder: 'asc' } },
+                variants: { orderBy: { sortOrder: 'asc' } },
+              },
+              orderBy: { sortOrder: 'asc' },
+              where: { isAvailable: true },
+            },
+          },
+          orderBy: { sortOrder: 'asc' },
+        },
+      },
       where: { slug, status: RestaurantStatus.ENABLED },
     });
     if (!restaurant) {
@@ -179,6 +194,28 @@ export class PrismaRestaurantRepository
     }
     return {
       backgroundColor: restaurant.backgroundColor,
+      categories: restaurant.categories
+        .filter((category) => category.products.length > 0)
+        .map((category) => ({
+          id: category.id,
+          name: category.name,
+          products: category.products.map((product) => ({
+            basePrice: product.basePrice.toFixed(2),
+            description: product.description,
+            extras: product.extras.map((extra) => ({
+              id: extra.id,
+              name: extra.name,
+              price: extra.price.toFixed(2),
+            })),
+            id: product.id,
+            name: product.name,
+            variants: product.variants.map((variant) => ({
+              id: variant.id,
+              name: variant.name,
+              price: variant.price.toFixed(2),
+            })),
+          })),
+        })),
       fontFamily: restaurant.fontFamily,
       id: restaurant.id,
       logoPath: restaurant.logoPath,

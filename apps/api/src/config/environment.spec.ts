@@ -10,6 +10,7 @@ const VALID_DATABASE_URL =
   'postgresql://cartas:secret@localhost:5432/cartas_qr';
 const VALID_ENVIRONMENT = {
   DATABASE_URL: VALID_DATABASE_URL,
+  GEMINI_API_KEY: 'test-gemini-api-key',
   INITIAL_ADMIN_EMAIL: 'admin@example.com',
   INITIAL_ADMIN_PASSWORD: 'strong-password',
   JWT_ACCESS_SECRET: 'access-secret-with-at-least-32-characters',
@@ -35,6 +36,7 @@ describe('validateEnvironment', () => {
       API_PORT: 4100,
       CORS_ORIGINS: 'http://localhost:3000,https://menu.example.com',
       DATABASE_URL: VALID_DATABASE_URL,
+      GEMINI_API_KEY: 'test-gemini-api-key',
       INITIAL_ADMIN_EMAIL: 'admin@example.com',
       JWT_ACCESS_TTL_SECONDS: 1_200,
       JWT_AUDIENCE: 'custom-audience',
@@ -52,6 +54,9 @@ describe('validateEnvironment', () => {
     expect(environment).toMatchObject({
       API_PORT: 3001,
       CORS_ORIGINS: 'http://localhost:3000',
+      GEMINI_MAX_RETRIES: 2,
+      GEMINI_MODEL: 'gemini-2.5-flash',
+      GEMINI_TIMEOUT_MS: 60_000,
       JWT_ACCESS_TTL_SECONDS: 900,
       JWT_AUDIENCE: 'sirio-cartas-qr-api',
       JWT_ISSUER: 'sirio-cartas-qr',
@@ -94,6 +99,14 @@ describe('validateEnvironment', () => {
     [
       { ...VALID_ENVIRONMENT, STORAGE_PATH: '' },
       'STORAGE_PATH is required',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, GEMINI_API_KEY: '' },
+      'GEMINI_API_KEY is required',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, GEMINI_TIMEOUT_MS: '500' },
+      'GEMINI_TIMEOUT_MS must be an integer between 1000 and 120000',
     ],
   ])('rejects invalid values', (rawEnvironment, message) => {
     expect(() => validateEnvironment(rawEnvironment)).toThrow(message);

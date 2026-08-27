@@ -12,7 +12,7 @@ Antes de planificar se resolvieron por conversación todas las decisiones de arq
 - **Fase 1 — completada el 26 de agosto de 2026**: JWT access/refresh con rotación y revocación de sesiones, Argon2id, roles, pertenencia, cambio/reset de contraseña y bootstrap idempotente del administrador verificados localmente.
 - **Fase 2 — completada el 26 de agosto de 2026**: alta transaccional, slugs únicos e inmutables, deshabilitación/reactivación, eliminación durable de datos/archivos y backoffice responsivo verificados localmente.
 - **Fase 3 — completada el 26 de agosto de 2026**: login y panel responsivo del dueño, perfil de contacto/redes, logo persistente con validación binaria y aislamiento por pertenencia verificados localmente.
-- **Fase 4 — pendiente de confirmación**: no se ha iniciado la digitalización de cartas mediante Gemini.
+- **Fase 4 — completada el 27 de agosto de 2026**: digitalización multimodal con Gemini, validación estructurada, publicación atómica, corrección posterior, menú público y tolerancia a fallos verificados con una carta de prueba real.
 
 ## Decisiones de arquitectura confirmadas
 
@@ -41,7 +41,7 @@ Estas decisiones **cambian o completan** el texto literal del documento; quedan 
 2. **Alta de restaurante dividida en dos pasos**: el admin crea la cuenta solo con nombre + correo + contraseña inicial (RF-02); el dueño completa logo y datos de contacto desde su propio panel tras su primer login (ampliación de RF-09, que no especificaba quién carga esos datos).
 3. **Foto opcional por producto**: se agrega un campo de imagen opcional a `Product`, fuera del alcance original del "Enfoque B" (plantilla clonada solo con texto). Pedido explícito, se documenta como ampliación de RF-19/RF-20.
 4. **Slugs reservados**: como el panel del dueño y el backoffice viven bajo la misma app en rutas fijas (`/admin`, `/backoffice`, `/api`, `/login`, etc.), la generación de slugs (RF-07/RF-08) debe excluir esa lista reservada para que ningún restaurante pueda colisionar con esas rutas.
-5. **Límites de subida de fotos de carta (RF-14)**: no se fijan ahora; se definen como parte del diseño técnico de la Fase 4, considerando los límites reales de la API de Gemini.
+5. **Límites de subida de fotos de carta (RF-14)**: máximo 5 fotos JPG, PNG o WebP; 3 MB por archivo y 12 MB totales. El margen mantiene la solicitud inline por debajo del límite práctico de Gemini incluso después de codificar las imágenes en base64. Las fotos se procesan en memoria y no se almacenan en Sirio.
 
 ## Estructura del proyecto (a crear en Fase 0)
 
@@ -150,6 +150,8 @@ compose.yml   # postgres + api + web, volumen de imágenes persistente
 ## Fase 4 — Digitalización de la carta con IA (Gemini)
 
 **Objetivo**: RF-14 a RF-18.
+
+**Estado**: completada el 27 de agosto de 2026. Gemini extrajo correctamente una carta PNG de prueba con 2 categorías y 3 productos; el sistema publicó el resultado en una transacción y una corrección manual apareció inmediatamente en la vista pública.
 
 **Tareas clave**:
 - Endpoint de subida de una o varias fotos de carta; definir aquí (diseño técnico) los límites de tamaño/cantidad/formato considerando los límites reales de la API de Gemini (desviación #5).

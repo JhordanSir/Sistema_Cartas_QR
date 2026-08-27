@@ -10,6 +10,9 @@ const DEFAULT_JWT_AUDIENCE = 'sirio-cartas-qr-api';
 const MIN_SECRET_LENGTH = 32;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 128;
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+const DEFAULT_GEMINI_TIMEOUT_MS = 60_000;
+const DEFAULT_GEMINI_MAX_RETRIES = 2;
 
 type NodeEnvironment = (typeof NODE_ENVIRONMENTS)[number];
 
@@ -17,6 +20,10 @@ export interface Environment extends Record<string, unknown> {
   API_PORT: number;
   CORS_ORIGINS: string;
   DATABASE_URL: string;
+  GEMINI_API_KEY: string;
+  GEMINI_MAX_RETRIES: number;
+  GEMINI_MODEL: string;
+  GEMINI_TIMEOUT_MS: number;
   INITIAL_ADMIN_EMAIL: string;
   INITIAL_ADMIN_PASSWORD: string;
   JWT_ACCESS_SECRET: string;
@@ -52,6 +59,29 @@ export function validateEnvironment(
     API_PORT: parsePort(rawEnvironment.API_PORT),
     CORS_ORIGINS: parseCorsOrigins(rawEnvironment.CORS_ORIGINS),
     DATABASE_URL: databaseUrl,
+    GEMINI_API_KEY: parseRequiredString(
+      rawEnvironment.GEMINI_API_KEY,
+      'GEMINI_API_KEY',
+    ),
+    GEMINI_MAX_RETRIES: parseIntegerInRange(
+      rawEnvironment.GEMINI_MAX_RETRIES,
+      DEFAULT_GEMINI_MAX_RETRIES,
+      0,
+      4,
+      'GEMINI_MAX_RETRIES',
+    ),
+    GEMINI_MODEL: parseNonEmptyString(
+      rawEnvironment.GEMINI_MODEL,
+      DEFAULT_GEMINI_MODEL,
+      'GEMINI_MODEL',
+    ),
+    GEMINI_TIMEOUT_MS: parseIntegerInRange(
+      rawEnvironment.GEMINI_TIMEOUT_MS,
+      DEFAULT_GEMINI_TIMEOUT_MS,
+      1_000,
+      120_000,
+      'GEMINI_TIMEOUT_MS',
+    ),
     INITIAL_ADMIN_EMAIL: parseEmail(
       rawEnvironment.INITIAL_ADMIN_EMAIL,
       'INITIAL_ADMIN_EMAIL',
@@ -84,6 +114,27 @@ export function validateEnvironment(
     NODE_ENV: parseNodeEnvironment(rawEnvironment.NODE_ENV),
     STORAGE_PATH: parseStoragePath(rawEnvironment.STORAGE_PATH),
   };
+}
+
+function parseRequiredString(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${name} is required`);
+  }
+  return value.trim();
+}
+
+function parseIntegerInRange(
+  value: unknown,
+  defaultValue: number,
+  minimum: number,
+  maximum: number,
+  name: string,
+): number {
+  const parsed = value === undefined || value === '' ? defaultValue : Number(value);
+  if (!Number.isInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw new Error(`${name} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return parsed;
 }
 
 function parseStoragePath(value: unknown): string {

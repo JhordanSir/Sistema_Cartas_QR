@@ -27,11 +27,48 @@ export default async function PublicRestaurantPage({
       <section className="public-menu-card">
         <span className="menu-kicker">Carta digital</span>
         <h1>{restaurant.name}</h1>
-        <div className="menu-placeholder">
-          <span aria-hidden="true">✦</span>
-          <h2>Estamos preparando la carta</h2>
-          <p>Muy pronto encontrarás aquí todos los productos del restaurante.</p>
-        </div>
+        {restaurant.categories.length === 0 ? (
+          <div className="menu-placeholder">
+            <span aria-hidden="true">✦</span>
+            <h2>Estamos preparando la carta</h2>
+            <p>Muy pronto encontrarás aquí todos los productos del restaurante.</p>
+          </div>
+        ) : (
+          <div className="published-menu">
+            {restaurant.categories.map((category) => (
+              <section className="public-menu-category" key={category.id}>
+                <h2>{category.name}</h2>
+                <div className="public-product-list">
+                  {category.products.map((product) => (
+                    <article className="public-product" key={product.id}>
+                      <div className="public-product-heading">
+                        <h3>{product.name}</h3>
+                        <strong>S/ {product.basePrice}</strong>
+                      </div>
+                      {product.description ? <p>{product.description}</p> : null}
+                      {product.variants.length > 0 ? (
+                        <div className="public-options">
+                          <span>Presentaciones</span>
+                          {product.variants.map((variant) => (
+                            <small key={variant.id}>{variant.name} · S/ {variant.price}</small>
+                          ))}
+                        </div>
+                      ) : null}
+                      {product.extras.length > 0 ? (
+                        <div className="public-options">
+                          <span>Adicionales</span>
+                          {product.extras.map((extra) => (
+                            <small key={extra.id}>{extra.name} · S/ {extra.price}</small>
+                          ))}
+                        </div>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );
