@@ -1,0 +1,26 @@
+import {
+  authenticatedApiFetch,
+  isSameOrigin,
+  proxyApiResponse,
+} from '@/lib/api-server';
+
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ categoryId: string; restaurantId: string }> },
+): Promise<Response> {
+  if (!isSameOrigin(request)) {
+    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+  }
+  const { categoryId, restaurantId } = await context.params;
+  return proxyApiResponse(
+    await authenticatedApiFetch(
+      `/api/owner/restaurants/${encodeURIComponent(restaurantId)}/menu/categories/${encodeURIComponent(categoryId)}/products-order`,
+      {
+        body: await request.text(),
+        headers: { 'content-type': 'application/json' },
+        method: 'PUT',
+      },
+      'OWNER',
+    ),
+  );
+}

@@ -13,6 +13,7 @@ Antes de planificar se resolvieron por conversación todas las decisiones de arq
 - **Fase 2 — completada el 26 de agosto de 2026**: alta transaccional, slugs únicos e inmutables, deshabilitación/reactivación, eliminación durable de datos/archivos y backoffice responsivo verificados localmente.
 - **Fase 3 — completada el 26 de agosto de 2026**: login y panel responsivo del dueño, perfil de contacto/redes, logo persistente con validación binaria y aislamiento por pertenencia verificados localmente.
 - **Fase 4 — completada el 27 de agosto de 2026**: digitalización multimodal con Gemini, validación estructurada, publicación atómica, corrección posterior, menú público y tolerancia a fallos verificados con una carta de prueba real.
+- **Fase 5 — completada el 27 de agosto de 2026**: CRUD de secciones y productos, variantes/adicionales, orden, disponibilidad, eliminación permanente e imágenes opcionales con reflejo inmediato en la URL pública verificados localmente.
 
 ## Decisiones de arquitectura confirmadas
 
@@ -173,6 +174,8 @@ compose.yml   # postgres + api + web, volumen de imágenes persistente
 ## Fase 5 — Gestión de productos
 
 **Objetivo**: RF-19 a RF-26, más foto opcional por producto (desviación #3).
+
+**Estado**: completada el 27 de agosto de 2026. El flujo E2E crea y reordena secciones/productos, publica variantes, adicionales e imagen, oculta un producto no disponible sin borrarlo y comprueba su eliminación definitiva conservando la misma URL pública.
 
 **Tareas clave**:
 - CRUD de categorías y productos (alta, edición, eliminación).

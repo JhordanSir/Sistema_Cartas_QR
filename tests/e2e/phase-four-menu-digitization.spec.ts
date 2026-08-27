@@ -111,10 +111,10 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
     await expect(page.getByText('Lomo Salatado')).toBeVisible();
     await expect(page.getByText('S/ 28.00')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Corregir Lomo Salatado' }).click();
+    await page.getByRole('button', { name: 'Editar Lomo Salatado' }).click();
     await page.getByLabel('Nombre').fill('Lomo Saltado');
-    await page.getByRole('button', { name: 'Guardar corrección' }).click();
-    await expect(page.getByText('Producto corregido. El cambio ya está visible en la carta pública.')).toBeVisible();
+    await page.getByRole('button', { name: 'Guardar producto' }).click();
+    await expect(page.getByText('Producto actualizado en la carta pública.')).toBeVisible();
     await expect(page.getByText('Lomo Saltado')).toBeVisible();
 
     await page.goto(`${webUrl}/${restaurant.slug}`);

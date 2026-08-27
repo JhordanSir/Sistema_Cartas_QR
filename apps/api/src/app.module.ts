@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { ROOT_ENV_FILE, validateEnvironment } from './config/environment.js';
 import { DigitizationModule } from './digitization/digitization.module.js';
 import { HealthModule } from './health/health.module.js';
+import { MenuManagementModule } from './menu-management/menu-management.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RestaurantsModule } from './restaurants/restaurants.module.js';
 
@@ -21,6 +22,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module.js';
     AuthModule,
     RestaurantsModule,
     DigitizationModule,
+    MenuManagementModule,
     HealthModule,
   ],
 })

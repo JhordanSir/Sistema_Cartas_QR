@@ -1,11 +1,9 @@
 import {
-  Body,
   Controller,
   Get,
   Inject,
   Param,
   ParseUUIDPipe,
-  Patch,
   Post,
   UploadedFiles,
   UseGuards,
@@ -19,14 +17,11 @@ import { OwnerRestaurantGuard } from '../auth/presentation/owner-restaurant.guar
 import { CurrentPrincipal, Roles } from '../auth/presentation/auth.decorators.js';
 import { DigitizeMenu } from './application/use-cases/digitize-menu.js';
 import { GetOwnedMenu } from './application/use-cases/get-owned-menu.js';
-import { UpdateExtractedProduct } from './application/use-cases/update-extracted-product.js';
 import { MENU_PHOTO_LIMITS, type PublishedMenu } from './domain/menu.types.js';
 import {
   DIGITIZE_MENU,
   GET_OWNED_MENU,
-  UPDATE_EXTRACTED_PRODUCT,
 } from './digitization.tokens.js';
-import { UpdateExtractedProductDto } from './presentation/digitization.dto.js';
 import { throwDigitizationHttpError } from './presentation/digitization-http.errors.js';
 
 interface UploadedMenuPhoto {
@@ -42,8 +37,6 @@ export class DigitizationController {
   constructor(
     @Inject(DIGITIZE_MENU) private readonly digitizeMenu: DigitizeMenu,
     @Inject(GET_OWNED_MENU) private readonly getOwnedMenu: GetOwnedMenu,
-    @Inject(UPDATE_EXTRACTED_PRODUCT)
-    private readonly updateExtractedProduct: UpdateExtractedProduct,
   ) {}
 
   @Get()
@@ -80,26 +73,6 @@ export class DigitizationController {
           originalName: photo.originalname,
         })),
         principal,
-        restaurantId,
-      });
-    } catch (error) {
-      throwDigitizationHttpError(error);
-    }
-  }
-
-  @Patch('products/:productId')
-  async updateProduct(
-    @CurrentPrincipal() principal: AuthPrincipal,
-    @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
-    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
-    @Body() input: UpdateExtractedProductDto,
-  ): Promise<PublishedMenu> {
-    try {
-      return await this.updateExtractedProduct.execute({
-        ...input,
-        description: input.description ?? null,
-        principal,
-        productId,
         restaurantId,
       });
     } catch (error) {

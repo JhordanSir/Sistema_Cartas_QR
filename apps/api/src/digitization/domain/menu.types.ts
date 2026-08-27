@@ -53,6 +53,8 @@ export interface MenuProduct {
   description: string | null;
   extras: MenuExtra[];
   id?: string;
+  imagePath: string | null;
+  isAvailable: boolean;
   name: string;
   variants: MenuVariant[];
 }

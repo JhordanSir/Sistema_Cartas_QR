@@ -7,14 +7,12 @@ import type { MenuExtractionGateway } from './application/ports/menu-extraction.
 import type { MenuPublicationRepository } from './application/ports/menu-publication.repository.js';
 import { DigitizeMenu } from './application/use-cases/digitize-menu.js';
 import { GetOwnedMenu } from './application/use-cases/get-owned-menu.js';
-import { UpdateExtractedProduct } from './application/use-cases/update-extracted-product.js';
 import { DigitizationController } from './digitization.controller.js';
 import {
   DIGITIZE_MENU,
   GET_OWNED_MENU,
   MENU_EXTRACTION_GATEWAY,
   MENU_PUBLICATION_REPOSITORY,
-  UPDATE_EXTRACTED_PRODUCT,
 } from './digitization.tokens.js';
 import { GeminiMenuExtractionGateway } from './infrastructure/gemini-menu-extraction.gateway.js';
 import { PrismaMenuPublicationRepository } from './infrastructure/prisma-menu-publication.repository.js';
@@ -53,12 +51,6 @@ import { PrismaMenuPublicationRepository } from './infrastructure/prisma-menu-pu
       provide: GET_OWNED_MENU,
       useFactory: (repository: MenuPublicationRepository): GetOwnedMenu =>
         new GetOwnedMenu(repository),
-    },
-    {
-      inject: [MENU_PUBLICATION_REPOSITORY],
-      provide: UPDATE_EXTRACTED_PRODUCT,
-      useFactory: (repository: MenuPublicationRepository): UpdateExtractedProduct =>
-        new UpdateExtractedProduct(repository),
     },
   ],
 })

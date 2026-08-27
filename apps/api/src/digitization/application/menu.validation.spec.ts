@@ -33,6 +33,8 @@ describe('menu extraction validation', () => {
               basePrice: '28.00',
               description: 'Lomo salteado al wok',
               extras: [{ name: 'Huevo', price: '3.00' }],
+              imagePath: null,
+              isAvailable: true,
               name: 'Lomo Saltado',
               variants: [{ name: 'Personal', price: '28.00' }],
             },
@@ -61,7 +63,14 @@ describe('menu extraction validation', () => {
       categories: [
         {
           products: [
-            { basePrice: '6.50', description: null, extras: [], variants: [] },
+            {
+              basePrice: '6.50',
+              description: null,
+              extras: [],
+              imagePath: null,
+              isAvailable: true,
+              variants: [],
+            },
           ],
         },
       ],

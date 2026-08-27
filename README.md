@@ -2,7 +2,7 @@
 
 Monorepo para digitalizar cartas de restaurantes y publicarlas mediante un QR fijo. El backend es una API NestJS, la interfaz usa Next.js y los datos se almacenan en PostgreSQL mediante Prisma.
 
-Las **Fases 0 a 4 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes, perfil del dueño y digitalización/publicación de cartas con Gemini, con pruebas e imágenes Docker compatibles con Dokploy.
+Las **Fases 0 a 5 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes, perfil del dueño, digitalización con Gemini y gestión completa de la carta, con pruebas e imágenes Docker compatibles con Dokploy.
 
 ## Estructura
 
@@ -154,20 +154,35 @@ El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el
 
 El dueño digitaliza su carta desde `/admin/menu`. Puede enviar de 1 a 5 fotografías JPG, PNG o WebP, con un máximo de 3 MB por archivo y 12 MB totales. La API valida también la firma binaria antes de enviar las imágenes inline a Gemini. Las fotos se procesan en memoria y no se almacenan en Sirio.
 
-Gemini devuelve un objeto estructurado con categorías, productos, descripciones, precios, variantes, adicionales y una estimación de colores/tipografía. El núcleo valida y normaliza ese objeto; luego reemplaza la carta y el estilo en una sola transacción de PostgreSQL. Si algo falla, la carta anterior permanece intacta. El panel permite corregir nombre, descripción y precio de un producto y refleja el cambio inmediatamente en `/{slug}`.
+Gemini devuelve un objeto estructurado con categorías, productos, descripciones, precios, variantes, adicionales y una estimación de colores/tipografía. El núcleo valida y normaliza ese objeto; luego reemplaza la carta y el estilo en una sola transacción de PostgreSQL. Si algo falla, la carta anterior permanece intacta. El panel permite corregir o completar cualquier producto y refleja el cambio inmediatamente en `/{slug}`.
 
 Endpoints del propietario:
 
 - `GET /api/owner/restaurants/:restaurantId/menu`: carta publicada.
 - `POST /api/owner/restaurants/:restaurantId/menu/digitize`: carga multipart bajo el campo `photos` y publicación síncrona.
-- `PATCH /api/owner/restaurants/:restaurantId/menu/products/:productId`: corrección posterior de un producto.
+- `PATCH /api/owner/restaurants/:restaurantId/menu/products/:productId`: edición posterior de un producto.
 
 `GEMINI_TIMEOUT_MS` controla el timeout por intento y `GEMINI_MAX_RETRIES` limita los reintentos. Solo se reintentan fallos transitorios (408, 429, 5xx, timeout o red), con backoff exponencial y jitter. Tras fallos repetidos se abre temporalmente el circuito para proteger la API y entregar un mensaje claro al dueño.
+
+## Gestión de la carta
+
+Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
+
+La disponibilidad es independiente de la eliminación: marcar un producto como no disponible conserva todos sus datos en el panel y lo retira inmediatamente de la carta pública. Al volver a habilitarlo reaparece en la misma URL `/{slug}`; ninguna edición cambia el enlace que usará el QR.
+
+Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
+
+- `POST /categories`, `PATCH|DELETE /categories/:categoryId` y `PUT /categories-order`.
+- `POST /products`, `PATCH|DELETE /products/:productId` y `PATCH /products/:productId/availability`.
+- `PUT /categories/:categoryId/products-order`.
+- `PUT|GET|DELETE /products/:productId/image`.
+
+La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
 
 ## Persistencia
 
 - `postgres_data`: datos de PostgreSQL.
-- `uploads_data`: logos y futuras imágenes de productos bajo `/app/storage`; las fotos fuente de la carta no se conservan.
+- `uploads_data`: logos e imágenes de productos bajo `/app/storage`; las fotos fuente de la carta no se conservan.
 
 Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedores.
 

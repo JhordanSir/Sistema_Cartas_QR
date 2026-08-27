@@ -42,7 +42,10 @@ export interface MenuProduct {
   basePrice: string;
   description: string | null;
   extras: MenuOption[];
+  hasImage?: boolean;
   id?: string;
+  imagePath?: string | null;
+  isAvailable?: boolean;
   name: string;
   variants: MenuOption[];
 }

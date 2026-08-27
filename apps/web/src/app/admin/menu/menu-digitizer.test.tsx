@@ -44,6 +44,8 @@ const publishedMenu = {
           description: 'Con papas y arroz',
           extras: [],
           id: 'product-1',
+          imagePath: null,
+          isAvailable: true,
           name: 'Lomo Salatado',
           variants: [],
         },
@@ -97,12 +99,35 @@ describe('MenuDigitizer', () => {
     expect(await screen.findByText('Lomo Salatado')).toBeVisible();
     expect(screen.getByText('Carta digitalizada y publicada. Revisa los datos y corrige lo que necesites.')).toBeVisible();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Corregir Lomo Salatado' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Editar Lomo Salatado' }));
     fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Lomo Saltado' } });
-    fireEvent.submit(screen.getByRole('form', { name: 'Corregir Lomo Salatado' }));
+    fireEvent.submit(screen.getByRole('form', { name: 'Editar Lomo Salatado' }));
 
     await waitFor(() => expect(screen.getByText('Lomo Saltado')).toBeVisible());
-    expect(screen.getByText('Producto corregido. El cambio ya está visible en la carta pública.')).toBeVisible();
+    expect(screen.getByText('Producto actualizado en la carta pública.')).toBeVisible();
+  });
+
+  it('creates the first section from an empty menu', async () => {
+    (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === '/api/owner/restaurants') return apiResponse([profile]);
+      if (url.endsWith('/menu/categories') && init?.method === 'POST') {
+        return apiResponse({
+          ...emptyMenu,
+          categories: [{ id: 'category-1', name: 'Entradas', products: [] }],
+        });
+      }
+      return apiResponse(emptyMenu);
+    });
+    render(<MenuDigitizer />);
+
+    await screen.findByText('Crea la primera sección para empezar tu carta.');
+    fireEvent.click(screen.getByRole('button', { name: '+ Nueva sección' }));
+    fireEvent.change(screen.getByLabelText('Nombre'), { target: { value: 'Entradas' } });
+    fireEvent.submit(screen.getByRole('form', { name: 'Nueva sección' }));
+
+    expect(await screen.findByRole('heading', { name: 'Entradas' })).toBeVisible();
+    expect(screen.getByText('Sección creada y publicada.')).toBeVisible();
   });
 
   it('rejects more than five files before calling the API', async () => {

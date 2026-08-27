@@ -37,6 +37,7 @@ export interface PublicMenuProduct {
   basePrice: string;
   description: string | null;
   extras: PublicMenuOption[];
+  hasImage: boolean;
   id: string;
   name: string;
   variants: PublicMenuOption[];

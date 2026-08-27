@@ -207,6 +207,7 @@ export class PrismaRestaurantRepository
               name: extra.name,
               price: extra.price.toFixed(2),
             })),
+            hasImage: product.imagePath !== null,
             id: product.id,
             name: product.name,
             variants: product.variants.map((variant) => ({

@@ -122,6 +122,8 @@ function parseProduct(
         ? null
         : parseText(product.description, 1, 2_000, `descripción del ${label}`),
     extras: parsePricedItems(product.extras, 'adicional', label),
+    imagePath: null,
+    isAvailable: true,
     name: parseText(product.name, 1, 200, `nombre del ${label}`),
     variants: parsePricedItems(product.variants, 'variante', label),
   };

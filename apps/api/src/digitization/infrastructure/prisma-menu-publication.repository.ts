@@ -135,6 +135,8 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
         description: string | null;
         extras: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
         id: string;
+        imagePath: string | null;
+        isAvailable: boolean;
         name: string;
         variants: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
       }>;
@@ -157,6 +159,8 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
             price: extra.price.toFixed(2),
           })),
           id: product.id,
+          imagePath: product.imagePath,
+          isAvailable: product.isAvailable,
           name: product.name,
           variants: product.variants.map((variant) => ({
             id: variant.id,

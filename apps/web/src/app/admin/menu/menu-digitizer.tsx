@@ -2,22 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  type ChangeEvent,
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import type {
-  MenuProduct,
-  PublishedMenu,
-  RestaurantProfile,
-} from '@/lib/restaurant-types';
+import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from '../owner-navigation';
+import { MenuManager } from './menu-manager';
 
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
@@ -30,10 +20,6 @@ const PROCESSING_STAGES = [
   'Aplicando el estilo visual y publicando…',
 ];
 
-interface EditableProduct extends MenuProduct {
-  id: string;
-}
-
 export function MenuDigitizer() {
   const router = useRouter();
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
@@ -43,8 +29,6 @@ export function MenuDigitizer() {
   const [loading, setLoading] = useState(true);
   const [digitizing, setDigitizing] = useState(false);
   const [processingStage, setProcessingStage] = useState(0);
-  const [editing, setEditing] = useState<EditableProduct | null>(null);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const previews = useMemo(
@@ -170,35 +154,6 @@ export function MenuDigitizer() {
     setDigitizing(false);
   }
 
-  async function saveProduct(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selected || !editing) return;
-    setSaving(true);
-    setError(null);
-    const data = new FormData(event.currentTarget);
-    const response = await fetch(
-      `/api/owner/restaurants/${selected.id}/menu/products/${editing.id}`,
-      {
-        body: JSON.stringify({
-          basePrice: data.get('basePrice'),
-          description: data.get('description'),
-          name: data.get('name'),
-        }),
-        headers: { 'content-type': 'application/json' },
-        method: 'PATCH',
-      },
-    );
-    if (!response.ok) {
-      setError(await readApiError(response));
-      setSaving(false);
-      return;
-    }
-    setMenu((await response.json()) as PublishedMenu);
-    setEditing(null);
-    setSaving(false);
-    setNotice('Producto corregido. El cambio ya está visible en la carta pública.');
-  }
-
   return (
     <main className="backoffice-shell owner-admin-shell">
       <OwnerNavigation active="menu" />
@@ -282,61 +237,24 @@ export function MenuDigitizer() {
                 </div>
               </div>
               {digitizing ? <ProcessingState stage={processingStage} /> : null}
-              {!digitizing && menu?.categories.length ? (
+              {!digitizing && menu ? (
                 <>
-                  <div className="menu-result-toolbar">
-                    <span>{menu.categories.length} categorías · {countProducts(menu)} productos</span>
+                  <div className="public-menu-shortcut">
                     <Link href={`/${selected.slug}`} rel="noreferrer" target="_blank">Ver carta pública ↗</Link>
                   </div>
-                  <div className="owner-menu-result">
-                    {menu.categories.map((category) => (
-                      <section key={category.id ?? category.name}>
-                        <h3>{category.name}</h3>
-                        {category.products.map((product) => (
-                          <article key={product.id ?? product.name}>
-                            <div>
-                              <strong>{product.name}</strong>
-                              {product.description ? <p>{product.description}</p> : null}
-                              {product.variants.length || product.extras.length ? (
-                                <small>{product.variants.length} variantes · {product.extras.length} adicionales</small>
-                              ) : null}
-                            </div>
-                            <span>S/ {product.basePrice}</span>
-                            <button
-                              aria-label={`Corregir ${product.name}`}
-                              onClick={() => setEditing(product as EditableProduct)}
-                              type="button"
-                            >Corregir</button>
-                          </article>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
+                  <MenuManager
+                    menu={menu}
+                    restaurant={selected}
+                    setError={setError}
+                    setMenu={setMenu}
+                    setNotice={setNotice}
+                  />
                 </>
-              ) : null}
-              {!digitizing && !menu?.categories.length ? (
-                <div className="menu-result-empty"><span aria-hidden="true">✦</span><p>Aún no hay productos publicados.</p></div>
               ) : null}
             </section>
           </div>
         ) : null}
       </section>
-
-      {editing ? (
-        <div className="edit-product-backdrop" role="presentation">
-          <form aria-label={`Corregir ${editing.name}`} className="edit-product-modal" onSubmit={saveProduct}>
-            <span className="kicker">Corrección manual</span>
-            <h2>Revisa el producto</h2>
-            <label className="field"><span>Nombre</span><input defaultValue={editing.name} maxLength={200} name="name" required /></label>
-            <label className="field"><span>Descripción</span><textarea defaultValue={editing.description ?? ''} maxLength={2000} name="description" rows={4} /></label>
-            <label className="field"><span>Precio base (S/)</span><input defaultValue={editing.basePrice} min="0" name="basePrice" required step="0.01" type="number" /></label>
-            <footer>
-              <button className="button button-secondary" disabled={saving} onClick={() => setEditing(null)} type="button">Cancelar</button>
-              <button className="button button-primary" disabled={saving} type="submit">{saving ? 'Guardando…' : 'Guardar corrección'}</button>
-            </footer>
-          </form>
-        </div>
-      ) : null}
     </main>
   );
 }
@@ -355,10 +273,6 @@ function ProcessingState({ stage }: { stage: number }) {
 
 function MenuSkeleton() {
   return <div className="profile-skeleton menu-skeleton" aria-label="Cargando carta" role="status"><span /><span /></div>;
-}
-
-function countProducts(menu: PublishedMenu): number {
-  return menu.categories.reduce((total, category) => total + category.products.length, 0);
 }
 
 function formatBytes(bytes: number): string {
