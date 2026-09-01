@@ -10,6 +10,9 @@ export interface CreateRestaurantRecord {
   email: string;
   name: string;
   passwordHash: string;
+  qrPayload: string;
+  qrPng: Uint8Array;
+  qrSvg: Uint8Array;
   slug: string;
 }
 

@@ -69,6 +69,20 @@ export interface RestaurantLogo {
   contentType: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
+export type RestaurantQrFormat = 'png' | 'svg';
+
+export interface RestaurantQrIdentity {
+  publicUrl: string;
+  slug: string;
+}
+
+export interface RestaurantQrDocument {
+  bytes: Uint8Array;
+  contentType: 'image/png' | 'image/svg+xml';
+  fileName: string;
+  publicUrl: string;
+}
+
 export interface PaginatedRestaurants {
   items: RestaurantSummary[];
   page: number;

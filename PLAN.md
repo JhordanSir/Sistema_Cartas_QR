@@ -14,6 +14,8 @@ Antes de planificar se resolvieron por conversación todas las decisiones de arq
 - **Fase 3 — completada el 26 de agosto de 2026**: login y panel responsivo del dueño, perfil de contacto/redes, logo persistente con validación binaria y aislamiento por pertenencia verificados localmente.
 - **Fase 4 — completada el 27 de agosto de 2026**: digitalización multimodal con Gemini, validación estructurada, publicación atómica, corrección posterior, menú público y tolerancia a fallos verificados con una carta de prueba real.
 - **Fase 5 — completada el 27 de agosto de 2026**: CRUD de secciones y productos, variantes/adicionales, orden, disponibilidad, eliminación permanente e imágenes opcionales con reflejo inmediato en la URL pública verificados localmente.
+- **Fase 6 — completada el 31 de agosto de 2026**: QR fijo materializado y persistido al crear cada restaurante (URL, PNG y SVG), descarga autenticada desde el panel del dueño y carta pública mobile-first con navegación por categorías, disponibilidad y acceso sin login verificados localmente.
+- **Fase 7 — completada el 1 de septiembre de 2026**: registro asíncrono y anonimizado de vistas, estadísticas UTC-5 para dueño y administrador, retención programada de 30 días y agregados históricos verificados localmente.
 
 ## Decisiones de arquitectura confirmadas
 
@@ -199,15 +201,18 @@ compose.yml   # postgres + api + web, volumen de imágenes persistente
 
 **Objetivo**: RF-27 a RF-32.
 
+**Estado**: completada el 31 de agosto de 2026. El alta de restaurante guarda en la misma operación la URL pública canónica y los documentos PNG/SVG del QR. Un guard de base de datos impide cambiar el slug, payload o archivos QR; los restaurantes anteriores a la migración los materializan una sola vez cuando su dueño abre el QR. El panel `/admin/qr` permite previsualizar, copiar el enlace y descargar ambos formatos mediante el BFF autenticado.
+
 **Tareas clave**:
-- Generación automática de QR único al crear el restaurante (Fase 2), apuntando a `dominio.com/{slug}`; descargable en PNG y SVG.
-- Garantizar que el QR nunca se regenera por cambios posteriores (contenido, nombre visible).
-- Vista pública mobile-first: solo productos disponibles, navegación por categorías, sin login, solo lectura (RNF-05).
+- Generación automática y persistencia del QR único al crear el restaurante, apuntando a `PUBLIC_APP_URL/{slug}`; descargable en PNG y SVG.
+- Garantizar que el slug, payload y ambos archivos QR nunca se regeneran ni modifican por cambios posteriores de carta, disponibilidad o nombre visible. Los registros heredados se materializan una sola vez en su primer acceso autenticado.
+- Panel del dueño `/admin/qr` con previsualización, copia de enlace y descargas PNG/SVG; rutas BFF protegidas por rol y pertenencia.
+- Vista pública mobile-first: solo productos disponibles y categorías con al menos un producto visible, navegación horizontal por categorías, sin login y solo lectura (RNF-05).
 - Verificación de slugs reservados en el enrutamiento (desviación #4).
 
 **Skills**: `nextjs-developer`, `mobile-performance-testing`, `responsive-testing-automation`, `lighthouse-performance`, `web-vitals-testing`, `webapp-testing`, `playwright-e2e`.
 
-**Pruebas unitarias**: el QR no cambia su payload ante ediciones del menú o del nombre; descarga en ambos formatos.
+**Pruebas unitarias**: el QR no cambia su payload ni bytes ante ediciones del menú o del nombre; descarga PNG y SVG, y los registros heredados solo se completan una vez.
 
 **Pruebas e2e**: recorrido completo simulando el escaneo del QR (navegar a `/{slug}`), verificar que solo aparecen productos disponibles, verificar que un restaurante deshabilitado no muestra el menú, chequeo de rendimiento/responsive en viewport móvil.
 
@@ -218,6 +223,8 @@ compose.yml   # postgres + api + web, volumen de imágenes persistente
 ## Fase 7 — Estadísticas de visualización
 
 **Objetivo**: RF-33 a RF-39.
+
+**Estado**: completada el 1 de septiembre de 2026. Las vistas se registran desde el navegador sin bloquear la carta pública y se deduplican por hash de IP + día de Perú. El E2E verificó los paneles de dueño y backoffice, y una prueba de integración confirmó la consolidación idempotente de eventos antiguos hacia `ViewSummary`.
 
 **Tareas clave**:
 - Registro de vista en la vista pública, deduplicada por **IP + fecha** (día), sin impacto perceptible en la carga (RNF-04) — se registra de forma asíncrona/no bloqueante.

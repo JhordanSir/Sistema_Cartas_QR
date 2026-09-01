@@ -4,7 +4,10 @@ import type { RestaurantApplicationError } from '../../domain/restaurant.errors.
 import { RestaurantStatus } from '../../domain/restaurant-status.js';
 import type { RestaurantSummary } from '../../domain/restaurant.types.js';
 import type { RestaurantRepository } from '../ports/restaurant.repository.js';
-import type { RestaurantPasswordHasher } from '../ports/restaurant-services.js';
+import type {
+  RestaurantPasswordHasher,
+  RestaurantQrRenderer,
+} from '../ports/restaurant-services.js';
 import { CreateRestaurant } from './create-restaurant.js';
 
 const ADMIN: AuthPrincipal = {
@@ -48,12 +51,23 @@ function repository(): jest.Mocked<RestaurantRepository> {
 describe('CreateRestaurant', () => {
   let repo: jest.Mocked<RestaurantRepository>;
   let hasher: jest.Mocked<RestaurantPasswordHasher>;
+  let qrRenderer: jest.Mocked<RestaurantQrRenderer>;
   let useCase: CreateRestaurant;
 
   beforeEach(() => {
     repo = repository();
     hasher = { hash: jest.fn().mockResolvedValue('argon2-hash') };
-    useCase = new CreateRestaurant(repo, hasher);
+    qrRenderer = {
+      render: jest.fn().mockImplementation((payload, format) =>
+        Promise.resolve(Buffer.from(`${format}:${payload}`)),
+      ),
+    };
+    useCase = new CreateRestaurant(
+      repo,
+      hasher,
+      qrRenderer,
+      'https://cartas.example.com',
+    );
   });
 
   it('normalizes input, hashes the password and creates the aggregate', async () => {
@@ -75,8 +89,15 @@ describe('CreateRestaurant', () => {
       email: 'owner@example.com',
       name: 'Pizza Félix',
       passwordHash: 'argon2-hash',
+      qrPayload: 'https://cartas.example.com/pizza-felix',
+      qrPng: Buffer.from('png:https://cartas.example.com/pizza-felix'),
+      qrSvg: Buffer.from('svg:https://cartas.example.com/pizza-felix'),
       slug: 'pizza-felix',
     });
+    expect(qrRenderer.render).toHaveBeenCalledWith(
+      'https://cartas.example.com/pizza-felix',
+      'png',
+    );
   });
 
   it('retries with an incremental slug after a concurrent collision', async () => {

@@ -33,7 +33,9 @@ export interface Environment extends Record<string, unknown> {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_TTL_SECONDS: number;
   NODE_ENV: NodeEnvironment;
+  PUBLIC_APP_URL: string;
   STORAGE_PATH: string;
+  VIEW_IP_HASH_SECRET: string;
 }
 
 export const ROOT_ENV_FILE = resolveRootEnvFile(process.cwd());
@@ -112,7 +114,15 @@ export function validateEnvironment(
       'JWT_REFRESH_TTL',
     ),
     NODE_ENV: parseNodeEnvironment(rawEnvironment.NODE_ENV),
+    PUBLIC_APP_URL: parseRequiredOrigin(
+      rawEnvironment.PUBLIC_APP_URL,
+      'PUBLIC_APP_URL',
+    ),
     STORAGE_PATH: parseStoragePath(rawEnvironment.STORAGE_PATH),
+    VIEW_IP_HASH_SECRET: parseSecret(
+      rawEnvironment.VIEW_IP_HASH_SECRET,
+      'VIEW_IP_HASH_SECRET',
+    ),
   };
 }
 
@@ -204,6 +214,19 @@ function assertHttpOrigin(origin: string): void {
   if (!['http:', 'https:'].includes(url.protocol) || url.origin !== origin) {
     throw new Error(`CORS_ORIGINS contains an invalid origin: ${origin}`);
   }
+}
+
+function parseRequiredOrigin(value: unknown, name: string): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${name} is required`);
+  }
+  const origin = value.trim().replace(/\/$/, '');
+  try {
+    assertHttpOrigin(origin);
+  } catch {
+    throw new Error(`${name} must be a valid HTTP origin`);
+  }
+  return origin;
 }
 
 function parseDatabaseUrl(value: unknown): string {

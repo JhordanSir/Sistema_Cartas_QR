@@ -3,14 +3,15 @@ import { render, screen } from "@testing-library/react";
 import HomePage from "./page";
 
 describe("HomePage", () => {
-  it("muestra la propuesta y el canal de contacto", () => {
+  it("explica el sistema y dirige al propietario a su acceso", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole("heading", { name: /tu carta digital/i }),
+      screen.getByRole("heading", { name: /tu carta trabaja/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /whatsapp/i }),
-    ).toHaveAttribute("href", "https://wa.me/51973502261");
+      screen.getByRole("link", { name: /ingresar como propietario/i }),
+    ).toHaveAttribute("href", "/admin/login");
+    expect(screen.getByAltText("Logo de Sirio Automatiza")).toBeInTheDocument();
   });
 });

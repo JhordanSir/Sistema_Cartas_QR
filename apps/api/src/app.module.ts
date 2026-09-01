@@ -8,6 +8,7 @@ import { HealthModule } from './health/health.module.js';
 import { MenuManagementModule } from './menu-management/menu-management.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { RestaurantsModule } from './restaurants/restaurants.module.js';
+import { ViewStatisticsModule } from './analytics/view-statistics.module.js';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RestaurantsModule } from './restaurants/restaurants.module.js';
     RestaurantsModule,
     DigitizationModule,
     MenuManagementModule,
+    ViewStatisticsModule,
     HealthModule,
   ],
 })

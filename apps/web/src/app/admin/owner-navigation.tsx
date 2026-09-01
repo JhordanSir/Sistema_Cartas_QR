@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export function OwnerNavigation({ active }: { active: 'menu' | 'profile' }) {
+export function OwnerNavigation({ active }: { active: 'menu' | 'profile' | 'qr' | 'statistics' }) {
   const router = useRouter();
 
   async function logout() {
@@ -24,6 +24,12 @@ export function OwnerNavigation({ active }: { active: 'menu' | 'profile' }) {
         </Link>
         <Link className={`nav-item ${active === 'menu' ? 'nav-item-active' : ''}`} href="/admin/menu">
           <span aria-hidden="true">≡</span> Carta
+        </Link>
+        <Link className={`nav-item ${active === 'qr' ? 'nav-item-active' : ''}`} href="/admin/qr">
+          <span aria-hidden="true">⌗</span> QR
+        </Link>
+        <Link className={`nav-item ${active === 'statistics' ? 'nav-item-active' : ''}`} href="/admin/statistics">
+          <span aria-hidden="true">◔</span> Estadísticas
         </Link>
       </nav>
       <button className="nav-item nav-button" onClick={logout} type="button">

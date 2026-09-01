@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -24,5 +25,7 @@ export function throwRestaurantHttpError(error: unknown): never {
     case 'INVALID_LOGO':
     case 'SLUG_ALLOCATION_FAILED':
       throw new BadRequestException(error.message);
+    case 'QR_UNAVAILABLE':
+      throw new InternalServerErrorException(error.message);
   }
 }

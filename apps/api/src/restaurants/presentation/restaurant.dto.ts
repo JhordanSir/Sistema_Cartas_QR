@@ -95,3 +95,8 @@ export class UpdateRestaurantProfileDto {
   @MaxLength(2048)
   tiktokUrl?: string;
 }
+
+export enum RestaurantQrFormatDto {
+  PNG = 'png',
+  SVG = 'svg',
+}

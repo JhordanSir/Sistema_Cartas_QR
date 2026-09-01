@@ -1,17 +1,13 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 
-import { hasSessionForRole } from '@/lib/api-server';
+import { SessionRedirect } from '../session-access';
 
 import { LoginForm } from './login-form';
 
 export default async function LoginPage() {
-  if (await hasSessionForRole('ADMIN')) {
-    redirect('/backoffice');
-  }
-
   return (
     <main className="login-shell">
+      <SessionRedirect destination="/backoffice" role="ADMIN" />
       <Link className="brand-lockup" href="/" aria-label="Sirio Automatiza, inicio">
         <span className="brand-mark" aria-hidden="true">S</span>
         <span>Sirio Automatiza</span>

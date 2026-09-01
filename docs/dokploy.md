@@ -8,6 +8,7 @@ Este proyecto se despliega como una aplicación **Docker Compose** de Dokploy. E
 2. Confirma que el repositorio contiene `pnpm-lock.yaml` y que las imágenes se construyen localmente con `docker compose build`.
 3. Conserva el archivo `.env` en la raíz únicamente para desarrollo local. Está ignorado por Git y también por el contexto de construcción de Docker.
 4. Carga en la pestaña **Environment** de Dokploy las mismas variables de producción. Dokploy materializa esas variables en un `.env` junto a `compose.yml` durante el despliegue.
+5. Decide y verifica el dominio HTTPS canónico antes de dar de alta restaurantes. Ese origen será parte permanente de cada QR impreso.
 
 El Compose no usa `env_file`: cada servicio recibe solo las variables que necesita. De este modo, las credenciales de PostgreSQL, JWT, Gemini y del administrador inicial no llegan al contenedor web.
 
@@ -45,6 +46,14 @@ API_PORT=3001
 `DATABASE_URL_DOCKER` usa `postgres` como hostname porque ese es el nombre DNS del servicio dentro de Compose. La variable local `DATABASE_URL` no se pasa al contenedor y puede seguir apuntando a `localhost`. Si la contraseña contiene caracteres reservados de una URL, codifícalos al construir `DATABASE_URL_DOCKER`.
 
 Genera secretos JWT independientes y suficientemente largos. Tras el primer acceso cambia la contraseña del administrador mediante `POST /api/auth/admin/password`; el seed es idempotente y no reemplaza una cuenta existente. Sustituye luego `INITIAL_ADMIN_PASSWORD` en Dokploy por otro valor aleatorio que no reutilices. No guardes valores reales en `.env.example` ni en Git.
+
+### URL permanente de los QR
+
+`PUBLIC_APP_URL` debe ser exclusivamente el origen HTTPS público y canónico, por ejemplo `https://cartas.example.com`: sin ruta, query, fragmento ni un dominio temporal de Dokploy. Debe coincidir con el dominio que se asignará al servicio `web` y con `CORS_ORIGINS`.
+
+Al crear un restaurante, la API guarda en la misma transacción `PUBLIC_APP_URL/{slug}` y sus documentos QR en PNG y SVG. El slug, payload y archivos resultantes son inmutables; cambiar `PUBLIC_APP_URL` en una actualización posterior no modifica los QR que ya existen. Configura el valor definitivo antes de crear restaurantes o imprimir material. Si se migra de dominio, conserva el dominio anterior con una redirección hacia el nuevo sitio para no romper los códigos ya distribuidos.
+
+Se considera legado cualquier restaurante que todavía tenga los tres campos `qrPayload`, `qrPng` y `qrSvg` sin materializar. Estas filas se completan exactamente una vez cuando su dueño abre la gestión de QR. La materialización heredada usa el `PUBLIC_APP_URL` configurado en ese primer acceso, por lo que conviene realizarla únicamente después de configurar el dominio final y, si se requiere materializar todos los legados, abrir `/admin/qr` para cada restaurante con su dueño autorizado.
 
 ## Crear la aplicación Compose
 
@@ -99,8 +108,10 @@ Después de cada despliegue comprueba:
 10. Una eliminación definitiva quita el restaurante y deja en cero las tareas pendientes de `AssetDeletionJob` cuando el volumen está disponible.
 11. El dueño inicia sesión en `/admin/login`, completa el perfil, sube un logo válido y conserva ambos después de recargar y recrear el contenedor `api`.
 12. El dueño abre `/admin/menu`, sube de 1 a 5 fotos válidas, espera la publicación síncrona y verifica que una corrección posterior aparece en `/{slug}`.
+13. El dueño abre `/admin/qr`, confirma que el enlace es `https://<dominio>/<slug>`, previsualiza el QR y descarga PNG y SVG. Tras editar la carta o el nombre visible, vuelve a comprobar que los archivos y el enlace no cambiaron.
+14. Sin iniciar sesión, abre `https://<dominio>/<slug>` desde un móvil: la carta muestra solo productos disponibles y el índice horizontal de categorías permite saltar entre secciones. Deshabilita el restaurante en el backoffice y confirma que la misma URL devuelve 404 hasta reactivarlo.
 
-La sesión del backoffice se almacena en cookies HTTP-only. `PUBLIC_APP_URL` debe coincidir exactamente con el origen HTTPS que usará el operador, ya que también participa en la validación CSRF y en el atributo `Secure` de las cookies.
+La sesión del backoffice se almacena en cookies HTTP-only. `PUBLIC_APP_URL` debe coincidir exactamente con el origen HTTPS que usará el operador, ya que también participa en la validación CSRF y en el atributo `Secure` de las cookies; por la inmutabilidad de los QR, no debe sustituirse por un dominio distinto después de crear restaurantes.
 
 Los archivos de cada restaurante deben guardarse bajo `/app/storage/restaurants/<uuid>`. El logo del perfil ocupa `profile/logo` dentro de ese directorio y admite PNG, JPG o WebP de hasta 2 MB. La baja definitiva elimina el directorio completo; si la operación del volumen falla, queda una tarea durable en PostgreSQL y el contenedor `api` reintenta la limpieza en el siguiente arranque.
 

@@ -8,13 +8,14 @@ import {
   useState,
 } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 import type {
   PaginatedRestaurants,
   RestaurantStatus,
   RestaurantSummary,
 } from '@/lib/restaurant-types';
+
+import { BackofficeNavigation } from './backoffice-navigation';
 
 const EMPTY_LIST: PaginatedRestaurants = {
   items: [],
@@ -111,28 +112,9 @@ export function RestaurantBackoffice() {
     await loadRestaurants();
   }
 
-  async function logout() {
-    await fetch('/api/session/logout', { method: 'POST' });
-    router.replace('/login');
-    router.refresh();
-  }
-
   return (
     <main className="backoffice-shell">
-      <aside className="side-rail">
-        <Link className="brand-lockup" href="/">
-          <span className="brand-mark" aria-hidden="true">S</span>
-          <span>Sirio</span>
-        </Link>
-        <nav aria-label="Backoffice">
-          <Link className="nav-item nav-item-active" href="/backoffice">
-            <span aria-hidden="true">▦</span> Restaurantes
-          </Link>
-        </nav>
-        <button className="nav-item nav-button" onClick={logout} type="button">
-          <span aria-hidden="true">↗</span> Cerrar sesión
-        </button>
-      </aside>
+      <BackofficeNavigation active="restaurants" />
 
       <section className="workspace">
         <header className="workspace-header">

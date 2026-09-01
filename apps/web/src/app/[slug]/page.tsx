@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { apiInternalUrl } from '@/lib/api-server';
 import type { PublicRestaurant } from '@/lib/restaurant-types';
 
+import { PublicViewTracker } from './public-view-tracker';
+
 export default async function PublicRestaurantPage({
   params,
 }: PageProps<'/[slug]'>) {
@@ -24,9 +26,13 @@ export default async function PublicRestaurantPage({
         '--menu-font': restaurant.fontFamily,
       } as React.CSSProperties}
     >
+      <PublicViewTracker slug={restaurant.slug} />
       <section className="public-menu-card">
-        <span className="menu-kicker">Carta digital</span>
-        <h1>{restaurant.name}</h1>
+        <header className="public-menu-masthead">
+          <span className="menu-kicker">Carta digital</span>
+          <h1>{restaurant.name}</h1>
+          <span className="menu-live-mark"><i /> Disponible ahora</span>
+        </header>
         {restaurant.categories.length === 0 ? (
           <div className="menu-placeholder">
             <span aria-hidden="true">✦</span>
@@ -34,9 +40,22 @@ export default async function PublicRestaurantPage({
             <p>Muy pronto encontrarás aquí todos los productos del restaurante.</p>
           </div>
         ) : (
-          <div className="published-menu">
+          <>
+            <nav aria-label="Secciones de la carta" className="public-category-index">
+              {restaurant.categories.map((category, index) => (
+                <a href={`#categoria-${category.id}`} key={category.id}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  {category.name}
+                </a>
+              ))}
+            </nav>
+            <div className="published-menu">
             {restaurant.categories.map((category) => (
-              <section className="public-menu-category" key={category.id}>
+              <section
+                className="public-menu-category"
+                id={`categoria-${category.id}`}
+                key={category.id}
+              >
                 <h2>{category.name}</h2>
                 <div className="public-product-list">
                   {category.products.map((product) => (
@@ -78,8 +97,13 @@ export default async function PublicRestaurantPage({
                 </div>
               </section>
             ))}
-          </div>
+            </div>
+          </>
         )}
+        <footer className="public-menu-footer">
+          <span aria-hidden="true">S</span>
+          Carta digital actualizada al instante
+        </footer>
       </section>
     </main>
   );

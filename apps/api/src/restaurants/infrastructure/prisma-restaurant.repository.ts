@@ -12,6 +12,11 @@ import type {
   RestaurantRepository,
 } from '../application/ports/restaurant.repository.js';
 import type {
+  RestaurantQrRepository,
+  StoreRestaurantQrInput,
+  StoredRestaurantQr,
+} from '../application/ports/restaurant-qr.repository.js';
+import type {
   RestaurantProfileRepository,
   UpdateRestaurantProfileRecord,
 } from '../application/ports/restaurant-profile.repository.js';
@@ -29,7 +34,10 @@ type RestaurantWithOwners = Restaurant & {
 };
 
 export class PrismaRestaurantRepository
-  implements RestaurantRepository, RestaurantProfileRepository
+  implements
+    RestaurantRepository,
+    RestaurantProfileRepository,
+    RestaurantQrRepository
 {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -45,6 +53,9 @@ export class PrismaRestaurantRepository
         const restaurant = await transaction.restaurant.create({
           data: {
             name: input.name,
+            qrPayload: input.qrPayload,
+            qrPng: Buffer.from(input.qrPng),
+            qrSvg: Buffer.from(input.qrSvg),
             slug: input.slug,
           },
         });
@@ -142,6 +153,47 @@ export class PrismaRestaurantRepository
     return restaurant ? this.toProfile(restaurant) : null;
   }
 
+  async findQrForOwner(
+    ownerId: string,
+    restaurantId: string,
+  ): Promise<StoredRestaurantQr | null> {
+    const restaurant = await this.prisma.restaurant.findFirst({
+      select: {
+        qrPayload: true,
+        qrPng: true,
+        qrSvg: true,
+        slug: true,
+      },
+      where: {
+        id: restaurantId,
+        owners: { some: { ownerId } },
+      },
+    });
+    return restaurant ? this.toStoredQr(restaurant) : null;
+  }
+
+  async storeQrIfIncomplete(
+    ownerId: string,
+    restaurantId: string,
+    input: StoreRestaurantQrInput,
+  ): Promise<StoredRestaurantQr | null> {
+    await this.prisma.restaurant.updateMany({
+      data: {
+        qrPayload: input.qrPayload,
+        qrPng: Buffer.from(input.qrPng),
+        qrSvg: Buffer.from(input.qrSvg),
+      },
+      where: {
+        id: restaurantId,
+        owners: { some: { ownerId } },
+        qrPayload: null,
+        qrPng: null,
+        qrSvg: null,
+      },
+    });
+    return this.findQrForOwner(ownerId, restaurantId);
+  }
+
   async updateProfileForOwner(
     ownerId: string,
     restaurantId: string,
@@ -186,6 +238,11 @@ export class PrismaRestaurantRepository
           },
           orderBy: { sortOrder: 'asc' },
         },
+      },
+      omit: {
+        qrPayload: true,
+        qrPng: true,
+        qrSvg: true,
       },
       where: { slug, status: RestaurantStatus.ENABLED },
     });
@@ -329,6 +386,20 @@ export class PrismaRestaurantRepository
       tiktokUrl: record.tiktokUrl,
       updatedAt: record.updatedAt.toISOString(),
       whatsapp: record.whatsapp,
+    };
+  }
+
+  private toStoredQr(record: {
+    qrPayload: string | null;
+    qrPng: Uint8Array | null;
+    qrSvg: Uint8Array | null;
+    slug: string;
+  }): StoredRestaurantQr {
+    return {
+      qrPayload: record.qrPayload,
+      qrPng: record.qrPng,
+      qrSvg: record.qrSvg,
+      slug: record.slug,
     };
   }
 

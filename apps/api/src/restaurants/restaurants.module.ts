@@ -7,13 +7,16 @@ import { AuthModule } from '../auth/auth.module.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { RestaurantRepository } from './application/ports/restaurant.repository.js';
 import type { RestaurantProfileRepository } from './application/ports/restaurant-profile.repository.js';
+import type { RestaurantQrRepository } from './application/ports/restaurant-qr.repository.js';
 import type {
   RestaurantAssetStorage,
   RestaurantLogoStorage,
+  RestaurantQrRenderer,
 } from './application/ports/restaurant-services.js';
 import { CreateRestaurant } from './application/use-cases/create-restaurant.js';
 import { DeleteRestaurant } from './application/use-cases/delete-restaurant.js';
 import { GetPublicRestaurant } from './application/use-cases/get-public-restaurant.js';
+import { GenerateRestaurantQr } from './application/use-cases/generate-restaurant-qr.js';
 import { GetRestaurantLogo } from './application/use-cases/get-restaurant-logo.js';
 import { GetRestaurantProfile } from './application/use-cases/get-restaurant-profile.js';
 import { ListRestaurants } from './application/use-cases/list-restaurants.js';
@@ -22,11 +25,13 @@ import { RetryAssetDeletions } from './application/use-cases/retry-asset-deletio
 import { SetRestaurantStatus } from './application/use-cases/set-restaurant-status.js';
 import { UpdateRestaurantProfile } from './application/use-cases/update-restaurant-profile.js';
 import { LocalRestaurantAssetStorage } from './infrastructure/local-restaurant-asset.storage.js';
+import { NodeQrCodeRenderer } from './infrastructure/node-qr-code.renderer.js';
 import { PendingAssetCleanupBootstrap } from './infrastructure/pending-asset-cleanup.bootstrap.js';
 import { PrismaRestaurantRepository } from './infrastructure/prisma-restaurant.repository.js';
 import {
   CREATE_RESTAURANT,
   DELETE_RESTAURANT,
+  GENERATE_RESTAURANT_QR,
   GET_PUBLIC_RESTAURANT,
   GET_RESTAURANT_LOGO,
   GET_RESTAURANT_PROFILE,
@@ -35,6 +40,8 @@ import {
   RESTAURANT_ASSET_STORAGE,
   RESTAURANT_LOGO_STORAGE,
   RESTAURANT_PROFILE_REPOSITORY,
+  RESTAURANT_QR_REPOSITORY,
+  RESTAURANT_QR_RENDERER,
   RESTAURANT_REPOSITORY,
   RETRY_ASSET_DELETIONS,
   SET_RESTAURANT_STATUS,
@@ -75,12 +82,34 @@ import { RestaurantsController } from './restaurants.controller.js';
         ),
     },
     {
-      inject: [RESTAURANT_REPOSITORY, PASSWORD_HASHER],
+      inject: [PrismaService],
+      provide: RESTAURANT_QR_REPOSITORY,
+      useFactory: (prisma: PrismaService): RestaurantQrRepository =>
+        new PrismaRestaurantRepository(prisma),
+    },
+    {
+      provide: RESTAURANT_QR_RENDERER,
+      useFactory: (): RestaurantQrRenderer => new NodeQrCodeRenderer(),
+    },
+    {
+      inject: [
+        RESTAURANT_REPOSITORY,
+        PASSWORD_HASHER,
+        RESTAURANT_QR_RENDERER,
+        ConfigService,
+      ],
       provide: CREATE_RESTAURANT,
       useFactory: (
         repository: RestaurantRepository,
         passwordHasher: PasswordHasher,
-      ): CreateRestaurant => new CreateRestaurant(repository, passwordHasher),
+        renderer: RestaurantQrRenderer,
+        config: ConfigService,
+      ): CreateRestaurant => new CreateRestaurant(
+        repository,
+        passwordHasher,
+        renderer,
+        config.getOrThrow<string>('PUBLIC_APP_URL'),
+      ),
     },
     {
       inject: [RESTAURANT_REPOSITORY],
@@ -136,6 +165,24 @@ import { RestaurantsController } from './restaurants.controller.js';
         repository: RestaurantProfileRepository,
         storage: RestaurantLogoStorage,
       ): GetRestaurantLogo => new GetRestaurantLogo(repository, storage),
+    },
+    {
+      inject: [
+        RESTAURANT_QR_REPOSITORY,
+        RESTAURANT_QR_RENDERER,
+        ConfigService,
+      ],
+      provide: GENERATE_RESTAURANT_QR,
+      useFactory: (
+        repository: RestaurantQrRepository,
+        renderer: RestaurantQrRenderer,
+        config: ConfigService,
+      ): GenerateRestaurantQr =>
+        new GenerateRestaurantQr(
+          repository,
+          renderer,
+          config.getOrThrow<string>('PUBLIC_APP_URL'),
+        ),
     },
     {
       inject: [RESTAURANT_REPOSITORY, RESTAURANT_ASSET_STORAGE],

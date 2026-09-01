@@ -2,7 +2,7 @@
 
 Monorepo para digitalizar cartas de restaurantes y publicarlas mediante un QR fijo. El backend es una API NestJS, la interfaz usa Next.js y los datos se almacenan en PostgreSQL mediante Prisma.
 
-Las **Fases 0 a 5 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes, perfil del dueño, digitalización con Gemini y gestión completa de la carta, con pruebas e imágenes Docker compatibles con Dokploy.
+Las **Fases 0 a 7 están implementadas**: fundamentos, autenticación, backoffice, ciclo de vida de restaurantes, perfil del dueño, digitalización con Gemini, gestión completa de la carta, QR fijo persistido y analítica de vistas, con pruebas e imágenes Docker compatibles con Dokploy.
 
 ## Estructura
 
@@ -94,6 +94,8 @@ El contrato completo está en [`.env.example`](.env.example). Las dos URLs de ba
 
 De forma equivalente, `API_INTERNAL_URL` se usa en desarrollo nativo y `API_INTERNAL_URL_DOCKER` durante el build/despliegue del contenedor web. Ningún secreto se copia dentro de las imágenes Docker.
 
+`PUBLIC_APP_URL` debe ser el origen HTTPS canónico y definitivo de producción, por ejemplo `https://cartas.example.com`, sin una ruta adicional. Configúralo antes de crear el primer restaurante: cada alta materializa y guarda el QR con `PUBLIC_APP_URL/{slug}`. Cambiar esa variable después no altera los QR ya impresos ni sus archivos persistidos.
+
 Los secretos JWT de access y refresh deben ser distintos y tener al menos 32 caracteres. `JWT_ISSUER` y `JWT_AUDIENCE` se validan al verificar cada token. El administrador inicial se crea una sola vez desde `INITIAL_ADMIN_EMAIL` e `INITIAL_ADMIN_PASSWORD`.
 
 ## Autenticación
@@ -124,7 +126,7 @@ La web conserva access y refresh tokens en cookies `HttpOnly`, `SameSite=Strict`
 
 ## Backoffice y restaurantes
 
-El administrador ingresa por `/login` y gestiona los restaurantes en `/backoffice`. El alta solicita nombre, correo del dueño y contraseña inicial; crea transaccionalmente la cuenta, la relación y un slug único e inmutable.
+El administrador ingresa por `/login` y gestiona los restaurantes en `/backoffice`. El alta solicita nombre, correo del dueño y contraseña inicial; crea transaccionalmente la cuenta, la relación, un slug único e inmutable y el QR permanente (payload público, PNG y SVG).
 
 Endpoints de administración bajo `/api/backoffice/restaurants`:
 
@@ -179,15 +181,31 @@ Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 
 La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
 
+## Código QR y carta pública
+
+El dueño administra su código desde `/admin/qr`. Allí puede previsualizarlo, copiar el enlace permanente y descargarlo en los dos formatos disponibles: PNG para uso digital o impresión rápida y SVG para imprenta o gran formato. El enlace contenido por el QR es exactamente `PUBLIC_APP_URL/{slug}`.
+
+Al crear el restaurante se almacenan una única vez el payload y los bytes PNG/SVG. El slug, la URL y ambos archivos quedan protegidos contra modificaciones: editar el menú, precios, disponibilidad o nombre visible cambia lo que ve el cliente, nunca el código que ya se imprimió. Se considera legado un restaurante que aún tiene los tres campos `qrPayload`, `qrPng` y `qrSvg` sin materializar; al consultar por primera vez el QR, su dueño los completa una sola vez con el `PUBLIC_APP_URL` vigente. Por ello, una base existente también debe configurar el dominio final antes de abrir `/admin/qr` para sus restaurantes antiguos.
+
+La web expone rutas BFF de Next.js bajo `/api/owner/...`; estas reenvían al endpoint homónimo de Nest sin exponer JWT al navegador. Todas están restringidas al dueño asociado al restaurante:
+
+- `GET /api/owner/restaurants/:restaurantId/qr`: devuelve la identidad y URL pública fija.
+- `GET /api/owner/restaurants/:restaurantId/qr/png` y `.../svg`: muestran el documento QR.
+- `GET /api/owner/restaurants/:restaurantId/qr/png?download=true` y `.../svg?download=true`: entregan el archivo como descarga con un nombre basado en el slug.
+
+La carta pública está en `/{slug}`, no requiere inicio de sesión y se sirve solo mientras el restaurante esté habilitado. Muestra únicamente productos disponibles y omite del índice y de la carta las categorías que quedan sin productos visibles; en móvil ofrece un índice horizontal de las categorías restantes que lleva a cada sección sin ocultar la navegación principal. Si el restaurante se deshabilita, el QR conserva su identidad, pero la URL pública responde 404 hasta reactivarlo.
+
 ## Persistencia
 
 - `postgres_data`: datos de PostgreSQL.
 - `uploads_data`: logos e imágenes de productos bajo `/app/storage`; las fotos fuente de la carta no se conservan.
 
+Los payloads y documentos QR se guardan en PostgreSQL junto al restaurante, no en `uploads_data`.
+
 Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedores.
 
 ## Despliegue con Dokploy
 
-Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `web` en el puerto interno `3000`.
+Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `web` en el puerto interno `3000`. Define `PUBLIC_APP_URL` con ese dominio HTTPS final antes de crear restaurantes para que los QR impresos apunten al origen correcto.
 
 El plan funcional completo está en [`PLAN.md`](PLAN.md) y los requisitos fuente en [`Requerimientos_Sistema_Cartas_QR.md`](Requerimientos_Sistema_Cartas_QR.md).

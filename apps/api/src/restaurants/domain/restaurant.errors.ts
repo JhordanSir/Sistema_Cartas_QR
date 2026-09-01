@@ -4,6 +4,7 @@ export type RestaurantErrorCode =
   | 'INVALID_CONFIRMATION'
   | 'INVALID_INPUT'
   | 'INVALID_LOGO'
+  | 'QR_UNAVAILABLE'
   | 'RESTAURANT_NOT_FOUND'
   | 'SLUG_ALLOCATION_FAILED';
 

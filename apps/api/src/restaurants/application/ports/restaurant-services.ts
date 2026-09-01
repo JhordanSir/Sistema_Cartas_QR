@@ -23,3 +23,10 @@ export interface RestaurantStoredLogo {
   bytes: Uint8Array;
   contentType: 'image/jpeg' | 'image/png' | 'image/webp';
 }
+
+export interface RestaurantQrRenderer {
+  render(payload: string, format: RestaurantQrFormat): Promise<Uint8Array>;
+}
+import type {
+  RestaurantQrFormat,
+} from '../../domain/restaurant.types.js';

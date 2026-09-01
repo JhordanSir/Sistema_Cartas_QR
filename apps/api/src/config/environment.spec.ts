@@ -15,7 +15,9 @@ const VALID_ENVIRONMENT = {
   INITIAL_ADMIN_PASSWORD: 'strong-password',
   JWT_ACCESS_SECRET: 'access-secret-with-at-least-32-characters',
   JWT_REFRESH_SECRET: 'refresh-secret-with-at-least-32-characters',
+  PUBLIC_APP_URL: 'http://localhost:3000',
   STORAGE_PATH: './storage',
+  VIEW_IP_HASH_SECRET: 'view-hash-secret-with-at-least-32-characters',
 };
 
 describe('validateEnvironment', () => {
@@ -29,6 +31,7 @@ describe('validateEnvironment', () => {
       JWT_ISSUER: 'custom-issuer',
       JWT_REFRESH_TTL: '10d',
       NODE_ENV: 'production',
+      PUBLIC_APP_URL: 'https://menu.example.com/',
       STORAGE_PATH: resolve(dirname(ROOT_ENV_FILE), 'storage'),
     });
 
@@ -43,6 +46,8 @@ describe('validateEnvironment', () => {
       JWT_ISSUER: 'custom-issuer',
       JWT_REFRESH_TTL_SECONDS: 864_000,
       NODE_ENV: 'production',
+      PUBLIC_APP_URL: 'https://menu.example.com',
+      VIEW_IP_HASH_SECRET: 'view-hash-secret-with-at-least-32-characters',
     });
   });
 
@@ -62,7 +67,9 @@ describe('validateEnvironment', () => {
       JWT_ISSUER: 'sirio-cartas-qr',
       JWT_REFRESH_TTL_SECONDS: 604_800,
       NODE_ENV: 'development',
+      PUBLIC_APP_URL: 'http://localhost:3000',
       STORAGE_PATH: resolve(dirname(ROOT_ENV_FILE), 'storage'),
+      VIEW_IP_HASH_SECRET: 'view-hash-secret-with-at-least-32-characters',
     });
   });
 
@@ -85,8 +92,16 @@ describe('validateEnvironment', () => {
       'CORS_ORIGINS contains an invalid URL: menu.example.com',
     ],
     [
+      { ...VALID_ENVIRONMENT, PUBLIC_APP_URL: 'menu.example.com' },
+      'PUBLIC_APP_URL must be a valid HTTP origin',
+    ],
+    [
       { ...VALID_ENVIRONMENT, JWT_ACCESS_SECRET: 'short' },
       'JWT_ACCESS_SECRET must contain at least 32 characters',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, VIEW_IP_HASH_SECRET: 'short' },
+      'VIEW_IP_HASH_SECRET must contain at least 32 characters',
     ],
     [
       { ...VALID_ENVIRONMENT, JWT_ACCESS_TTL: 'fifteen-minutes' },

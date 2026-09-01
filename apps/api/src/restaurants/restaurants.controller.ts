@@ -8,6 +8,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  ParseEnumPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -33,21 +34,25 @@ import {
   type DeleteRestaurantResult,
 } from './application/use-cases/delete-restaurant.js';
 import { GetPublicRestaurant } from './application/use-cases/get-public-restaurant.js';
+import { GenerateRestaurantQr } from './application/use-cases/generate-restaurant-qr.js';
 import { GetRestaurantLogo } from './application/use-cases/get-restaurant-logo.js';
 import { GetRestaurantProfile } from './application/use-cases/get-restaurant-profile.js';
 import { ListRestaurants } from './application/use-cases/list-restaurants.js';
 import { ListOwnedRestaurants } from './application/use-cases/list-owned-restaurants.js';
 import { SetRestaurantStatus } from './application/use-cases/set-restaurant-status.js';
 import { UpdateRestaurantProfile } from './application/use-cases/update-restaurant-profile.js';
+import { restaurantQrDownloadDisposition } from './domain/restaurant-qr.js';
 import type {
   PaginatedRestaurants,
   PublicRestaurant,
+  RestaurantQrIdentity,
   RestaurantSummary,
   RestaurantProfile,
 } from './domain/restaurant.types.js';
 import {
   CREATE_RESTAURANT,
   DELETE_RESTAURANT,
+  GENERATE_RESTAURANT_QR,
   GET_PUBLIC_RESTAURANT,
   GET_RESTAURANT_LOGO,
   GET_RESTAURANT_PROFILE,
@@ -60,6 +65,7 @@ import {
   CreateRestaurantDto,
   DeleteRestaurantDto,
   ListRestaurantsDto,
+  RestaurantQrFormatDto,
   SetRestaurantStatusDto,
   UpdateRestaurantProfileDto,
 } from './presentation/restaurant.dto.js';
@@ -86,6 +92,8 @@ export class RestaurantsController {
     private readonly updateRestaurantProfile: UpdateRestaurantProfile,
     @Inject(GET_RESTAURANT_LOGO)
     private readonly getRestaurantLogo: GetRestaurantLogo,
+    @Inject(GENERATE_RESTAURANT_QR)
+    private readonly generateRestaurantQr: GenerateRestaurantQr,
   ) {}
 
   @Roles(AuthRole.OWNER)
@@ -151,6 +159,47 @@ export class RestaurantsController {
       return new StreamableFile(Buffer.from(logo.bytes), {
         disposition: 'inline',
         type: logo.contentType,
+      });
+    } catch (error) {
+      throwRestaurantHttpError(error);
+    }
+  }
+
+  @Roles(AuthRole.OWNER)
+  @UseGuards(OwnerRestaurantGuard)
+  @Get('owner/restaurants/:restaurantId/qr')
+  async qrIdentity(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
+  ): Promise<RestaurantQrIdentity> {
+    try {
+      return await this.generateRestaurantQr.getIdentity({ principal, restaurantId });
+    } catch (error) {
+      throwRestaurantHttpError(error);
+    }
+  }
+
+  @Roles(AuthRole.OWNER)
+  @UseGuards(OwnerRestaurantGuard)
+  @Get('owner/restaurants/:restaurantId/qr/:format')
+  async qr(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
+    @Param('format', new ParseEnumPipe(RestaurantQrFormatDto))
+    format: RestaurantQrFormatDto,
+    @Query('download') download?: string,
+  ): Promise<StreamableFile> {
+    try {
+      const document = await this.generateRestaurantQr.execute({
+        format,
+        principal,
+        restaurantId,
+      });
+      return new StreamableFile(Buffer.from(document.bytes), {
+        disposition: download === 'true'
+          ? restaurantQrDownloadDisposition(document.fileName)
+          : 'inline',
+        type: document.contentType,
       });
     } catch (error) {
       throwRestaurantHttpError(error);

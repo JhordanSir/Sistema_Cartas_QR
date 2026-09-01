@@ -1,15 +1,13 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 
-import { hasSessionForRole } from '@/lib/api-server';
+import { SessionRedirect } from '../../session-access';
 
 import { OwnerLoginForm } from './owner-login-form';
 
 export default async function OwnerLoginPage() {
-  if (await hasSessionForRole('OWNER')) redirect('/admin');
-
   return (
     <main className="login-shell owner-login-shell">
+      <SessionRedirect destination="/admin" role="OWNER" />
       <Link className="brand-lockup" href="/" aria-label="Sirio Automatiza, inicio">
         <span className="brand-mark" aria-hidden="true">S</span>
         <span>Sirio Automatiza</span>

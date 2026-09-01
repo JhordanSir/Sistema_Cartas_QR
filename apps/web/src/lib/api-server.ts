@@ -75,7 +75,11 @@ export async function hasSessionCookie(): Promise<boolean> {
   return cookieStore.has(ACCESS_COOKIE) || cookieStore.has(REFRESH_COOKIE);
 }
 
-export async function hasSessionForRole(role: SessionRole): Promise<boolean> {
+/**
+ * Fast server-render hint only. Route handlers validate and refresh the actual
+ * session before protected UI is mounted or a login page redirects elsewhere.
+ */
+export async function hasSessionCookieForRole(role: SessionRole): Promise<boolean> {
   const cookieStore = await cookies();
   return (
     (cookieStore.has(ACCESS_COOKIE) || cookieStore.has(REFRESH_COOKIE)) &&
@@ -138,9 +142,13 @@ export async function authenticatedApiFetch(
 }
 
 export async function proxyApiResponse(response: Response): Promise<Response> {
-  const contentType = response.headers.get('content-type');
+  const headers = new Headers();
+  for (const name of ['cache-control', 'content-disposition', 'content-type']) {
+    const value = response.headers.get(name);
+    if (value) headers.set(name, value);
+  }
   return new Response(await response.arrayBuffer(), {
-    headers: contentType ? { 'content-type': contentType } : undefined,
+    headers,
     status: response.status,
   });
 }

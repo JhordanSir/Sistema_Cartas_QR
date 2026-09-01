@@ -157,6 +157,10 @@ describe('OwnerRestaurantGuard', () => {
     });
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(auth.ownerCanAccessRestaurant).toHaveBeenCalledWith(
+      OWNER,
+      '44444444-4444-4444-8444-444444444444',
+    );
   });
 
   it('denies a principal without ownership', async () => {
@@ -172,5 +176,17 @@ describe('OwnerRestaurantGuard', () => {
     await expect(guard.canActivate(context)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
+  });
+
+  it('denies an owner route without a restaurant scope before checking ownership', async () => {
+    const auth = {
+      ownerCanAccessRestaurant: jest.fn(),
+    } as unknown as AuthApplicationService;
+    const guard = new OwnerRestaurantGuard(auth);
+
+    await expect(
+      guard.canActivate(createContext({ auth: OWNER, params: {} })),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(auth.ownerCanAccessRestaurant).not.toHaveBeenCalled();
   });
 });

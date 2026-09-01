@@ -81,3 +81,29 @@ export interface RestaurantProfile {
   updatedAt: string;
   whatsapp: string | null;
 }
+
+export interface ViewPeriodTotals {
+  allTime: number;
+  last30Days: number;
+  last7Days: number;
+}
+
+export interface ViewHourStatistic {
+  averageViews: number;
+  hour: number;
+  totalViews: number;
+}
+
+export interface ViewWeekdayStatistic {
+  averageViews: number;
+  dayOfWeek: number;
+  totalViews: number;
+}
+
+export interface RestaurantViewStatistics {
+  generatedForDate: string;
+  hourly: ViewHourStatistic[];
+  timeZone: string;
+  uniqueViews: ViewPeriodTotals;
+  weekdays: ViewWeekdayStatistic[];
+}
