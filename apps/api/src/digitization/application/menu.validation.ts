@@ -76,21 +76,6 @@ export function parseExtractedMenu(value: unknown): ExtractedMenu {
   };
 }
 
-export function normalizeProductCorrection(value: {
-  basePrice: unknown;
-  description: unknown;
-  name: unknown;
-}): { basePrice: string; description: string | null; name: string } {
-  return {
-    basePrice: parsePrice(value.basePrice, 'precio'),
-    description:
-      value.description === null || value.description === ''
-        ? null
-        : parseText(value.description, 1, 2_000, 'descripción'),
-    name: parseText(value.name, 1, 200, 'nombre'),
-  };
-}
-
 function parseCategory(value: unknown, categoryIndex: number): MenuCategory {
   const category = asObject(value, `La categoría ${categoryIndex + 1} no es válida.`);
   if (

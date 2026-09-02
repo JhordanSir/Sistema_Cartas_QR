@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/api": {
+      "entry": [
+        "src/bootstrap/seed-initial-admin.ts",
+        "src/testing/e2e-owner.fixture.ts"
+      ],
+      "ignoreDependencies": ["@prisma/client", "pg", "@types/pg"]
+    },
+    "apps/web": {
+      "entry": ["jest.config.mjs", "jest.setup.ts", "src/app/**/*.{ts,tsx}"],
+      "jest": false,
+      "ignoreDependencies": ["jest-environment-jsdom"]
+    }
+  }
+}

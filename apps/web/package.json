@@ -13,7 +13,6 @@
     "test:coverage": "jest --coverage --runInBand"
   },
   "dependencies": {
-    "@sirio/shared": "workspace:*",
     "dotenv": "17.4.2",
     "next": "16.3.3",
     "react": "19.2.8",

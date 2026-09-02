@@ -1,7 +1,5 @@
 import type { RestaurantQrFormat } from './restaurant.types.js';
 
-export const RESTAURANT_QR_FORMATS: readonly RestaurantQrFormat[] = ['png', 'svg'];
-
 export function buildPublicRestaurantUrl(publicOrigin: string, slug: string): string {
   const origin = new URL(publicOrigin).origin;
   return `${origin}/${encodeURIComponent(slug)}`;

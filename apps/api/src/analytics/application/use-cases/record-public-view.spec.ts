@@ -19,11 +19,12 @@ describe('RecordPublicView', () => {
       visitorIp: '203.0.113.12',
     })).resolves.toBe('recorded');
 
-    expect(repository.recordUniquePublicView).toHaveBeenCalledWith(expect.objectContaining({
-      slug: 'mesa-norte',
-      viewDate: new Date('2026-09-01T00:00:00.000Z'),
-      viewHour: 0,
-      visitorHash: expect.stringMatching(/^[a-f0-9]{64}$/),
-    }));
+    const [recordedView] = repository.recordUniquePublicView.mock.calls[0] ?? [];
+    if (!recordedView) throw new Error('Expected the public view to be recorded.');
+
+    expect(recordedView.slug).toBe('mesa-norte');
+    expect(recordedView.viewDate).toEqual(new Date('2026-09-01T00:00:00.000Z'));
+    expect(recordedView.viewHour).toBe(0);
+    expect(recordedView.visitorHash).toMatch(/^[a-f0-9]{64}$/);
   });
 });

@@ -11,7 +11,7 @@ export const MENU_TEMPLATE_IDS = ['ORIGINAL', 'TRADITIONAL', 'CASUAL', 'PREMIUM'
 
 export type MenuTemplateId = (typeof MENU_TEMPLATE_IDS)[number];
 
-export const MENU_TEMPLATE_DETAILS: Record<MenuTemplateId, {
+const MENU_TEMPLATE_DETAILS: Record<MenuTemplateId, {
   description: string;
   label: string;
   style: MenuStyle | null;
@@ -169,7 +169,7 @@ export function hasPublishableProducts(menu: ExtractedMenu): boolean {
   );
 }
 
-export function normalizeMenuTemplate(value: string): MenuTemplateId {
+function normalizeMenuTemplate(value: string): MenuTemplateId {
   return MENU_TEMPLATE_IDS.includes(value as MenuTemplateId)
     ? value as MenuTemplateId
     : 'ORIGINAL';

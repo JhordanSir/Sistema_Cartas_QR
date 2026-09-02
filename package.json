@@ -12,6 +12,7 @@
     "build": "pnpm db:generate && pnpm -r --workspace-concurrency=1 --if-present build",
     "dev": "pnpm --parallel --filter @sirio/api --filter @sirio/web dev",
     "lint": "pnpm -r --if-present lint",
+    "check:dead-code": "knip --include files --include dependencies --include exports --include types",
     "typecheck": "pnpm db:generate && pnpm -r --if-present typecheck",
     "test": "pnpm db:generate && pnpm -r --if-present test",
     "test:coverage": "pnpm db:generate && pnpm -r --if-present test:coverage",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@playwright/test": "1.62.1",
     "dotenv": "17.4.2",
+    "knip": "6.34.0",
     "prisma": "7.10.0",
     "typescript": "6.0.3"
   }

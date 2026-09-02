@@ -26,6 +26,8 @@ coverage/
 playwright-report/
 test-results/
 blob-report/
+artifacts/
+.interface-design/
 apps/api/src/generated/prisma/
 storage/
 

@@ -70,11 +70,6 @@ export async function clearSessionCookies(): Promise<void> {
   cookieStore.delete(ROLE_COOKIE);
 }
 
-export async function hasSessionCookie(): Promise<boolean> {
-  const cookieStore = await cookies();
-  return cookieStore.has(ACCESS_COOKIE) || cookieStore.has(REFRESH_COOKIE);
-}
-
 /**
  * Fast server-render hint only. Route handlers validate and refresh the actual
  * session before protected UI is mounted or a login page redirects elsewhere.

@@ -21,7 +21,6 @@ const apiInternalUrl = (process.env.API_INTERNAL_URL ?? "http://api-internal:300
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: workspaceRoot,
-  transpilePackages: ["@sirio/shared"],
   async rewrites() {
     return [
       {

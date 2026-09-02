@@ -21,8 +21,6 @@ export const MENU_FONT_FAMILIES = [
 ] as const;
 
 export type MenuFontFamily = (typeof MENU_FONT_FAMILIES)[number];
-export type MenuPhotoContentType =
-  (typeof MENU_PHOTO_LIMITS.acceptedContentTypes)[number];
 
 export interface MenuPhoto {
   bytes: Uint8Array;
@@ -36,13 +34,13 @@ export interface MenuStyle {
   textColor: string;
 }
 
-export interface MenuExtra {
+interface MenuExtra {
   id?: string;
   name: string;
   price: string;
 }
 
-export interface MenuVariant {
+interface MenuVariant {
   id?: string;
   name: string;
   price: string;

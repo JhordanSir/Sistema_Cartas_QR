@@ -2,7 +2,7 @@ import { RestaurantApplicationError } from '../domain/restaurant.errors.js';
 import type { RestaurantLogoUpload } from './ports/restaurant-services.js';
 import type { UpdateRestaurantProfileRecord } from './ports/restaurant-profile.repository.js';
 
-export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 const PHONE_PATTERN = /^\+?[0-9 ()-]{7,32}$/;
 const SOCIAL_HOSTS: Record<string, readonly string[]> = {

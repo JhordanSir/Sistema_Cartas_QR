@@ -9,19 +9,19 @@ export interface ViewStatisticsBucket {
   viewCount: number;
 }
 
-export interface ViewPeriodTotals {
+interface ViewPeriodTotals {
   allTime: number;
   last30Days: number;
   last7Days: number;
 }
 
-export interface ViewHourStatistic {
+interface ViewHourStatistic {
   averageViews: number;
   hour: number;
   totalViews: number;
 }
 
-export interface ViewWeekdayStatistic {
+interface ViewWeekdayStatistic {
   averageViews: number;
   dayOfWeek: number;
   totalViews: number;

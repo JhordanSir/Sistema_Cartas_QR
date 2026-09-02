@@ -77,6 +77,7 @@ Las apps leen el mismo `.env` de la raíz; no se requieren archivos `.env` dentr
 ```powershell
 pnpm db:validate
 pnpm lint
+pnpm check:dead-code
 pnpm typecheck
 pnpm test
 pnpm build
@@ -208,5 +209,3 @@ Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedore
 ## Despliegue con Dokploy
 
 Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `nginx` en el puerto interno `80`. Define `PUBLIC_APP_URL` con ese dominio HTTPS final antes de crear restaurantes para que los QR impresos apunten al origen correcto.
-
-El plan funcional completo está en [`PLAN.md`](PLAN.md) y los requisitos fuente en [`Requerimientos_Sistema_Cartas_QR.md`](Requerimientos_Sistema_Cartas_QR.md).

@@ -1,6 +1,6 @@
 import type { RestaurantStatus } from './restaurant-status.js';
 
-export interface RestaurantOwnerSummary {
+interface RestaurantOwnerSummary {
   email: string;
   id: string;
   isActive: boolean;
@@ -27,13 +27,13 @@ export interface PublicRestaurant {
   textColor: string;
 }
 
-export interface PublicMenuOption {
+interface PublicMenuOption {
   id: string;
   name: string;
   price: string;
 }
 
-export interface PublicMenuProduct {
+interface PublicMenuProduct {
   basePrice: string;
   description: string | null;
   extras: PublicMenuOption[];
@@ -43,7 +43,7 @@ export interface PublicMenuProduct {
   variants: PublicMenuOption[];
 }
 
-export interface PublicMenuCategory {
+interface PublicMenuCategory {
   id: string;
   name: string;
   products: PublicMenuProduct[];
