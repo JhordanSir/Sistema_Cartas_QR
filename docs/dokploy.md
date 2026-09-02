@@ -1,6 +1,6 @@
 # Despliegue en Dokploy
 
-Este proyecto se despliega como una aplicación **Docker Compose** de Dokploy. El archivo de despliegue es `./compose.yml` y construye tres servicios: `postgres`, `api` y `web`.
+Este proyecto se despliega como una aplicación **Docker Compose** de Dokploy. El archivo de despliegue es `./compose.yml` y construye cuatro servicios: `postgres`, `api`, `web` y `nginx`.
 
 ## Antes de desplegar
 
@@ -73,13 +73,15 @@ Usa la pestaña **Domains** de la aplicación Compose:
 
 1. Añade el dominio público.
 2. Selecciona el servicio `web`.
-3. Configura el puerto interno `3000`.
+3. Configura el puerto interno `80` del servicio `nginx`.
 4. Activa HTTPS y el emisor de certificados configurado en Dokploy.
 5. Redeploya la aplicación para que Dokploy aplique las etiquetas de Traefik.
 
-No añadas etiquetas de Traefik ni la red `dokploy-network` manualmente al archivo. Dokploy Native Domains incorpora el routing durante el despliegue. Tampoco publiques `api` ni `postgres`: el navegador entra por `web`, y Next.js se comunica con la API mediante `http://api:3001` dentro de `app_network`.
+No añadas etiquetas de Traefik ni la red `dokploy-network` manualmente al archivo. Dokploy Native Domains incorpora el routing durante el despliegue. El navegador entra por `nginx:80`; Nginx reenvía la aplicación a `web:3000` y Next.js se comunica con la API mediante `http://api:3001` dentro de `app_network`. Tampoco publiques `api` ni `postgres`.
 
-El Compose de producción no publica ningún puerto del host. `web` expone internamente `3000` y `api` expone `3001` solo en sus redes de contenedores; Native Domains dirige el tráfico al puerto interno `3000` de `web`. Para desarrollo local, `compose.dev.yml` publica los puertos necesarios en loopback y el frontend queda en `WEB_BIND_ADDRESS:WEB_PORT` (por defecto `127.0.0.1:3000`).
+El Compose de producción no publica ningún puerto del host. `nginx` expone internamente el puerto `80`, `web` expone `3000` y `api` expone `3001` solo en sus redes de contenedores; Native Domains dirige el tráfico al puerto interno `80` de `nginx`. El gateway conserva los encabezados de proxy y admite cargas de hasta 16 MB, con un timeout de lectura de 240 segundos para la digitalización de cartas.
+
+Si administras un Nginx externo en vez de los dominios nativos de Dokploy, añade `./compose.nginx-host.yml` al despliegue y configura su upstream como `http://127.0.0.1:8080`. Ese override publica el mismo gateway interno (puerto 80 del contenedor) únicamente en loopback. No asignes `NGINX_PORT=80` mientras Dokploy, Nginx Proxy Manager u otro proxy del host ya controle los puertos 80/443.
 
 ## Persistencia y copias de seguridad
 

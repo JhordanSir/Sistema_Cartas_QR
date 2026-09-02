@@ -119,6 +119,30 @@ services:
       - no-new-privileges:true
     logging: *default-logging
 
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx.Dockerfile
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 15s
+    expose:
+      - "80"
+    networks:
+      - app_network
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    logging: *default-logging
+
 volumes:
   postgres_data:
   uploads_data:

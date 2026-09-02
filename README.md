@@ -16,8 +16,9 @@ prisma/
   migrations/          migraciones versionadas
   schema.prisma        modelo multi-tenant
 docker/                Dockerfiles de producción
-compose.yml            despliegue de producción/Dokploy
+compose.yml            despliegue de producción/Dokploy con gateway Nginx interno
 compose.dev.yml        puertos loopback solo para desarrollo local
+compose.nginx-host.yml publicación opcional del gateway para un Nginx externo
 ```
 
 ## Requisitos
@@ -206,6 +207,6 @@ Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedore
 
 ## Despliegue con Dokploy
 
-Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `web` en el puerto interno `3000`. Define `PUBLIC_APP_URL` con ese dominio HTTPS final antes de crear restaurantes para que los QR impresos apunten al origen correcto.
+Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `nginx` en el puerto interno `80`. Define `PUBLIC_APP_URL` con ese dominio HTTPS final antes de crear restaurantes para que los QR impresos apunten al origen correcto.
 
 El plan funcional completo está en [`PLAN.md`](PLAN.md) y los requisitos fuente en [`Requerimientos_Sistema_Cartas_QR.md`](Requerimientos_Sistema_Cartas_QR.md).
