@@ -16,7 +16,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - data_network
+      data_network:
+        aliases:
+          - postgres-internal
     healthcheck:
       test:
         - CMD-SHELL
@@ -62,8 +64,10 @@ services:
     volumes:
       - uploads_data:/app/storage
     networks:
-      - app_network
-      - data_network
+      app_network:
+        aliases:
+          - api-internal
+      data_network: {}
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,7 +90,7 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
       args:
-        API_INTERNAL_URL: ${API_INTERNAL_URL_DOCKER:-http://api:3001}
+        API_INTERNAL_URL: http://api-internal:${API_PORT:-3001}
     restart: unless-stopped
     init: true
     stop_grace_period: 30s
@@ -94,14 +98,16 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: 0.0.0.0
-      API_INTERNAL_URL: ${API_INTERNAL_URL_DOCKER:-http://api:3001}
+      API_INTERNAL_URL: http://api-internal:${API_PORT:-3001}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:3000}
       APP_TIMEZONE: ${APP_TIMEZONE:-America/Lima}
       TZ: ${TZ:-UTC}
     expose:
       - "3000"
     networks:
-      - app_network
+      app_network:
+        aliases:
+          - web-internal
     depends_on:
       api:
         condition: service_healthy

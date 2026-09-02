@@ -22,7 +22,7 @@ RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS build
 
-ARG API_INTERNAL_URL=http://api:3001
+ARG API_INTERNAL_URL=http://api-internal:3001
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 
 COPY . .

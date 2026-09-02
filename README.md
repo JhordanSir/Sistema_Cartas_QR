@@ -91,9 +91,9 @@ La suite E2E presupone que el Compose está levantado. `pnpm peers check` permit
 El contrato completo está en [`.env.example`](.env.example). Las dos URLs de base resuelven contextos distintos:
 
 - `DATABASE_URL`: comandos Prisma ejecutados desde el host (`localhost`).
-- `DATABASE_URL_DOCKER`: API dentro de Compose (`postgres`).
+- `DATABASE_URL_DOCKER`: API dentro de Compose (`postgres-internal`).
 
-De forma equivalente, `API_INTERNAL_URL` se usa en desarrollo nativo y `API_INTERNAL_URL_DOCKER` durante el build/despliegue del contenedor web. Ningún secreto se copia dentro de las imágenes Docker.
+`API_INTERNAL_URL` se usa únicamente en desarrollo nativo. En Compose, la web usa automáticamente el alias privado `api-internal`, evitando colisiones con servicios de otros proyectos Dokploy. Ningún secreto se copia dentro de las imágenes Docker.
 
 `PUBLIC_APP_URL` debe ser el origen HTTPS canónico y definitivo de producción, por ejemplo `https://cartas.example.com`, sin una ruta adicional. Configúralo antes de crear el primer restaurante: cada alta materializa y guarda el QR con `PUBLIC_APP_URL/{slug}`. Cambiar esa variable después no altera los QR ya impresos ni sus archivos persistidos.
 

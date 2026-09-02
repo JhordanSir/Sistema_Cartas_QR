@@ -20,8 +20,7 @@ Configura, como mínimo, estos valores en Dokploy:
 POSTGRES_DB=cartas_qr
 POSTGRES_USER=cartas_qr
 POSTGRES_PASSWORD=<secreto-largo-y-unico>
-DATABASE_URL_DOCKER=postgresql://cartas_qr:<password-url-encoded>@postgres:5432/cartas_qr?schema=public
-API_INTERNAL_URL_DOCKER=http://api:3001
+DATABASE_URL_DOCKER=postgresql://cartas_qr:<password-url-encoded>@postgres-internal:5432/cartas_qr?schema=public
 JWT_ACCESS_SECRET=<secreto-aleatorio>
 JWT_REFRESH_SECRET=<otro-secreto-aleatorio>
 JWT_ACCESS_TTL=15m
@@ -43,7 +42,7 @@ TZ=UTC
 API_PORT=3001
 ```
 
-`DATABASE_URL_DOCKER` usa `postgres` como hostname porque ese es el nombre DNS del servicio dentro de Compose. La variable local `DATABASE_URL` no se pasa al contenedor y puede seguir apuntando a `localhost`. Si la contraseña contiene caracteres reservados de una URL, codifícalos al construir `DATABASE_URL_DOCKER`.
+`DATABASE_URL_DOCKER` usa `postgres-internal` como hostname. Es un alias privado de `data_network` y evita confundir PostgreSQL con servicios homónimos que Dokploy pueda conectar a una red compartida. La variable local `DATABASE_URL` no se pasa al contenedor y puede seguir apuntando a `localhost`. Si la contraseña contiene caracteres reservados de una URL, codifícalos al construir `DATABASE_URL_DOCKER`.
 
 Genera secretos JWT independientes y suficientemente largos. Tras el primer acceso cambia la contraseña del administrador mediante `POST /api/auth/admin/password`; el seed es idempotente y no reemplaza una cuenta existente. Sustituye luego `INITIAL_ADMIN_PASSWORD` en Dokploy por otro valor aleatorio que no reutilices. No guardes valores reales en `.env.example` ni en Git.
 
@@ -72,16 +71,16 @@ El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma mig
 Usa la pestaña **Domains** de la aplicación Compose:
 
 1. Añade el dominio público.
-2. Selecciona el servicio `web`.
-3. Configura el puerto interno `80` del servicio `nginx`.
+2. Selecciona el servicio `nginx`.
+3. Configura su puerto interno `80`.
 4. Activa HTTPS y el emisor de certificados configurado en Dokploy.
 5. Redeploya la aplicación para que Dokploy aplique las etiquetas de Traefik.
 
-No añadas etiquetas de Traefik ni la red `dokploy-network` manualmente al archivo. Dokploy Native Domains incorpora el routing durante el despliegue. El navegador entra por `nginx:80`; Nginx reenvía la aplicación a `web:3000` y Next.js se comunica con la API mediante `http://api:3001` dentro de `app_network`. Tampoco publiques `api` ni `postgres`.
+No añadas etiquetas de Traefik ni la red `dokploy-network` manualmente al archivo. Dokploy Native Domains incorpora el routing durante el despliegue. El navegador entra por `nginx:80`; Nginx reenvía la aplicación a `web-internal:3000` y Next.js se comunica con la API mediante `http://api-internal:3001` dentro de `app_network`. Tampoco publiques `api` ni `postgres`.
 
 El Compose de producción no publica ningún puerto del host. `nginx` expone internamente el puerto `80`, `web` expone `3000` y `api` expone `3001` solo en sus redes de contenedores; Native Domains dirige el tráfico al puerto interno `80` de `nginx`. El gateway conserva los encabezados de proxy y admite cargas de hasta 16 MB, con un timeout de lectura de 240 segundos para la digitalización de cartas.
 
-Durante despliegues aislados, Dokploy puede recrear `web` con una IP nueva. Nginx usa el DNS interno de Docker en cada petición, por lo que vuelve a resolver `web:3000` y no retiene la IP del contenedor anterior.
+Durante despliegues aislados, Dokploy puede recrear `web` con una IP nueva y conectar Nginx a redes compartidas que tengan servicios llamados `web`. Nginx resuelve por petición el alias exclusivo `web-internal:3000`, que solo existe en `app_network`; por ello no conserva la IP anterior ni puede seleccionar una aplicación ajena.
 
 Si administras un Nginx externo en vez de los dominios nativos de Dokploy, añade `./compose.nginx-host.yml` al despliegue y configura su upstream como `http://127.0.0.1:8080`. Ese override publica el mismo gateway interno (puerto 80 del contenedor) únicamente en loopback. No asignes `NGINX_PORT=80` mientras Dokploy, Nginx Proxy Manager u otro proxy del host ya controle los puertos 80/443.
 

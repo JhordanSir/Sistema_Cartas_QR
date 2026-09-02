@@ -18,7 +18,7 @@ interface TokenResponse {
 }
 
 export function apiInternalUrl(): string {
-  return (process.env.API_INTERNAL_URL ?? 'http://api:3001').replace(/\/$/, '');
+  return (process.env.API_INTERNAL_URL ?? 'http://api-internal:3001').replace(/\/$/, '');
 }
 
 export function isSameOrigin(request: Request): boolean {

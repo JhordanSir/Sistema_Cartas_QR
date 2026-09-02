@@ -13,7 +13,7 @@ loadEnv({
   quiet: true,
 });
 
-const apiInternalUrl = (process.env.API_INTERNAL_URL ?? "http://api:3001").replace(
+const apiInternalUrl = (process.env.API_INTERNAL_URL ?? "http://api-internal:3001").replace(
   /\/$/,
   "",
 );
