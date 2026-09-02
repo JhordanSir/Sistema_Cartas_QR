@@ -12,21 +12,12 @@ import type {
   ProductValues,
 } from '../domain/menu-management.types.js';
 import type { PublishedMenu } from '../../digitization/domain/menu.types.js';
-
-const menuInclude = {
-  categories: {
-    include: {
-      products: {
-        include: {
-          extras: { orderBy: { sortOrder: 'asc' as const } },
-          variants: { orderBy: { sortOrder: 'asc' as const } },
-        },
-        orderBy: { sortOrder: 'asc' as const },
-      },
-    },
-    orderBy: { sortOrder: 'asc' as const },
-  },
-} as const;
+import {
+  menuInclude,
+  parseMenuSnapshot,
+  preserveCurrentPublicMenu,
+  toOwnedMenu,
+} from '../../digitization/domain/menu-publication.js';
 
 export class PrismaMenuManagementRepository
   implements
@@ -43,6 +34,7 @@ export class PrismaMenuManagementRepository
   ): Promise<PublishedMenu | null> {
     const created = await this.prisma.$transaction(async (transaction) => {
       if (!(await this.isOwned(transaction, ownerId, restaurantId))) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       const aggregate = await transaction.category.aggregate({
         _max: { sortOrder: true },
         where: { restaurantId },
@@ -66,20 +58,22 @@ export class PrismaMenuManagementRepository
     categoryId: string,
     name: string,
   ): Promise<PublishedMenu | null> {
-    const updated = await this.prisma.category.updateMany({
-      data: { name },
-      where: {
-        id: categoryId,
-        restaurantId,
-        restaurant: { owners: { some: { ownerId } } },
-      },
+    const updated = await this.prisma.$transaction(async (transaction) => {
+      const category = await transaction.category.findFirst({
+        select: { id: true },
+        where: {
+          id: categoryId,
+          restaurantId,
+          restaurant: { owners: { some: { ownerId } } },
+        },
+      });
+      if (!category) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
+      await transaction.category.update({ data: { name }, where: { id: categoryId } });
+      await this.touchRestaurant(transaction, restaurantId);
+      return true;
     });
-    if (updated.count !== 1) return null;
-    await this.prisma.restaurant.update({
-      data: { updatedAt: new Date() },
-      where: { id: restaurantId },
-    });
-    return this.findMenu(ownerId, restaurantId);
+    return updated ? this.findMenu(ownerId, restaurantId) : null;
   }
 
   async deleteCategory(
@@ -97,6 +91,7 @@ export class PrismaMenuManagementRepository
         },
       });
       if (!category) return null;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       await transaction.category.delete({ where: { id: categoryId } });
       await this.compactCategoryOrder(transaction, restaurantId);
       await this.touchRestaurant(transaction, restaurantId);
@@ -116,6 +111,7 @@ export class PrismaMenuManagementRepository
   ): Promise<PublishedMenu | null> {
     const reordered = await this.prisma.$transaction(async (transaction) => {
       if (!(await this.isOwned(transaction, ownerId, restaurantId))) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       const records = await transaction.category.findMany({
         select: { id: true },
         where: { restaurantId },
@@ -145,6 +141,7 @@ export class PrismaMenuManagementRepository
         },
       });
       if (!category) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       const aggregate = await transaction.product.aggregate({
         _max: { sortOrder: true },
         where: { categoryId: values.categoryId, restaurantId },
@@ -182,6 +179,7 @@ export class PrismaMenuManagementRepository
         },
       });
       if (!current) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
 
       let nextSortOrder: number | undefined;
       if (patch.categoryId && patch.categoryId !== current.categoryId) {
@@ -255,6 +253,7 @@ export class PrismaMenuManagementRepository
         },
       });
       if (!product) return undefined;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       await transaction.product.delete({ where: { id: productId } });
       await this.compactProductOrder(transaction, restaurantId, product.categoryId);
       await this.touchRestaurant(transaction, restaurantId);
@@ -281,6 +280,7 @@ export class PrismaMenuManagementRepository
         },
       });
       if (!category) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       const products = await transaction.product.findMany({
         select: { id: true },
         where: { categoryId, restaurantId },
@@ -319,23 +319,38 @@ export class PrismaMenuManagementRepository
     productId: string,
     imagePath: string | null,
   ): Promise<PublishedMenu | null> {
-    const updated = await this.prisma.product.updateMany({
-      data: { imagePath },
-      where: {
-        id: productId,
-        restaurantId,
-        restaurant: { owners: { some: { ownerId } } },
-      },
+    const updated = await this.prisma.$transaction(async (transaction) => {
+      const product = await transaction.product.findFirst({
+        select: { id: true },
+        where: {
+          id: productId,
+          restaurantId,
+          restaurant: { owners: { some: { ownerId } } },
+        },
+      });
+      if (!product) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
+      await transaction.product.update({ data: { imagePath }, where: { id: productId } });
+      await this.touchRestaurant(transaction, restaurantId);
+      return true;
     });
-    if (updated.count !== 1) return null;
-    await this.prisma.restaurant.update({
-      data: { updatedAt: new Date() },
-      where: { id: restaurantId },
-    });
-    return this.findMenu(ownerId, restaurantId);
+    return updated ? this.findMenu(ownerId, restaurantId) : null;
   }
 
   async findPublicProductImage(slug: string, productId: string): Promise<string | null> {
+    const published = await this.prisma.restaurant.findFirst({
+      select: { publicationInitialized: true, publishedMenu: true },
+      where: { slug, status: 'ENABLED' },
+    });
+    const snapshot = published ? parseMenuSnapshot(published.publishedMenu) : null;
+    if (snapshot) {
+      for (const category of snapshot.categories) {
+        const product = category.products.find((item) => item.id === productId && item.isAvailable);
+        if (product) return product.imagePath;
+      }
+      return null;
+    }
+    if (published?.publicationInitialized) return null;
     const product = await this.prisma.product.findFirst({
       select: { imagePath: true },
       where: {
@@ -352,7 +367,7 @@ export class PrismaMenuManagementRepository
       include: menuInclude,
       where: { id: restaurantId, owners: { some: { ownerId } } },
     });
-    return restaurant ? toPublishedMenu(restaurant) : null;
+    return restaurant ? toOwnedMenu(restaurant) : null;
   }
 
   private async isOwned(
@@ -441,58 +456,4 @@ function sameIds(current: string[], requested: string[]): boolean {
     current.length === requested.length &&
     current.every((id) => requested.includes(id))
   );
-}
-
-function toPublishedMenu(record: {
-  backgroundColor: string;
-  categories: Array<{
-    id: string;
-    name: string;
-    products: Array<{
-      basePrice: { toFixed(digits: number): string };
-      description: string | null;
-      extras: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
-      id: string;
-      imagePath: string | null;
-      isAvailable: boolean;
-      name: string;
-      variants: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
-    }>;
-  }>;
-  fontFamily: string;
-  id: string;
-  textColor: string;
-  updatedAt: Date;
-}): PublishedMenu {
-  return {
-    categories: record.categories.map((category) => ({
-      id: category.id,
-      name: category.name,
-      products: category.products.map((product) => ({
-        basePrice: product.basePrice.toFixed(2),
-        description: product.description,
-        extras: product.extras.map((extra) => ({
-          id: extra.id,
-          name: extra.name,
-          price: extra.price.toFixed(2),
-        })),
-        id: product.id,
-        imagePath: product.imagePath,
-        isAvailable: product.isAvailable,
-        name: product.name,
-        variants: product.variants.map((variant) => ({
-          id: variant.id,
-          name: variant.name,
-          price: variant.price.toFixed(2),
-        })),
-      })),
-    })),
-    restaurantId: record.id,
-    style: {
-      backgroundColor: record.backgroundColor,
-      fontFamily: record.fontFamily as PublishedMenu['style']['fontFamily'],
-      textColor: record.textColor,
-    },
-    updatedAt: record.updatedAt.toISOString(),
-  };
 }

@@ -60,6 +60,27 @@ describe('RestaurantStatisticsDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Ritmo por día', level: 2 })).toBeVisible();
     expect(screen.getByText('Hora de Perú · UTC−5')).toBeVisible();
   });
+
+  it('adapta la introducción para el administrador de la plataforma', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string) => Promise.resolve(
+      url.startsWith('/api/backoffice/restaurants')
+        ? apiResponse({
+            items: [{
+              ...profile,
+              owner: { email: 'owner@example.test', id: '44444444-4444-4444-8444-444444444444', isActive: true },
+            }],
+            page: 1,
+            pageSize: 100,
+            total: 1,
+          })
+        : apiResponse(statistics),
+    ));
+
+    render(<RestaurantStatisticsDashboard scope="backoffice" />);
+
+    expect(await screen.findByText('Panorama de la plataforma')).toBeVisible();
+    expect(screen.getByText(/Consulta el movimiento de cada carta/)).toBeVisible();
+  });
 });
 
 function apiResponse(body: unknown): Response {

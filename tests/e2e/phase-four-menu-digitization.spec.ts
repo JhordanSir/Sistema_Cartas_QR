@@ -67,7 +67,7 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
     restaurant = null;
   });
 
-  test('publica desde una foto real y permite corregir una lectura', async ({ browser, page }) => {
+  test('mantiene el borrador privado hasta publicar y conserva la carta anterior durante una corrección', async ({ browser, page }) => {
     if (!restaurant) throw new Error('Restaurant fixture was not created');
     const photoPage = await browser.newPage({ viewport: { height: 1500, width: 1200 } });
     await photoPage.setContent(`
@@ -104,18 +104,51 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
       mimeType: 'image/png',
       name: 'carta-fase-4.png',
     });
-    await page.getByRole('button', { name: 'Digitalizar y publicar' }).click();
-    await expect(page.getByText('Carta digitalizada y publicada. Revisa los datos y corrige lo que necesites.')).toBeVisible({
+    await page.getByRole('button', { name: 'Digitalizar en borrador' }).click();
+    await expect(page.getByText('Carta digitalizada. Revísala y publícala cuando esté lista.')).toBeVisible({
       timeout: 90_000,
     });
-    await expect(page.getByText('Lomo Salatado')).toBeVisible();
-    await expect(page.getByText('S/ 28.00')).toBeVisible();
+    await expect(
+      page.locator('.managed-category article').filter({ hasText: 'Lomo Salatado' }).getByText('Lomo Salatado'),
+    ).toBeVisible();
+    await expect(
+      page.locator('.managed-category article').filter({ hasText: 'Lomo Salatado' }).getByText('S/ 28.00'),
+    ).toBeVisible();
 
+    await page.getByRole('radio', { name: 'Casual' }).click();
+    await expect(page.getByText('Plantilla aplicada al borrador. Publícala cuando estés conforme.')).toBeVisible();
+    await page.getByRole('button', { name: 'Previsualizar borrador' }).click();
+    await expect(page.getByText('Previsualización del borrador')).toBeVisible();
+    await page.getByRole('button', { name: 'Cerrar previsualización' }).click();
+
+    await page.goto(`${webUrl}/${restaurant.slug}`);
+    await expect(page.getByRole('heading', { name: 'Estamos preparando la carta' })).toBeVisible();
+
+    await page.goto(`${webUrl}/admin/menu`);
+    await page.getByRole('button', { name: 'Publicar carta' }).click();
+    await page.getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
+
+    await page.goto(`${webUrl}/${restaurant.slug}`);
+    await expect(page.getByRole('heading', { name: 'Lomo Salatado' })).toBeVisible();
+
+    await page.goto(`${webUrl}/admin/menu`);
     await page.getByRole('button', { name: 'Editar Lomo Salatado' }).click();
     await page.getByLabel('Nombre').fill('Lomo Saltado');
     await page.getByRole('button', { name: 'Guardar producto' }).click();
-    await expect(page.getByText('Producto actualizado en la carta pública.')).toBeVisible();
-    await expect(page.getByText('Lomo Saltado')).toBeVisible();
+    await expect(page.getByText('Producto actualizado en el borrador.')).toBeVisible();
+    await expect(
+      page.locator('.managed-category article').filter({ hasText: 'Lomo Saltado' }).getByText('Lomo Saltado'),
+    ).toBeVisible();
+
+    await page.goto(`${webUrl}/${restaurant.slug}`);
+    await expect(page.getByRole('heading', { name: 'Lomo Salatado' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Lomo Saltado' })).not.toBeVisible();
+
+    await page.goto(`${webUrl}/admin/menu`);
+    await page.getByRole('button', { name: 'Publicar cambios' }).click();
+    await page.getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
 
     await page.goto(`${webUrl}/${restaurant.slug}`);
     await expect(page.getByRole('heading', { name: 'Lomo Saltado' })).toBeVisible();

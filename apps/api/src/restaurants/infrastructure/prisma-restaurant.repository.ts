@@ -5,6 +5,7 @@ import {
   type RestaurantStatus as PrismaRestaurantStatus,
 } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
+import { parseMenuSnapshot } from '../../digitization/domain/menu-publication.js';
 import type {
   CreateRestaurantRecord,
   CreateRestaurantResult,
@@ -56,6 +57,7 @@ export class PrismaRestaurantRepository
             qrPayload: input.qrPayload,
             qrPng: Buffer.from(input.qrPng),
             qrSvg: Buffer.from(input.qrSvg),
+            publicationInitialized: true,
             slug: input.slug,
           },
         });
@@ -249,37 +251,75 @@ export class PrismaRestaurantRepository
     if (!restaurant) {
       return null;
     }
+    const snapshot = parseMenuSnapshot(restaurant.publishedMenu);
+    const draftMenu = {
+      categories: restaurant.categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        products: category.products.map((product) => ({
+          basePrice: product.basePrice.toFixed(2),
+          description: product.description,
+          extras: product.extras.map((extra) => ({
+            id: extra.id,
+            name: extra.name,
+            price: extra.price.toFixed(2),
+          })),
+          id: product.id,
+          imagePath: product.imagePath,
+          isAvailable: true,
+          name: product.name,
+          variants: product.variants.map((variant) => ({
+            id: variant.id,
+            name: variant.name,
+            price: variant.price.toFixed(2),
+          })),
+        })),
+      })),
+      style: {
+        backgroundColor: restaurant.backgroundColor,
+        fontFamily: restaurant.fontFamily,
+        textColor: restaurant.textColor,
+      },
+    };
+    const menu = snapshot ?? (restaurant.publicationInitialized
+      ? { categories: [], style: draftMenu.style }
+      : draftMenu);
     return {
-      backgroundColor: restaurant.backgroundColor,
-      categories: restaurant.categories
+      backgroundColor: menu.style.backgroundColor,
+      categories: menu.categories
+        .map((category) => ({
+          id: category.id ?? category.name,
+          name: category.name,
+          products: category.products.filter((product) => product.isAvailable),
+        }))
         .filter((category) => category.products.length > 0)
         .map((category) => ({
           id: category.id,
           name: category.name,
           products: category.products.map((product) => ({
-            basePrice: product.basePrice.toFixed(2),
+            basePrice: product.basePrice,
             description: product.description,
             extras: product.extras.map((extra) => ({
-              id: extra.id,
+              id: extra.id ?? extra.name,
               name: extra.name,
-              price: extra.price.toFixed(2),
+              price: extra.price,
             })),
             hasImage: product.imagePath !== null,
-            id: product.id,
+            id: product.id ?? product.name,
             name: product.name,
             variants: product.variants.map((variant) => ({
-              id: variant.id,
+              id: variant.id ?? variant.name,
               name: variant.name,
-              price: variant.price.toFixed(2),
+              price: variant.price,
             })),
           })),
         })),
-      fontFamily: restaurant.fontFamily,
+      fontFamily: menu.style.fontFamily,
       id: restaurant.id,
       logoPath: restaurant.logoPath,
       name: restaurant.name,
       slug: restaurant.slug,
-      textColor: restaurant.textColor,
+      textColor: menu.style.textColor,
     };
   }
 

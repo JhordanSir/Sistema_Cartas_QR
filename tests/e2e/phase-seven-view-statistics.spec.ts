@@ -111,6 +111,7 @@ test.describe.serial('Estadísticas de visualización de la Fase 7', () => {
     await page.getByRole('link', { name: 'Estadísticas' }).click();
     await expect(page).toHaveURL(`${webUrl}/backoffice/statistics`);
     await expect(page.getByRole('heading', { name: 'Estadísticas' })).toBeVisible();
+    await page.getByLabel('Restaurante').selectOption(restaurant.id);
     await expect(page.getByRole('heading', { name: /Pulso QR/ })).toBeVisible();
   });
 });

@@ -63,6 +63,18 @@ async function createProduct(
   return response.json() as Promise<PublishedMenu>;
 }
 
+async function publishMenu(
+  request: APIRequestContext,
+  restaurantId: string,
+  token: string,
+): Promise<void> {
+  const response = await request.post(
+    `${directApiUrl}/owner/restaurants/${restaurantId}/menu/publish`,
+    { headers: { authorization: `Bearer ${token}` } },
+  );
+  expect(response.ok()).toBe(true);
+}
+
 function categoryId(menu: PublishedMenu, name: string): string {
   const category = menu.categories.find((candidate) => candidate.name === name);
   if (!category) throw new Error(`Category ${name} was not published`);
@@ -78,6 +90,8 @@ function productId(menu: PublishedMenu, name: string): string {
 }
 
 test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   let restaurant: CreatedRestaurant | null = null;
   let adminToken = '';
   let ownerEmail = '';
@@ -200,6 +214,7 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
       },
     );
     expect(hideProduct.ok()).toBe(true);
+    await publishMenu(request, restaurant.id, ownerToken);
     const publicApi = await request.get(
       `${directApiUrl}/restaurants/public/${restaurant.slug}`,
     );

@@ -18,6 +18,13 @@ enum AuthRole {
   ADMIN
 }
 
+enum MenuTemplate {
+  ORIGINAL
+  TRADITIONAL
+  CASUAL
+  PREMIUM
+}
+
 model Restaurant {
   id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug            String           @unique @db.VarChar(160)
@@ -35,6 +42,11 @@ model Restaurant {
   backgroundColor String           @default("#ffffff") @db.VarChar(32)
   textColor       String           @default("#111827") @db.VarChar(32)
   fontFamily      String           @default("Inter") @db.VarChar(100)
+  menuTemplate    MenuTemplate     @default(ORIGINAL)
+  sourceStyle     Json?            @db.JsonB
+  publishedMenu   Json?            @db.JsonB
+  publishedAt     DateTime?        @db.Timestamptz(3)
+  publicationInitialized Boolean   @default(false)
   status          RestaurantStatus @default(ENABLED)
   createdAt       DateTime         @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime         @updatedAt @db.Timestamptz(3)

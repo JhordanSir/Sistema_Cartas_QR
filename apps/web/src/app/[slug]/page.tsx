@@ -29,9 +29,14 @@ export default async function PublicRestaurantPage({
       <PublicViewTracker slug={restaurant.slug} />
       <section className="public-menu-card">
         <header className="public-menu-masthead">
-          <span className="menu-kicker">Carta digital</span>
+          <div className="public-menu-overline">
+            <span className="menu-kicker">Carta digital</span>
+            <span className="menu-live-mark"><i /> {restaurant.categories.length ? 'Carta publicada' : 'Próximamente'}</span>
+          </div>
           <h1>{restaurant.name}</h1>
-          <span className="menu-live-mark"><i /> Disponible ahora</span>
+          {restaurant.categories.length > 0 ? (
+            <p>Elige una sección y encuentra tu próximo favorito.</p>
+          ) : null}
         </header>
         {restaurant.categories.length === 0 ? (
           <div className="menu-placeholder">
@@ -41,22 +46,30 @@ export default async function PublicRestaurantPage({
           </div>
         ) : (
           <>
-            <nav aria-label="Secciones de la carta" className="public-category-index">
-              {restaurant.categories.map((category, index) => (
-                <a href={`#categoria-${category.id}`} key={category.id}>
-                  <span>{String(index + 1).padStart(2, '0')}</span>
-                  {category.name}
-                </a>
-              ))}
-            </nav>
+            {restaurant.categories.length > 1 ? (
+              <nav aria-label="Secciones de la carta" className="public-category-index">
+                <span className="public-category-index-label">Secciones</span>
+                <div>
+                  {restaurant.categories.map((category, index) => (
+                    <a href={`#categoria-${category.id}`} key={category.id}>
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      {category.name}
+                    </a>
+                  ))}
+                </div>
+              </nav>
+            ) : null}
             <div className="published-menu">
-            {restaurant.categories.map((category) => (
+            {restaurant.categories.map((category, index) => (
               <section
                 className="public-menu-category"
                 id={`categoria-${category.id}`}
                 key={category.id}
               >
-                <h2>{category.name}</h2>
+                <header className="public-category-heading">
+                  <span aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                  <h2>{category.name}</h2>
+                </header>
                 <div className="public-product-list">
                   {category.products.map((product) => (
                     <article className={`public-product${product.hasImage ? ' has-image' : ''}`} key={product.id}>
@@ -78,17 +91,21 @@ export default async function PublicRestaurantPage({
                         {product.variants.length > 0 ? (
                           <div className="public-options">
                             <span>Presentaciones</span>
-                            {product.variants.map((variant) => (
-                              <small key={variant.id}>{variant.name} · S/ {variant.price}</small>
-                            ))}
+                            <ul>
+                              {product.variants.map((variant) => (
+                                <li key={variant.id}>{variant.name} <b>S/ {variant.price}</b></li>
+                              ))}
+                            </ul>
                           </div>
                         ) : null}
                         {product.extras.length > 0 ? (
                           <div className="public-options">
                             <span>Adicionales</span>
-                            {product.extras.map((extra) => (
-                              <small key={extra.id}>{extra.name} · S/ {extra.price}</small>
-                            ))}
+                            <ul>
+                              {product.extras.map((extra) => (
+                                <li key={extra.id}>{extra.name} <b>S/ {extra.price}</b></li>
+                              ))}
+                            </ul>
                           </div>
                         ) : null}
                       </div>
@@ -102,7 +119,7 @@ export default async function PublicRestaurantPage({
         )}
         <footer className="public-menu-footer">
           <span aria-hidden="true">S</span>
-          Carta digital actualizada al instante
+          Carta digital publicada con Sirio
         </footer>
       </section>
     </main>

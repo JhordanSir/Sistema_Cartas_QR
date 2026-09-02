@@ -97,10 +97,10 @@ export function QrManager() {
       <section className="workspace owner-workspace qr-workspace">
         <header className="workspace-header owner-workspace-header">
           <div>
-            <span className="kicker">Identidad permanente</span>
+            <span className="kicker">Comparte tu carta</span>
             <h1>Tu QR no cambia</h1>
             <p className="supporting-copy">
-              Imprímelo una vez. Cada edición de la carta aparecerá detrás del mismo código.
+              Imprímelo una vez. La carta seguirá actualizándose detrás del mismo código.
             </p>
           </div>
           {restaurants.length > 1 ? (
@@ -123,7 +123,7 @@ export function QrManager() {
         {!loading && selected ? (
           <div className="qr-layout">
             <section className="qr-placard" aria-label={`QR permanente de ${selected.name}`}>
-              <span className="qr-placard-kicker">Carta digital</span>
+              <span className="qr-placard-kicker">Listo para compartir</span>
               <h2>{selected.name}</h2>
               <div className="qr-frame">
                 {/* This authenticated SVG is generated server-side from the immutable slug. */}
@@ -141,7 +141,7 @@ export function QrManager() {
               <span className="section-number">01</span>
               <div className="qr-action-copy">
                 <span className="kicker">Listo para imprimir</span>
-                <h2>Descarga el formato que necesitas</h2>
+                <h2>Descárgalo y compártelo</h2>
                 <p>PNG funciona bien para piezas rápidas. SVG conserva máxima nitidez en imprenta y gran formato.</p>
               </div>
               <div className="qr-downloads">
@@ -156,7 +156,7 @@ export function QrManager() {
                   href={`/api/owner/restaurants/${selected.id}/qr/svg?download=true`}
                 >Descargar SVG</a>
               </div>
-              <div className="permanent-url-block">
+              <div className="permanent-url-block" role="status">
                 <span>Enlace permanente</span>
                 <code>{publicUrl || 'Preparando enlace…'}</code>
                 <button disabled={!publicUrl} onClick={() => void copyPublicUrl()} type="button">

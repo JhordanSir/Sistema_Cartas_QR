@@ -71,6 +71,12 @@ export interface ExtractedMenu {
 }
 
 export interface PublishedMenu extends ExtractedMenu {
+  publication: {
+    hasPublishedMenu: boolean;
+    hasUnpublishedChanges: boolean;
+    publishedAt: string | null;
+  };
   restaurantId: string;
+  template: 'ORIGINAL' | 'TRADITIONAL' | 'CASUAL' | 'PREMIUM';
   updatedAt: string;
 }

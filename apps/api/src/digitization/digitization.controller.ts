@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Inject,
@@ -17,10 +18,13 @@ import { OwnerRestaurantGuard } from '../auth/presentation/owner-restaurant.guar
 import { CurrentPrincipal, Roles } from '../auth/presentation/auth.decorators.js';
 import { DigitizeMenu } from './application/use-cases/digitize-menu.js';
 import { GetOwnedMenu } from './application/use-cases/get-owned-menu.js';
+import { PublishMenu, SetMenuTemplate } from './application/use-cases/publish-menu.js';
 import { MENU_PHOTO_LIMITS, type PublishedMenu } from './domain/menu.types.js';
 import {
   DIGITIZE_MENU,
   GET_OWNED_MENU,
+  PUBLISH_MENU,
+  SET_MENU_TEMPLATE,
 } from './digitization.tokens.js';
 import { throwDigitizationHttpError } from './presentation/digitization-http.errors.js';
 
@@ -37,6 +41,8 @@ export class DigitizationController {
   constructor(
     @Inject(DIGITIZE_MENU) private readonly digitizeMenu: DigitizeMenu,
     @Inject(GET_OWNED_MENU) private readonly getOwnedMenu: GetOwnedMenu,
+    @Inject(PUBLISH_MENU) private readonly publishMenu: PublishMenu,
+    @Inject(SET_MENU_TEMPLATE) private readonly setMenuTemplate: SetMenuTemplate,
   ) {}
 
   @Get()
@@ -74,6 +80,35 @@ export class DigitizationController {
         })),
         principal,
         restaurantId,
+      });
+    } catch (error) {
+      throwDigitizationHttpError(error);
+    }
+  }
+
+  @Post('publish')
+  async publish(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
+  ): Promise<PublishedMenu> {
+    try {
+      return await this.publishMenu.execute({ principal, restaurantId });
+    } catch (error) {
+      throwDigitizationHttpError(error);
+    }
+  }
+
+  @Post('template')
+  async template(
+    @CurrentPrincipal() principal: AuthPrincipal,
+    @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
+    @Body() input: { template?: unknown },
+  ): Promise<PublishedMenu> {
+    try {
+      return await this.setMenuTemplate.execute({
+        principal,
+        restaurantId,
+        template: input.template,
       });
     } catch (error) {
       throwDigitizationHttpError(error);

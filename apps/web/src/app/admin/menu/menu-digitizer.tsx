@@ -8,6 +8,7 @@ import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from '../owner-navigation';
 import { MenuManager } from './menu-manager';
+import { MenuPublicationControls } from './menu-publication-controls';
 
 const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
@@ -17,7 +18,7 @@ const PROCESSING_STAGES = [
   'Leyendo las páginas de tu carta…',
   'Reconociendo categorías, platos y precios…',
   'Interpretando variantes y adicionales…',
-  'Aplicando el estilo visual y publicando…',
+  'Preparando el borrador para tu revisión…',
 ];
 
 export function MenuDigitizer() {
@@ -28,6 +29,8 @@ export function MenuDigitizer() {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
   const [digitizing, setDigitizing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [templateSaving, setTemplateSaving] = useState(false);
   const [processingStage, setProcessingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -48,7 +51,7 @@ export function MenuDigitizer() {
       router.replace('/admin/login');
       return;
     }
-    if (!response.ok) throw new Error('No pudimos cargar la carta publicada.');
+    if (!response.ok) throw new Error('No pudimos cargar el borrador de la carta.');
     setMenu((await response.json()) as PublishedMenu);
   }, [router]);
 
@@ -150,8 +153,48 @@ export function MenuDigitizer() {
     }
     setMenu((await response.json()) as PublishedMenu);
     setFiles([]);
-    setNotice('Carta digitalizada y publicada. Revisa los datos y corrige lo que necesites.');
+    setNotice('Carta digitalizada. Revísala y publícala cuando esté lista.');
     setDigitizing(false);
+  }
+
+  async function publishMenu() {
+    if (!selected) return;
+    setPublishing(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/owner/restaurants/${selected.id}/menu/publish`, { method: 'POST' });
+      if (!response.ok) {
+        setError(await readApiError(response));
+        return;
+      }
+      setMenu((await response.json()) as PublishedMenu);
+      setNotice('La carta pública se actualizó. El QR sigue siendo el mismo.');
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function chooseTemplate(template: PublishedMenu['template']) {
+    if (!selected) return;
+    setTemplateSaving(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/owner/restaurants/${selected.id}/menu/template`, {
+        body: JSON.stringify({ template }),
+        headers: { 'content-type': 'application/json' },
+        method: 'POST',
+      });
+      if (!response.ok) {
+        setError(await readApiError(response));
+        return;
+      }
+      setMenu((await response.json()) as PublishedMenu);
+      setNotice('Plantilla aplicada al borrador. Publícala cuando estés conforme.');
+    } finally {
+      setTemplateSaving(false);
+    }
   }
 
   return (
@@ -160,10 +203,10 @@ export function MenuDigitizer() {
       <section className="workspace owner-workspace menu-workspace">
         <header className="workspace-header owner-workspace-header">
           <div>
-            <span className="kicker">Digitalización inteligente</span>
-            <h1>Tu carta, lista en minutos</h1>
+            <span className="kicker">Carta del restaurante</span>
+            <h1>Prepara la próxima versión de tu carta.</h1>
             <p className="supporting-copy">
-              Sube fotos claras y Sirio reconocerá productos, precios y el carácter visual del menú.
+              Cada ajuste queda en borrador. Tú decides cuándo actualizar lo que ven tus clientes.
             </p>
           </div>
           {restaurants.length > 1 ? (
@@ -183,13 +226,24 @@ export function MenuDigitizer() {
           <section className="profile-empty"><h2>No encontramos un restaurante asociado</h2></section>
         ) : null}
         {!loading && selected ? (
-          <div className="digitizer-layout">
+          <>
+            {menu ? (
+              <MenuPublicationControls
+                menu={menu}
+                onPublish={publishMenu}
+                onTemplate={chooseTemplate}
+                publishing={publishing}
+                restaurant={selected}
+                templateSaving={templateSaving}
+              />
+            ) : null}
+            <div className="digitizer-layout">
             <section className="digitizer-card">
               <div className="profile-section-heading">
                 <span className="section-number">01</span>
                 <div>
-                  <h2>Fotografía cada página</h2>
-                  <p>Buena luz, texto enfocado y la carta completa dentro del encuadre.</p>
+                  <h2>Sube las fotos de tu carta</h2>
+                  <p>Usa buena luz y texto enfocado. Incluye cada página completa.</p>
                 </div>
               </div>
               <label className="menu-photo-dropzone">
@@ -223,7 +277,7 @@ export function MenuDigitizer() {
                 onClick={digitize}
                 type="button"
               >
-                {digitizing ? 'Digitalizando…' : 'Digitalizar y publicar'}
+                {digitizing ? 'Digitalizando…' : 'Digitalizar en borrador'}
               </button>
               <p className="privacy-note">Las fotos se envían a Gemini para interpretarlas y no se almacenan en Sirio.</p>
             </section>
@@ -232,15 +286,23 @@ export function MenuDigitizer() {
               <div className="profile-section-heading">
                 <span className="section-number">02</span>
                 <div>
-                  <h2>Carta publicada</h2>
-                  <p>{menu?.categories.length ? 'Comprueba el resultado y corrige cualquier lectura.' : 'Aquí aparecerá el resultado publicado.'}</p>
+                  <h2>Tu borrador de carta</h2>
+                  <p>{menu?.categories.length ? 'Revisa el resultado antes de actualizar la carta pública.' : 'Aquí aparecerá tu carta después de digitalizarla.'}</p>
                 </div>
+              </div>
+              <div className={`menu-public-status${menu?.publication.hasUnpublishedChanges ? ' menu-public-status-draft' : menu?.publication.hasPublishedMenu ? ' menu-public-status-live' : ''}`} role="status">
+                <span aria-hidden="true">●</span>
+                <p>{menu?.publication.hasUnpublishedChanges
+                  ? 'Hay cambios en borrador. La carta pública conserva su versión anterior.'
+                  : menu?.publication.hasPublishedMenu
+                    ? 'Esta es la misma versión que está publicada ahora.'
+                    : 'Aún no hay una carta publicada. Tu QR mostrará Próximamente.'}</p>
               </div>
               {digitizing ? <ProcessingState stage={processingStage} /> : null}
               {!digitizing && menu ? (
                 <>
                   <div className="public-menu-shortcut">
-                    <Link href={`/${selected.slug}`} rel="noreferrer" target="_blank">Ver carta pública ↗</Link>
+                    <Link href={`/${selected.slug}`} rel="noreferrer" target="_blank">{menu.publication.hasPublishedMenu ? 'Ver carta publicada ↗' : 'Ver enlace del QR ↗'}</Link>
                   </div>
                   <MenuManager
                     menu={menu}
@@ -252,7 +314,8 @@ export function MenuDigitizer() {
                 </>
               ) : null}
             </section>
-          </div>
+            </div>
+          </>
         ) : null}
       </section>
     </main>
@@ -266,7 +329,7 @@ function ProcessingState({ stage }: { stage: number }) {
       <h3>Gemini está interpretando tu carta</h3>
       <p>{PROCESSING_STAGES[stage]}</p>
       <div>{PROCESSING_STAGES.map((_, index) => <span className={index <= stage ? 'complete' : ''} key={index} />)}</div>
-      <small>No cierres esta ventana. La carta se publicará al terminar.</small>
+      <small>No cierres esta ventana. Podrás revisar el borrador al terminar.</small>
     </div>
   );
 }

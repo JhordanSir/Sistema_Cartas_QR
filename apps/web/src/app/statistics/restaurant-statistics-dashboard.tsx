@@ -89,7 +89,8 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
   }, [loadRestaurants]);
 
   useEffect(() => {
-    void loadStatistics();
+    const timeout = window.setTimeout(() => void loadStatistics(), 0);
+    return () => window.clearTimeout(timeout);
   }, [loadStatistics]);
 
   return (
@@ -100,10 +101,12 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       <section className="workspace owner-workspace statistics-workspace">
         <header className="workspace-header owner-workspace-header">
           <div>
-            <span className="kicker">Pulso de la carta</span>
+            <span className="kicker">{scope === 'owner' ? 'Lecturas de tu carta' : 'Panorama de la plataforma'}</span>
             <h1>Estadísticas</h1>
             <p className="supporting-copy">
-              Vistas únicas por día, calculadas siempre en hora de Perú.
+              {scope === 'owner'
+                ? 'Cada visita cuenta una vez por persona y día, siempre en hora de Perú.'
+                : 'Consulta el movimiento de cada carta y detecta los locales que necesitan atención.'}
             </p>
           </div>
           {restaurants.length > 1 ? (
@@ -156,9 +159,9 @@ function StatisticsReport({
       </section>
 
       <section className="statistics-totals" aria-label="Vistas únicas">
-        <Metric label="Hoy y 6 días previos" value={statistics.uniqueViews.last7Days} />
+        <Metric label="Últimos 7 días" value={statistics.uniqueViews.last7Days} />
         <Metric featured label="Últimos 30 días" value={statistics.uniqueViews.last30Days} />
-        <Metric label="Historial completo" value={statistics.uniqueViews.allTime} />
+        <Metric label="Desde el inicio" value={statistics.uniqueViews.allTime} />
       </section>
 
       <section className="statistics-rhythm-grid" aria-label="Ritmos de visita">
@@ -176,7 +179,7 @@ function StatisticsReport({
         />
       </section>
       <p className="statistics-note">
-        Cada lectura cuenta una vez por visitante y día. Los promedios incluyen los días sin lecturas desde la primera visita registrada.
+        Una misma persona solo cuenta una vez al día. Los promedios incluyen los días sin lecturas desde la primera visita registrada.
       </p>
     </div>
   );

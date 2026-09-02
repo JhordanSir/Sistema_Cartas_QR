@@ -114,10 +114,10 @@ export function RestaurantProfilePanel() {
       <section className="workspace owner-workspace">
         <header className="workspace-header owner-workspace-header">
           <div>
-            <span className="kicker">Identidad del restaurante</span>
+            <span className="kicker">Panel del restaurante</span>
             <h1>Tu perfil</h1>
             <p className="supporting-copy">
-              Esta información acompañará tu carta y ayudará a tus clientes a encontrarte.
+              Haz que las personas reconozcan tu restaurante y sepan cómo encontrarte.
             </p>
           </div>
           {restaurants.length > 1 ? (
@@ -188,7 +188,7 @@ function ProfileForm({
   return (
     <form className="profile-layout" onSubmit={onSubmit}>
       <aside className="identity-card" aria-label="Vista previa de identidad">
-        <span className="ticket-number">Vista previa</span>
+        <span className="ticket-number">Así te verán</span>
         <div className="logo-preview">
           {logoUrl ? (
             <Image
@@ -203,10 +203,12 @@ function ProfileForm({
           )}
         </div>
         <h2>{profile.name}</h2>
-        <a href={`/${profile.slug}`} rel="noreferrer" target="_blank">/{profile.slug}</a>
+        <a className="identity-public-link" href={`/${profile.slug}`} rel="noreferrer" target="_blank">
+          <span aria-hidden="true">↗</span> Abrir carta pública
+        </a>
         <div className="profile-progress" aria-label={`${completed} de 5 datos completados`}>
           <div><span style={{ width: `${completed * 20}%` }} /></div>
-          <p><strong>{completed}/5</strong> señales de confianza completas</p>
+          <p><strong>{completed}/5</strong> datos que ayudan a tus clientes</p>
         </div>
         <label className="logo-picker">
           <span>{logo ? 'Cambiar selección' : profile.logoPath ? 'Reemplazar logo' : 'Subir logo'}</span>
@@ -225,8 +227,8 @@ function ProfileForm({
         <div className="profile-section-heading">
           <span className="section-number">01</span>
           <div>
-            <h2>Contacto y ubicación</h2>
-            <p>Datos opcionales para que tus clientes puedan ubicarte o escribirte.</p>
+            <h2>Cómo te encuentran</h2>
+            <p>Agrega los datos que tus clientes necesitan para ubicarte o escribirte.</p>
           </div>
         </div>
         <div className="profile-fields">
@@ -247,8 +249,8 @@ function ProfileForm({
         <div className="profile-section-heading profile-section-divider">
           <span className="section-number">02</span>
           <div>
-            <h2>Redes sociales</h2>
-            <p>Usa enlaces completos y seguros que comiencen con https://.</p>
+            <h2>Dónde te siguen</h2>
+            <p>Usa enlaces completos que comiencen con https://.</p>
           </div>
         </div>
         <div className="profile-fields">
@@ -267,7 +269,7 @@ function ProfileForm({
         </div>
 
         <footer className="profile-actions">
-          <p>El nombre y la URL solo pueden ser modificados por el administrador.</p>
+          <p>El nombre y la dirección pública los administra la plataforma.</p>
           <button className="button button-primary" disabled={saving} type="submit">
             {saving ? 'Guardando…' : 'Guardar perfil'}
           </button>

@@ -52,10 +52,7 @@ export class UploadProductImage {
 }
 
 export class DeleteProductImage {
-  constructor(
-    private readonly repository: ProductManagementRepository,
-    private readonly storage: ProductImageStorage,
-  ) {}
+  constructor(private readonly repository: ProductManagementRepository) {}
 
   async execute(input: {
     principal: AuthPrincipal;
@@ -76,7 +73,6 @@ export class DeleteProductImage {
       null,
     );
     if (!menu) notFound();
-    if (product.imagePath) await this.storage.deleteImage(product.imagePath);
     return menu;
   }
 }

@@ -38,6 +38,8 @@ export function RestaurantBackoffice() {
   const [status, setStatus] = useState<RestaurantStatus | ''>('');
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantSummary | null>(null);
+  const visibleCount = data.items.filter((restaurant) => restaurant.status === 'ENABLED').length;
+  const pausedCount = data.items.length - visibleCount;
 
   const loadRestaurants = useCallback(async () => {
     setLoading(true);
@@ -116,7 +118,7 @@ export function RestaurantBackoffice() {
     <main className="backoffice-shell">
       <BackofficeNavigation active="restaurants" />
 
-      <section className="workspace">
+      <section className="workspace backoffice-workspace">
         <header className="workspace-header">
           <div>
             <span className="kicker">Backoffice</span>
@@ -147,31 +149,38 @@ export function RestaurantBackoffice() {
         <section className="registry" aria-labelledby="registry-title">
           <div className="registry-toolbar">
             <div>
+              <span className="ticket-number">Registro operativo</span>
               <h2 id="registry-title">Registro de locales</h2>
-              <p>{data.total} {data.total === 1 ? 'restaurante' : 'restaurantes'}</p>
+              <p>{data.total} {data.total === 1 ? 'restaurante' : 'restaurantes'} en esta búsqueda</p>
             </div>
-            <div className="filters">
-              <label className="search-field">
-                <span className="sr-only">Buscar restaurante</span>
-                <span aria-hidden="true">⌕</span>
-                <input
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Buscar nombre, slug o correo"
-                  type="search"
-                  value={query}
-                />
-              </label>
-              <label>
-                <span className="sr-only">Filtrar por estado</span>
-                <select
-                  onChange={(event) => setStatus(event.target.value as RestaurantStatus | '')}
-                  value={status}
-                >
-                  <option value="">Todos los estados</option>
-                  <option value="ENABLED">Habilitados</option>
-                  <option value="DISABLED">Deshabilitados</option>
-                </select>
-              </label>
+            <div className="registry-utility">
+              <div aria-label="Resumen de esta vista" className="registry-state-summary">
+                <span className="registry-state-live"><i aria-hidden="true" />{visibleCount} en servicio</span>
+                <span className="registry-state-paused"><i aria-hidden="true" />{pausedCount} pausados</span>
+              </div>
+              <div className="filters">
+                <label className="search-field">
+                  <span className="sr-only">Buscar restaurante</span>
+                  <span aria-hidden="true">⌕</span>
+                  <input
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Buscar nombre, slug o correo"
+                    type="search"
+                    value={query}
+                  />
+                </label>
+                <label>
+                  <span className="sr-only">Filtrar por estado</span>
+                  <select
+                    onChange={(event) => setStatus(event.target.value as RestaurantStatus | '')}
+                    value={status}
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="ENABLED">Habilitados</option>
+                    <option value="DISABLED">Deshabilitados</option>
+                  </select>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -185,8 +194,9 @@ export function RestaurantBackoffice() {
           ) : null}
           {!loading && data.items.length > 0 ? (
             <div className="restaurant-list">
-              {data.items.map((restaurant) => (
+              {data.items.map((restaurant, index) => (
                 <RestaurantRow
+                  folio={index + 1}
                   key={restaurant.id}
                   onDelete={() => setDeleting(restaurant)}
                   onStatus={() => void changeStatus(restaurant)}
@@ -245,10 +255,12 @@ function CreateRestaurantPanel({
 }
 
 function RestaurantRow({
+  folio,
   onDelete,
   onStatus,
   restaurant,
 }: {
+  folio: number;
   onDelete: () => void;
   onStatus: () => void;
   restaurant: RestaurantSummary;
@@ -260,6 +272,7 @@ function RestaurantRow({
       <div className="restaurant-identity">
         <span className="restaurant-monogram" aria-hidden="true">{initial}</span>
         <div>
+          <span className="restaurant-folio">Folio {String(folio).padStart(3, '0')}</span>
           <div className="restaurant-title-line">
             <h3>{restaurant.name}</h3>
             <span className={`status-pill ${enabled ? 'status-enabled' : 'status-disabled'}`}>
@@ -267,7 +280,7 @@ function RestaurantRow({
               {enabled ? 'Habilitado' : 'Deshabilitado'}
             </span>
           </div>
-          <a href={`/${restaurant.slug}`} target="_blank" rel="noreferrer">/{restaurant.slug}</a>
+          <a href={`/${restaurant.slug}`} target="_blank" rel="noreferrer">Abrir carta <span aria-hidden="true">↗</span> <small>/{restaurant.slug}</small></a>
         </div>
       </div>
       <div className="owner-cell">

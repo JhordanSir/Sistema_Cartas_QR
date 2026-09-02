@@ -17,22 +17,23 @@ export default function HomePage() {
             />
             <span>Sirio <b>Automatiza</b></span>
           </Link>
-          <Link className="landing-login-link" href="/admin/login">
-            Ingresar al panel <span aria-hidden="true">↗</span>
-          </Link>
+          <div className="landing-nav-actions">
+            <Link className="landing-admin-link" href="/login">Administración</Link>
+            <Link className="landing-login-link" href="/admin/login">Ingresar como propietario</Link>
+          </div>
         </header>
 
         <section className="landing-hero" aria-labelledby="hero-title">
           <div className="landing-copy">
-            <p className="landing-kicker"><span aria-hidden="true" /> Tecnología para restaurantes</p>
+            <p className="landing-kicker"><span aria-hidden="true" /> Carta digital para restaurantes</p>
             <h1 id="hero-title">Tu carta trabaja <em>mientras atiendes.</em></h1>
             <p className="landing-lede">
-              Convierte tu menú en una experiencia digital: tus clientes escanean
-              un QR, ven siempre la carta actual y tú controlas cada cambio desde un solo lugar.
+              Convierte tu menú en una experiencia clara para cada mesa. Tus clientes escanean,
+              consultan la carta vigente y tú conservas el control desde un solo lugar.
             </p>
             <div className="landing-actions">
               <Link className="landing-button landing-button-primary" href="/admin/login">
-                Ingresar como propietario <span aria-hidden="true">→</span>
+                Ingresar a mi restaurante <span aria-hidden="true">→</span>
               </Link>
               <a
                 className="landing-button landing-button-quiet"
@@ -43,14 +44,14 @@ export default function HomePage() {
                 Hablar con Sirio
               </a>
             </div>
-            <p className="landing-proof">Un QR permanente · Sin aplicaciones para tus clientes</p>
+            <p className="landing-proof">Un QR permanente · Sin apps ni descargas para tus clientes</p>
           </div>
 
-          <aside className="landing-system-card" aria-label="Sirio convierte una carta en un menú QR">
-            <div className="landing-orbit landing-orbit-one" aria-hidden="true" />
-            <div className="landing-orbit landing-orbit-two" aria-hidden="true" />
-            <div className="landing-signal landing-signal-top" aria-hidden="true" />
-            <div className="landing-signal landing-signal-bottom" aria-hidden="true" />
+          <aside className="landing-service-card" aria-label="Sirio conecta una carta con el código QR del restaurante">
+            <div className="landing-card-topline">
+              <span>Servicio de carta</span>
+              <span aria-hidden="true">●</span>
+            </div>
             <div className="landing-logo-frame">
               <Image
                 alt="Logo de Sirio Automatiza"
@@ -60,9 +61,14 @@ export default function HomePage() {
                 src="/brand/sirio-logo.webp"
               />
             </div>
+            <div className="landing-service-steps" aria-hidden="true">
+              <span><b>1</b> Digitaliza</span>
+              <span><b>2</b> Publica</span>
+              <span><b>3</b> Comparte</span>
+            </div>
             <div className="landing-card-caption">
               <span className="landing-status"><i aria-hidden="true" /> Carta conectada</span>
-              <strong>Del menú de tu cocina a cada mesa.</strong>
+              <strong>De tu cocina a cada mesa.</strong>
             </div>
           </aside>
         </section>
@@ -70,7 +76,7 @@ export default function HomePage() {
         <section className="landing-capabilities" aria-labelledby="capabilities-title">
           <div className="landing-section-heading">
             <p className="landing-kicker"><span aria-hidden="true" /> Todo en su sitio</p>
-            <h2 id="capabilities-title">Una carta que se adapta al ritmo de tu restaurante.</h2>
+            <h2 id="capabilities-title">Una carta que sigue el ritmo de tu restaurante.</h2>
           </div>
           <div className="landing-feature-list">
             <article>
@@ -98,8 +104,8 @@ export default function HomePage() {
         </section>
 
         <footer className="landing-footer">
-          <span>Sirio Automatiza</span>
-          <span>Cartas digitales que no se quedan quietas.</span>
+          <span>Sirio Automatiza · Cartas QR</span>
+          <span>Actualiza una vez. Llega a todas las mesas.</span>
         </footer>
       </div>
     </main>

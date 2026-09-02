@@ -1,6 +1,6 @@
 import { access, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import { LocalProductImageStorage } from './local-product-image.storage.js';
 
@@ -18,7 +18,7 @@ describe('LocalProductImageStorage', () => {
     await rm(storageRoot, { force: true, recursive: true });
   });
 
-  it('atomically stores, reads and removes a product image at its fixed path', async () => {
+  it('stores each product image at an immutable versioned path', async () => {
     const storage = new LocalProductImageStorage(storageRoot);
     const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
 
@@ -27,15 +27,15 @@ describe('LocalProductImageStorage', () => {
       contentType: 'image/png',
     });
 
-    expect(relativePath).toBe(
-      `restaurants/${RESTAURANT_ID}/products/${PRODUCT_ID}/image`,
+    expect(relativePath).toMatch(
+      new RegExp(`^restaurants/${RESTAURANT_ID}/products/${PRODUCT_ID}/image-[0-9a-f-]{36}$`),
     );
     await expect(storage.readImage(relativePath)).resolves.toEqual({
       bytes: Buffer.from(png),
       contentType: 'image/png',
     });
     await storage.deleteImage(relativePath);
-    await expect(access(dirname(join(storageRoot, relativePath)))).rejects.toThrow();
+    await expect(access(join(storageRoot, relativePath))).rejects.toThrow();
   });
 
   it.each([

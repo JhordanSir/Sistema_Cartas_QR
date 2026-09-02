@@ -92,7 +92,7 @@ export function MenuManager({
     );
     if (nextMenu) {
       setCategoryEditor(null);
-      setNotice(editing ? 'Sección actualizada en la carta pública.' : 'Sección creada y publicada.');
+      setNotice(editing ? 'Sección actualizada en el borrador.' : 'Sección creada en el borrador.');
     }
   }
 
@@ -101,7 +101,7 @@ export function MenuManager({
       return;
     }
     const nextMenu = await mutate(`/categories/${category.id}`, { method: 'DELETE' });
-    if (nextMenu) setNotice('Sección y productos eliminados permanentemente.');
+    if (nextMenu) setNotice('Sección y productos eliminados del borrador.');
   }
 
   async function moveCategory(index: number, direction: -1 | 1) {
@@ -110,7 +110,7 @@ export function MenuManager({
     if (target < 0 || target >= ordered.length) return;
     [ordered[index], ordered[target]] = [ordered[target]!, ordered[index]!];
     const nextMenu = await mutate('/categories-order', jsonRequest('PUT', { orderedIds: ordered }));
-    if (nextMenu) setNotice('Orden de secciones actualizado.');
+    if (nextMenu) setNotice('Orden de secciones actualizado en el borrador.');
   }
 
   function openProduct(categoryId: string, product: ManagedProduct | null = null) {
@@ -162,7 +162,7 @@ export function MenuManager({
     }
     if (nextMenu) {
       setProductDraft(null);
-      setNotice(productDraft.product ? 'Producto actualizado en la carta pública.' : 'Producto creado y publicado.');
+      setNotice(productDraft.product ? 'Producto actualizado en el borrador.' : 'Producto creado en el borrador.');
     }
   }
 
@@ -174,15 +174,15 @@ export function MenuManager({
     );
     if (nextMenu) {
       setNotice(nextAvailable
-        ? 'Producto disponible y visible en la carta pública.'
-        : 'Producto marcado como no disponible y oculto de la carta pública.');
+        ? 'Producto marcado como disponible en el borrador.'
+        : 'Producto marcado como no disponible en el borrador.');
     }
   }
 
   async function deleteProduct(product: ManagedProduct) {
     if (!window.confirm(`¿Eliminar “${product.name}” permanentemente?`)) return;
     const nextMenu = await mutate(`/products/${product.id}`, { method: 'DELETE' });
-    if (nextMenu) setNotice('Producto eliminado permanentemente.');
+    if (nextMenu) setNotice('Producto eliminado del borrador.');
   }
 
   async function moveProduct(category: ManagedCategory, index: number, direction: -1 | 1) {
@@ -195,7 +195,7 @@ export function MenuManager({
       `/categories/${category.id}/products-order`,
       jsonRequest('PUT', { orderedIds: ordered }),
     );
-    if (nextMenu) setNotice('Orden de productos actualizado.');
+    if (nextMenu) setNotice('Orden de productos actualizado en el borrador.');
   }
 
   return (

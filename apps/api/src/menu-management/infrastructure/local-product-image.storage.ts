@@ -9,7 +9,7 @@ import type {
   StoredProductImage,
 } from '../domain/menu-management.types.js';
 
-const PRODUCT_IMAGE_PATH = /^restaurants\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/products\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/image$/;
+const PRODUCT_IMAGE_PATH = /^restaurants\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/products\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/image(?:-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})?$/;
 
 export class LocalProductImageStorage implements ProductImageStorage {
   private readonly root: string;
@@ -23,13 +23,12 @@ export class LocalProductImageStorage implements ProductImageStorage {
     productId: string,
     image: ProductImageUpload,
   ): Promise<string> {
-    const relativePath = `restaurants/${restaurantId}/products/${productId}/image`;
+    const relativePath = `restaurants/${restaurantId}/products/${productId}/image-${randomUUID()}`;
     const target = this.resolveImagePath(relativePath);
     const temporary = `${target}.${randomUUID()}.tmp`;
     await mkdir(dirname(target), { recursive: true });
     try {
       await writeFile(temporary, image.bytes, { flag: 'wx' });
-      await rm(target, { force: true });
       await rename(temporary, target);
     } finally {
       await rm(temporary, { force: true });
@@ -51,7 +50,7 @@ export class LocalProductImageStorage implements ProductImageStorage {
 
   async deleteImage(relativePath: string): Promise<void> {
     const target = this.resolveImagePath(relativePath);
-    await rm(dirname(target), { force: true, recursive: true });
+    await rm(target, { force: true });
   }
 
   private resolveImagePath(relativePath: string): string {

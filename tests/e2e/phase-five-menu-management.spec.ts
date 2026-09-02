@@ -22,6 +22,8 @@ async function login(
 }
 
 test.describe.serial('gestión completa de carta de la Fase 5', () => {
+  test.describe.configure({ timeout: 60_000 });
+
   let restaurant: CreatedRestaurant | null = null;
   let ownerEmail = '';
   const ownerPassword = 'OwnerPass-5!';
@@ -108,7 +110,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
       name: 'hamburguesa.png',
     });
     await page.getByRole('button', { name: 'Crear producto' }).click();
-    await expect(page.getByText('Producto creado y publicado.')).toBeVisible();
+    await expect(page.getByText('Producto creado en el borrador.')).toBeVisible();
     await expect(page.getByText('1 variantes · 1 adicionales')).toBeVisible();
 
     await page.getByRole('button', { name: 'Añadir producto a Platos de fondo' }).click();
@@ -123,27 +125,46 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
 
     const publicPage = await context.newPage();
     const publicUrl = `${webUrl}/${restaurant.slug}`;
-    await publicPage.goto(publicUrl);
+    await publicPage.goto(publicUrl, { waitUntil: 'networkidle' });
+    await expect(publicPage.getByRole('heading', { name: 'Estamos preparando la carta' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Publicar carta' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
+    await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
-    await expect(publicPage.getByText('Doble · S/ 31.00')).toBeVisible();
-    await expect(publicPage.getByText('Queso · S/ 3.00')).toBeVisible();
+    await expect(publicPage.getByText('Doble S/ 31.00')).toBeVisible();
+    await expect(publicPage.getByText('Queso S/ 3.00')).toBeVisible();
     await expect(publicPage.getByAltText('Hamburguesa Sirio')).toBeVisible();
 
     await page.getByRole('button', { name: 'Marcar no disponible Hamburguesa Sirio' }).click();
-    await expect(page.getByText('Producto marcado como no disponible y oculto de la carta pública.')).toBeVisible();
-    await publicPage.reload();
+    await expect(page.getByText('Producto marcado como no disponible en el borrador.')).toBeVisible();
+    await publicPage.reload({ waitUntil: 'networkidle' });
+    await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
+    await page.getByRole('button', { name: 'Publicar cambios' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await expect(publicPage).toHaveURL(publicUrl);
 
     await page.getByRole('button', { name: 'Hacer disponible Hamburguesa Sirio' }).click();
-    await publicPage.reload();
+    await expect(page.getByText('Producto marcado como disponible en el borrador.')).toBeVisible();
+    await publicPage.reload({ waitUntil: 'networkidle' });
+    await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Publicar cambios' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
 
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: 'Eliminar Hamburguesa Sirio' }).click();
-    await expect(page.getByText('Producto eliminado permanentemente.')).toBeVisible();
+    await expect(page.getByText('Producto eliminado del borrador.')).toBeVisible();
     await expect(page.getByText('Hamburguesa Sirio')).toHaveCount(0);
-    await publicPage.reload();
+    await publicPage.reload({ waitUntil: 'networkidle' });
+    await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
+    await page.getByRole('button', { name: 'Publicar cambios' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await expect(publicPage).toHaveURL(publicUrl);
     await publicPage.close();

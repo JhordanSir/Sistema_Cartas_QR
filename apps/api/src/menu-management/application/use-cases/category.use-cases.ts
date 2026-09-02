@@ -3,7 +3,6 @@ import type { PublishedMenu } from '../../../digitization/domain/menu.types.js';
 import { MenuManagementApplicationError } from '../../domain/menu-management.errors.js';
 import { assertOwner, normalizeCategoryName, normalizeOrderedIds } from '../menu-management.validation.js';
 import type { CategoryManagementRepository } from '../ports/menu-management.repositories.js';
-import type { ProductImageStorage } from '../ports/product-image.storage.js';
 
 export class CreateCategory {
   constructor(private readonly repository: CategoryManagementRepository) {}
@@ -47,10 +46,7 @@ export class UpdateCategory {
 }
 
 export class DeleteCategory {
-  constructor(
-    private readonly repository: CategoryManagementRepository,
-    private readonly imageStorage: ProductImageStorage,
-  ) {}
+  constructor(private readonly repository: CategoryManagementRepository) {}
 
   async execute(input: {
     categoryId: string;
@@ -66,7 +62,6 @@ export class DeleteCategory {
     if (!result) {
       throw new MenuManagementApplicationError('CATEGORY_NOT_FOUND', 'Category not found.');
     }
-    await Promise.all(result.imagePaths.map((path) => ignoreStorageFailure(this.imageStorage, path)));
     return result.menu;
   }
 }
@@ -100,15 +95,4 @@ function requireMenu(menu: PublishedMenu | null): PublishedMenu {
     throw new MenuManagementApplicationError('RESTAURANT_NOT_FOUND', 'Restaurant not found.');
   }
   return menu;
-}
-
-async function ignoreStorageFailure(
-  storage: ProductImageStorage,
-  relativePath: string,
-): Promise<void> {
-  try {
-    await storage.deleteImage(relativePath);
-  } catch {
-    // The database deletion remains authoritative. Restaurant deletion also clears this directory.
-  }
 }

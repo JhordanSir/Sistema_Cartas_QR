@@ -1,27 +1,24 @@
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type {
   MenuPublicationRepository,
+  PublishMenuResult,
   ProductCorrection,
 } from '../application/ports/menu-publication.repository.js';
 import type {
   ExtractedMenu,
   PublishedMenu,
 } from '../domain/menu.types.js';
-
-const menuInclude = {
-  categories: {
-    include: {
-      products: {
-        include: {
-          extras: { orderBy: { sortOrder: 'asc' as const } },
-          variants: { orderBy: { sortOrder: 'asc' as const } },
-        },
-        orderBy: { sortOrder: 'asc' as const },
-      },
-    },
-    orderBy: { sortOrder: 'asc' as const },
-  },
-} as const;
+import {
+  hasPublishableProducts,
+  menuInclude,
+  parseStoredMenuStyle,
+  preserveCurrentPublicMenu,
+  resolveTemplateStyle,
+  toMenuSnapshot,
+  toOwnedMenu,
+  type MenuTemplateId,
+} from '../domain/menu-publication.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 
 export class PrismaMenuPublicationRepository implements MenuPublicationRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -39,7 +36,7 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
       include: menuInclude,
       where: { id: restaurantId, owners: { some: { ownerId } } },
     });
-    return restaurant ? this.toPublishedMenu(restaurant) : null;
+    return restaurant ? toOwnedMenu(restaurant) : null;
   }
 
   async replaceForOwner(
@@ -54,9 +51,14 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
       });
       if (!restaurant) return null;
 
+      await preserveCurrentPublicMenu(transaction, restaurantId);
       await transaction.category.deleteMany({ where: { restaurantId } });
       await transaction.restaurant.update({
-        data: menu.style,
+        data: {
+          ...menu.style,
+          menuTemplate: 'ORIGINAL',
+          sourceStyle: menu.style as unknown as Prisma.InputJsonValue,
+        },
         where: { id: restaurantId },
       });
 
@@ -100,11 +102,36 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
         }
       }
 
-      const published = await transaction.restaurant.findUnique({
+      const draft = await transaction.restaurant.findUnique({
         include: menuInclude,
         where: { id: restaurantId },
       });
-      return published ? this.toPublishedMenu(published) : null;
+      return draft ? toOwnedMenu(draft) : null;
+    });
+  }
+
+  async publishForOwner(
+    ownerId: string,
+    restaurantId: string,
+  ): Promise<PublishMenuResult> {
+    return this.prisma.$transaction(async (transaction) => {
+      const restaurant = await transaction.restaurant.findFirst({
+        include: menuInclude,
+        where: { id: restaurantId, owners: { some: { ownerId } } },
+      });
+      if (!restaurant) return { kind: 'not-found' } as const;
+      const snapshot = toMenuSnapshot(restaurant);
+      if (!hasPublishableProducts(snapshot)) return { kind: 'empty' } as const;
+      const published = await transaction.restaurant.update({
+        data: {
+          publishedAt: new Date(),
+          publishedMenu: snapshot as unknown as Prisma.InputJsonValue,
+          publicationInitialized: true,
+        },
+        include: menuInclude,
+        where: { id: restaurantId },
+      });
+      return { kind: 'published', menu: toOwnedMenu(published) } as const;
     });
   }
 
@@ -114,68 +141,56 @@ export class PrismaMenuPublicationRepository implements MenuPublicationRepositor
     productId: string,
     correction: ProductCorrection,
   ): Promise<PublishedMenu | null> {
-    const updated = await this.prisma.product.updateMany({
-      data: correction,
-      where: {
-        id: productId,
-        restaurantId,
-        restaurant: { owners: { some: { ownerId } } },
-      },
+    const updated = await this.prisma.$transaction(async (transaction) => {
+      const product = await transaction.product.findFirst({
+        select: { id: true },
+        where: {
+          id: productId,
+          restaurantId,
+          restaurant: { owners: { some: { ownerId } } },
+        },
+      });
+      if (!product) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
+      await transaction.product.update({ data: correction, where: { id: productId } });
+      return true;
     });
-    return updated.count === 1 ? this.findForOwner(ownerId, restaurantId) : null;
+    return updated ? this.findForOwner(ownerId, restaurantId) : null;
   }
 
-  private toPublishedMenu(record: {
-    backgroundColor: string;
-    categories: Array<{
-      id: string;
-      name: string;
-      products: Array<{
-        basePrice: { toFixed(digits: number): string };
-        description: string | null;
-        extras: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
-        id: string;
-        imagePath: string | null;
-        isAvailable: boolean;
-        name: string;
-        variants: Array<{ id: string; name: string; price: { toFixed(digits: number): string } }>;
-      }>;
-    }>;
-    fontFamily: string;
-    id: string;
-    textColor: string;
-    updatedAt: Date;
-  }): PublishedMenu {
-    return {
-      categories: record.categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-        products: category.products.map((product) => ({
-          basePrice: product.basePrice.toFixed(2),
-          description: product.description,
-          extras: product.extras.map((extra) => ({
-            id: extra.id,
-            name: extra.name,
-            price: extra.price.toFixed(2),
-          })),
-          id: product.id,
-          imagePath: product.imagePath,
-          isAvailable: product.isAvailable,
-          name: product.name,
-          variants: product.variants.map((variant) => ({
-            id: variant.id,
-            name: variant.name,
-            price: variant.price.toFixed(2),
-          })),
-        })),
-      })),
-      restaurantId: record.id,
-      style: {
-        backgroundColor: record.backgroundColor,
-        fontFamily: record.fontFamily as PublishedMenu['style']['fontFamily'],
-        textColor: record.textColor,
-      },
-      updatedAt: record.updatedAt.toISOString(),
-    };
+  async setTemplateForOwner(
+    ownerId: string,
+    restaurantId: string,
+    template: MenuTemplateId,
+  ): Promise<PublishedMenu | null> {
+    const changed = await this.prisma.$transaction(async (transaction) => {
+      const restaurant = await transaction.restaurant.findFirst({
+        select: {
+          backgroundColor: true,
+          fontFamily: true,
+          id: true,
+          sourceStyle: true,
+          textColor: true,
+        },
+        where: { id: restaurantId, owners: { some: { ownerId } } },
+      });
+      if (!restaurant) return false;
+      await preserveCurrentPublicMenu(transaction, restaurantId);
+      const originalStyle = parseStoredMenuStyle(restaurant.sourceStyle) ?? {
+        backgroundColor: restaurant.backgroundColor,
+        fontFamily: restaurant.fontFamily as PublishedMenu['style']['fontFamily'],
+        textColor: restaurant.textColor,
+      };
+      await transaction.restaurant.update({
+        data: {
+          ...resolveTemplateStyle(template, originalStyle),
+          menuTemplate: template,
+          sourceStyle: originalStyle as unknown as Prisma.InputJsonValue,
+        },
+        where: { id: restaurantId },
+      });
+      return true;
+    });
+    return changed ? this.findForOwner(ownerId, restaurantId) : null;
   }
 }

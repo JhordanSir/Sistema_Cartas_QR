@@ -12,6 +12,8 @@ import { DigitizationApplicationError } from '../domain/digitization.errors.js';
 export function throwDigitizationHttpError(error: unknown): never {
   if (!(error instanceof DigitizationApplicationError)) throw error;
   switch (error.code) {
+    case 'EMPTY_MENU':
+      throw new BadRequestException(error.message);
     case 'FORBIDDEN':
       throw new ForbiddenException(error.message);
     case 'RESTAURANT_NOT_FOUND':

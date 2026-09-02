@@ -92,12 +92,10 @@ import {
         new UpdateCategory(repository),
     },
     {
-      inject: [CATEGORY_REPOSITORY, PRODUCT_IMAGE_STORAGE],
+      inject: [CATEGORY_REPOSITORY],
       provide: DELETE_CATEGORY,
-      useFactory: (
-        repository: CategoryManagementRepository,
-        storage: ProductImageStorage,
-      ): DeleteCategory => new DeleteCategory(repository, storage),
+      useFactory: (repository: CategoryManagementRepository): DeleteCategory =>
+        new DeleteCategory(repository),
     },
     {
       inject: [CATEGORY_REPOSITORY],
@@ -125,12 +123,10 @@ import {
       ): SetProductAvailability => new SetProductAvailability(repository),
     },
     {
-      inject: [PRODUCT_REPOSITORY, PRODUCT_IMAGE_STORAGE],
+      inject: [PRODUCT_REPOSITORY],
       provide: DELETE_PRODUCT,
-      useFactory: (
-        repository: ProductManagementRepository,
-        storage: ProductImageStorage,
-      ): DeleteProduct => new DeleteProduct(repository, storage),
+      useFactory: (repository: ProductManagementRepository): DeleteProduct =>
+        new DeleteProduct(repository),
     },
     {
       inject: [PRODUCT_REPOSITORY],
@@ -147,12 +143,10 @@ import {
       ): UploadProductImage => new UploadProductImage(repository, storage),
     },
     {
-      inject: [PRODUCT_REPOSITORY, PRODUCT_IMAGE_STORAGE],
+      inject: [PRODUCT_REPOSITORY],
       provide: DELETE_PRODUCT_IMAGE,
-      useFactory: (
-        repository: ProductManagementRepository,
-        storage: ProductImageStorage,
-      ): DeleteProductImage => new DeleteProductImage(repository, storage),
+      useFactory: (repository: ProductManagementRepository): DeleteProductImage =>
+        new DeleteProductImage(repository),
     },
     {
       inject: [PRODUCT_IMAGE_READ_REPOSITORY, PRODUCT_IMAGE_STORAGE],

@@ -10,8 +10,12 @@ describe("HomePage", () => {
       screen.getByRole("heading", { name: /tu carta trabaja/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: /ingresar como propietario/i }),
+      screen.getByRole("link", { name: /ingresar a mi restaurante/i }),
     ).toHaveAttribute("href", "/admin/login");
+    expect(screen.getByRole("link", { name: "Administración" })).toHaveAttribute(
+      "href",
+      "/login",
+    );
     expect(screen.getByAltText("Logo de Sirio Automatiza")).toBeInTheDocument();
   });
 });

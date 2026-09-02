@@ -1,4 +1,5 @@
 export type DigitizationErrorCode =
+  | 'EMPTY_MENU'
   | 'FORBIDDEN'
   | 'INVALID_IMAGE'
   | 'INVALID_INPUT'

@@ -8,7 +8,6 @@ import {
   normalizeProductValues,
 } from '../menu-management.validation.js';
 import type { ProductManagementRepository } from '../ports/menu-management.repositories.js';
-import type { ProductImageStorage } from '../ports/product-image.storage.js';
 
 export class CreateProduct {
   constructor(private readonly repository: ProductManagementRepository) {}
@@ -90,10 +89,7 @@ export class SetProductAvailability {
 }
 
 export class DeleteProduct {
-  constructor(
-    private readonly repository: ProductManagementRepository,
-    private readonly imageStorage: ProductImageStorage,
-  ) {}
+  constructor(private readonly repository: ProductManagementRepository) {}
 
   async execute(input: {
     principal: AuthPrincipal;
@@ -108,13 +104,6 @@ export class DeleteProduct {
     );
     if (!result) {
       throw new MenuManagementApplicationError('PRODUCT_NOT_FOUND', 'Product not found.');
-    }
-    if (result.imagePath) {
-      try {
-        await this.imageStorage.deleteImage(result.imagePath);
-      } catch {
-        // The product is already deleted; restaurant cleanup remains the final safety net.
-      }
     }
     return result.menu;
   }

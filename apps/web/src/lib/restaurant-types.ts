@@ -58,12 +58,18 @@ export interface MenuCategory {
 
 export interface PublishedMenu {
   categories: MenuCategory[];
+  publication: {
+    hasPublishedMenu: boolean;
+    hasUnpublishedChanges: boolean;
+    publishedAt: string | null;
+  };
   restaurantId: string;
   style: {
     backgroundColor: string;
     fontFamily: string;
     textColor: string;
   };
+  template: 'ORIGINAL' | 'TRADITIONAL' | 'CASUAL' | 'PREMIUM';
   updatedAt: string;
 }
 
