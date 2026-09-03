@@ -142,6 +142,23 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .workspace-header h1 { margin: 8px 0 4px; font-size: clamp(40px, 5vw, 60px); }
 .workspace-header .supporting-copy { margin: 0; }
 
+.help-workspace { max-width: 1180px; }
+.help-header { align-items: end; }
+.help-header h1 { max-width: 16ch; }
+.help-header-note { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px; margin: 0; background: var(--teal-wash); color: var(--teal); font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.help-header-note span { color: var(--olive); font-size: 13px; }
+.help-tutorial-list { display: grid; gap: 18px; padding: 0; margin: 0; list-style: none; counter-reset: tutorial; }
+.help-tutorial { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: var(--shadow-soft); }
+.help-tutorial::before { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: var(--copper); content: ""; }
+.help-tutorial article { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 292px); align-items: center; gap: 28px; min-height: 260px; padding: 22px 24px 22px 30px; }
+.help-tutorial-copy { display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: start; gap: 16px; }
+.help-tutorial-index { display: grid; width: 38px; height: 38px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--canvas); color: var(--copper); font-size: 11px; font-weight: 850; place-items: center; }
+.help-tutorial-copy .ticket-number { margin: 2px 0 7px; color: var(--teal); }
+.help-tutorial-copy h2 { max-width: 18ch; margin: 0 0 8px; color: var(--ink); font-family: var(--font-display); font-size: clamp(24px, 2.7vw, 32px); font-weight: 650; letter-spacing: -0.04em; line-height: 1.02; }
+.help-tutorial-copy > div > p:last-child { max-width: 52ch; margin: 0; color: var(--ink-soft); font-size: 13px; font-weight: 550; line-height: 1.62; }
+.help-video-frame { justify-self: end; width: min(100%, 250px); padding: 7px; border: 1px solid var(--line-strong); border-radius: 20px; background: var(--ink); box-shadow: 8px 8px 0 var(--teal-wash); }
+.help-video-frame video { display: block; width: 100%; aspect-ratio: 9 / 16; border-radius: 13px; background: var(--canvas); object-fit: cover; }
+
 .create-panel { display: grid; grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.7fr); gap: 32px; padding: 28px; border-left: 4px solid var(--copper); border-radius: 12px; margin-bottom: 24px; background: var(--paper-raised); box-shadow: var(--shadow-soft); animation: panel-in 200ms cubic-bezier(0.23, 1, 0.32, 1); }
 .create-intro h2, .registry-toolbar h2, .empty-state h3, .delete-dialog h2, .menu-placeholder h2 { margin: 6px 0; color: var(--ink); font-family: var(--font-display); font-weight: 650; letter-spacing: -0.025em; }
 .create-intro h2 { font-size: 26px; }
@@ -561,6 +578,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .workspace-header { align-items: flex-start; }
   .owner-workspace-header { padding-bottom: 22px; margin-bottom: 24px; }
   .workspace-header .supporting-copy { max-width: 42ch; }
+  .help-header { align-items: flex-start; gap: 14px; }
+  .help-header-note { white-space: normal; }
+  .help-tutorial article { grid-template-columns: minmax(0, 1fr) 190px; gap: 20px; min-height: 226px; padding: 18px 18px 18px 24px; }
+  .help-video-frame { width: min(100%, 178px); box-shadow: 5px 5px 0 var(--teal-wash); }
   .create-panel { grid-template-columns: 1fr; }
   .registry-toolbar { grid-template-columns: 1fr; align-items: start; }
   .registry-utility { justify-items: stretch; }
@@ -593,6 +614,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .side-rail .brand-lockup > span:last-child { display: none; }
   .side-rail nav { margin-left: 4px; }
   .side-rail .nav-item { min-height: 42px; padding: 9px 8px; font-size: 11px; }
+  .help-tutorial-list { gap: 14px; }
+  .help-tutorial article { grid-template-columns: 1fr; gap: 18px; padding: 20px; }
+  .help-tutorial-copy { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; }
+  .help-tutorial-index { width: 34px; height: 34px; }
+  .help-tutorial-copy h2 { font-size: 27px; }
+  .help-video-frame { justify-self: center; width: min(100%, 264px); }
   .create-form { grid-template-columns: 1fr; }
   .create-form .button { width: 100%; }
   .filters { align-items: stretch; flex-direction: column; }

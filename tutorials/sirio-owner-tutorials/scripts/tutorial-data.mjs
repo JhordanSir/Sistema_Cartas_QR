@@ -1,0 +1,85 @@
+export const TUTORIALS = [
+  {
+    id: '01-access',
+    slug: 'acceso-panel',
+    title: 'Ingresa a tu panel',
+    description: 'Accede y reconoce las secciones principales del restaurante.',
+    touchAt: 14.4,
+    touchTarget: { x: 50, y: 73 },
+    beats: [
+      { id: '01-panel', kind: 'opening', kicker: 'Tutorial 1 · Acceso', title: 'Tu carta empieza aquí', lead: 'Todo lo que necesitas está en tu panel.', uiTitle: 'Panel del restaurante', rows: ['Tu perfil', 'Tu carta', 'Tu QR'], accent: 'Empezar', narration: 'Bienvenido a Sirio. Desde tu panel puedes preparar, publicar y compartir la carta digital de tu restaurante.', duration: 8.5 },
+      { id: '02-login-screen', kind: 'login', kicker: 'Acceso seguro', title: 'Abre el acceso', lead: 'Ingresa con las credenciales de tu restaurante.', uiTitle: 'Entrar a mi restaurante', rows: ['Correo del propietario', 'Contraseña'], accent: 'Entrar a mi restaurante', narration: 'Para entrar, abre el acceso de propietarios e ingresa el correo y la contraseña que recibiste para tu restaurante.', duration: 9 },
+      { id: '03-credentials', kind: 'login', kicker: 'Tus datos', title: 'Completa tus datos', lead: 'Usa tus credenciales personales.', uiTitle: 'Acceso del propietario', rows: ['correo@restaurante.pe', '••••••••'], accent: 'Entrar a mi restaurante', narration: 'Escribe tus datos personales. No compartas la contraseña: así proteges los cambios de tu carta.', duration: 8.5 },
+      { id: '04-navigation', kind: 'navigation', kicker: 'Ubícate', title: 'Reconoce tu panel', lead: 'Cada sección tiene una tarea concreta.', uiTitle: 'Sirio Automatiza', rows: ['◇  Perfil', '≡  Carta', '⌗  QR', '◔  Estadísticas'], accent: 'Todo listo', narration: 'En la navegación encontrarás Perfil, Carta, QR y Estadísticas. Empezaremos completando los datos que verán tus clientes.', duration: 10 },
+      { id: '05-ready', kind: 'success', kicker: 'Primer paso', title: 'Ya estás dentro', lead: 'Continúa con la identidad de tu restaurante.', uiTitle: 'Siguiente paso', rows: ['Añade tu logo', 'Completa tus datos', 'Guarda el perfil'], accent: 'Ir a Perfil', narration: 'Listo, ya estás dentro. En el siguiente tutorial completarás el perfil para que tu carta se reconozca como tuya.', duration: 9 },
+    ],
+  },
+  {
+    id: '02-profile',
+    slug: 'perfil-restaurante',
+    title: 'Completa tu perfil',
+    description: 'Muestra una identidad y datos de contacto claros en tu carta.',
+    touchAt: 8.8,
+    touchTarget: { x: 30, y: 46 },
+    beats: [
+      { id: '06-identity', kind: 'opening', kicker: 'Tutorial 2 · Perfil', title: 'Haz que te reconozcan', lead: 'Tu identidad aparece junto a tu carta.', uiTitle: 'Tu perfil', rows: ['Logo', 'Nombre del restaurante', 'Datos de contacto'], accent: 'Completar perfil', narration: 'Un perfil claro hace que tus clientes reconozcan tu restaurante cuando abren la carta desde el QR.', duration: 9 },
+      { id: '07-open-profile', kind: 'navigation', kicker: 'Navegación', title: 'Abre Perfil', lead: 'Encuentra esta sección en tu panel.', uiTitle: 'Panel del restaurante', rows: ['◇  Perfil', '≡  Carta', '⌗  QR', '◔  Estadísticas'], accent: 'Perfil seleccionado', narration: 'Primero, toca Perfil en la navegación. Aquí reúnes la información básica que acompaña a tu carta.', duration: 8.5 },
+      { id: '08-upload-logo', kind: 'upload', kicker: 'Identidad visual', title: 'Sube tu logo', lead: 'Revisa la imagen antes de guardar.', uiTitle: 'Logo del restaurante', rows: ['Subir logo', 'PNG · JPG · WebP', 'Vista previa'], accent: 'Elegir imagen', narration: 'Sube el logo de tu restaurante en formato PNG, JPG o WebP. Antes de continuar, revisa que la vista previa se vea bien.', duration: 10 },
+      { id: '09-contact-fields', kind: 'form', kicker: 'Para tus clientes', title: 'Agrega tus datos', lead: 'Haz que sea fácil encontrarte.', uiTitle: 'Datos de contacto', rows: ['Teléfono', 'WhatsApp', 'Dirección'], accent: 'Datos completos', narration: 'Luego agrega teléfono, WhatsApp y dirección. Estos datos ayudan a tus clientes a contactarte o ubicarte rápidamente.', duration: 9.5 },
+      { id: '10-save-profile', kind: 'success', kicker: 'Guardar', title: 'Guarda tu perfil', lead: 'Tus redes sociales son opcionales.', uiTitle: 'Información del restaurante', rows: ['Instagram', 'Facebook o TikTok', 'Todo revisado'], accent: 'Guardar perfil', narration: 'Si quieres, añade también tus redes. Cuando termines, toca Guardar perfil para conservar los cambios.', duration: 9 },
+    ],
+  },
+  {
+    id: '03-digitize',
+    slug: 'digitaliza-carta',
+    title: 'Digitaliza tu carta',
+    description: 'Convierte fotos claras del menú en un borrador editable.',
+    touchAt: 23.4,
+    touchTarget: { x: 50, y: 75 },
+    beats: [
+      { id: '11-menu-digitization', kind: 'opening', kicker: 'Tutorial 3 · Carta', title: 'Convierte tu carta', lead: 'Pasa de fotos a un borrador digital.', uiTitle: 'Carta del restaurante', rows: ['Fotos de tu carta', 'Categorías', 'Platos y precios'], accent: 'Crear borrador', narration: 'Sirio puede convertir las fotos de tu carta en un borrador digital que después podrás revisar y ajustar.', duration: 8.5 },
+      { id: '12-open-menu', kind: 'navigation', kicker: 'Navegación', title: 'Abre Carta', lead: 'Prepara una nueva versión de tu menú.', uiTitle: 'Panel del restaurante', rows: ['◇  Perfil', '≡  Carta', '⌗  QR', '◔  Estadísticas'], accent: 'Carta seleccionada', narration: 'Abre la sección Carta. Desde aquí crearás una nueva versión sin cambiar todavía lo que ven tus clientes.', duration: 8.5 },
+      { id: '13-photo-quality', kind: 'comparison', kicker: 'Antes de subir', title: 'Fotografía con claridad', lead: 'Buena luz y cada página completa.', uiTitle: 'Revisa tus fotos', rows: ['✕  Oscura o inclinada', '✓  Nítida y completa', 'Texto enfocado'], accent: 'Fotos listas', narration: 'Toma las fotos con buena luz, sin sombras y mostrando cada página completa. Mientras más claro esté el texto, mejor será el borrador.', duration: 10.5 },
+      { id: '14-upload-pages', kind: 'upload', kicker: 'Carga de archivos', title: 'Sube las páginas', lead: 'Selecciona las fotos de tu carta.', uiTitle: 'Fotos del menú', rows: ['Página 1  ·  Lista', 'Página 2  ·  Lista', 'Hasta 5 imágenes'], accent: 'Digitalizar carta', narration: 'Selecciona las páginas de tu carta y toca Digitalizar carta. Puedes subir varias imágenes para cubrir todo tu menú.', duration: 10 },
+      { id: '15-processing', kind: 'processing', kicker: 'Preparación', title: 'Sirio crea el borrador', lead: 'Revisa el resultado antes de publicar.', uiTitle: 'Procesando carta', rows: ['Leyendo páginas', 'Reconociendo platos', 'Preparando borrador'], accent: 'Borrador en preparación', narration: 'Sirio leerá las imágenes y organizará los platos, precios y categorías en un borrador. Espera a que termine para revisarlo.', duration: 9.5 },
+      { id: '16-draft-safe', kind: 'success', kicker: 'Sin riesgos', title: 'Tu QR sigue igual', lead: 'Los clientes conservan la carta publicada.', uiTitle: 'Borrador seguro', rows: ['Borrador privado', 'Carta pública actual', 'QR permanente'], accent: 'Revisar borrador', narration: 'Mientras trabajas en el borrador, tus clientes siguen viendo la carta publicada. El QR no cambia ni deja de funcionar.', duration: 10 },
+    ],
+  },
+  {
+    id: '04-publish',
+    slug: 'revisa-y-publica',
+    title: 'Revisa y publica',
+    description: 'Valida el borrador y actualiza la carta que ven los clientes.',
+    touchAt: 32.4,
+    touchTarget: { x: 50, y: 74 },
+    beats: [
+      { id: '17-review-draft', kind: 'opening', kicker: 'Tutorial 4 · Publicar', title: 'Revisa antes de publicar', lead: 'El borrador y la carta pública son distintos.', uiTitle: 'Control de publicación', rows: ['Tu borrador', 'Carta pública', 'QR permanente'], accent: 'Abrir borrador', narration: 'Antes de publicar, revisa el borrador con calma. Es independiente de la carta pública que tus clientes ven hoy.', duration: 9 },
+      { id: '18-order-categories', kind: 'list', kicker: 'Orden de lectura', title: 'Ordena secciones', lead: 'Haz que la carta sea fácil de leer.', uiTitle: 'Categorías', rows: ['01  Entradas', '02  Fondos', '03  Bebidas'], accent: 'Orden actualizado', narration: 'Ordena las categorías como quieres que aparezcan en el teléfono. Una carta clara ayuda a decidir más rápido.', duration: 9 },
+      { id: '19-product-availability', kind: 'form', kicker: 'Cada plato', title: 'Ajusta cada producto', lead: 'Corrige datos y marca los agotados.', uiTitle: 'Editar producto', rows: ['Nombre y precio', 'Descripción', 'Disponible'], accent: 'Guardar producto', narration: 'Revisa el nombre, precio y descripción de cada plato. Si algo se agotó, marca el producto como no disponible.', duration: 10 },
+      { id: '20-preview', kind: 'preview', kicker: 'Vista móvil', title: 'Abre la previsualización', lead: 'Comprueba cómo se leerá tu carta.', uiTitle: 'Previsualización', rows: ['Categorías claras', 'Precios visibles', 'Lectura móvil'], accent: 'Previsualizar borrador', narration: 'Abre la previsualización para comprobar cómo leerán tu carta desde el celular. Revisa categorías, productos y precios.', duration: 10 },
+      { id: '21-publish', kind: 'publish', kicker: 'Última revisión', title: 'Publica los cambios', lead: 'Confirma solo cuando estés conforme.', uiTitle: 'Publicar carta', rows: ['Borrador revisado', 'Cambios confirmados', 'Lista para clientes'], accent: 'Publicar carta', narration: 'Cuando todo esté correcto, toca Publicar carta y confirma. Esta acción actualiza la versión que visitan tus clientes.', duration: 10 },
+      { id: '22-public-updated', kind: 'success', kicker: 'Actualización lista', title: 'La carta está al día', lead: 'Ahora puedes compartir tu QR.', uiTitle: 'Carta publicada', rows: ['Carta pública actualizada', 'QR listo', 'Clientes informados'], accent: 'Ir a QR', narration: 'Tu carta pública ya está actualizada. El siguiente paso es usar el mismo QR para compartirla donde atiendes.', duration: 9 },
+    ],
+  },
+  {
+    id: '05-qr',
+    slug: 'comparte-qr',
+    title: 'Comparte tu QR',
+    description: 'Descarga y prueba el código que lleva siempre a la carta actual.',
+    touchAt: 17.2,
+    touchTarget: { x: 50, y: 74 },
+    beats: [
+      { id: '23-permanent-qr', kind: 'qr', kicker: 'Tutorial 5 · QR', title: 'Un QR, siempre actualizado', lead: 'Cambia la carta sin reimprimirlo.', uiTitle: 'Código QR permanente', rows: ['Mismo enlace', 'Carta al día', 'Listo para compartir'], accent: 'Ver mi QR', narration: 'Tu código QR es permanente. Cada vez que publiques la carta, el mismo código mostrará la versión más reciente.', duration: 9.5 },
+      { id: '24-open-qr', kind: 'navigation', kicker: 'Navegación', title: 'Abre QR', lead: 'Encuentra las opciones para compartir.', uiTitle: 'Panel del restaurante', rows: ['◇  Perfil', '≡  Carta', '⌗  QR', '◔  Estadísticas'], accent: 'QR seleccionado', narration: 'Abre la sección QR en tu panel. Aquí encontrarás las opciones para descargar y probar el código.', duration: 8.5 },
+      { id: '25-download-formats', kind: 'download', kicker: 'Formatos', title: 'Elige un formato', lead: 'Descarga el archivo que necesitas.', uiTitle: 'Descargar QR', rows: ['PNG  ·  Uso rápido', 'SVG  ·  Imprenta', 'Ambos llevan a tu carta'], accent: 'Descargar PNG', narration: 'Descarga PNG para compartir rápido en pantalla. Elige SVG si lo enviarás a imprimir, porque conserva la calidad al ampliar.', duration: 10 },
+      { id: '26-copy-link', kind: 'link', kicker: 'Prueba rápida', title: 'Prueba el enlace', lead: 'Copia y abre la dirección permanente.', uiTitle: 'Enlace de tu carta', rows: ['Enlace permanente', 'Copiar enlace', 'Abrir carta pública'], accent: 'Copiar enlace', narration: 'También puedes copiar el enlace y abrirlo en tu celular. Así confirmas que la carta pública se vea como esperas.', duration: 9.5 },
+      { id: '27-share-qr', kind: 'share', kicker: 'En cada punto', title: 'Compártelo donde atiendes', lead: 'El mismo QR funciona en todos tus canales.', uiTitle: 'Dónde usar tu QR', rows: ['Mesa', 'Cartel', 'Redes sociales'], accent: 'Listo para compartir', narration: 'Coloca el QR en mesas, carteles y redes. No necesitas generar otro: todos llevan a la misma carta actualizada.', duration: 9.5 },
+      { id: '28-close', kind: 'closing', kicker: 'Tu flujo completo', title: 'Actualiza. Publica. Comparte.', lead: 'Tu carta está lista para cada mesa.', uiTitle: 'Sirio Automatiza', rows: ['Perfil completo', 'Carta publicada', 'QR compartido'], accent: 'Tu carta está lista', narration: 'Eso es todo. Completa tu perfil, prepara la carta, publícala y comparte tu QR. Sirio queda listo para cada mesa.', duration: 10 },
+    ],
+  },
+];
+
+export const ALL_BEATS = TUTORIALS.flatMap((tutorial) =>
+  tutorial.beats.map((beat, index) => ({ ...beat, tutorialId: tutorial.id, tutorialTitle: tutorial.title, index })),
+);
+

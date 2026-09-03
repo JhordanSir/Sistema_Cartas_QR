@@ -243,6 +243,16 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     await page.getByRole('link', { name: 'Descargar SVG' }).click();
     expect((await svgDownload).suggestedFilename()).toBe(`${restaurant.slug}-qr.svg`);
 
+    await page.getByRole('link', { name: 'Ayuda' }).click();
+    await expect(page).toHaveURL(`${webUrl}/admin/help`);
+    await expect(page.getByRole('heading', {
+      name: 'Aprende a manejar tu carta desde el celular.',
+    })).toBeVisible();
+    const tutorials = page.locator('video');
+    await expect(tutorials).toHaveCount(5);
+    await expect(tutorials.first()).toHaveAttribute('playsinline', '');
+    await expect(tutorials.first().locator('track[kind="subtitles"]')).toHaveAttribute('src', '/tutorials/01-access.vtt');
+
     const publicPage = await context.newPage();
     await publicPage.goto(`${webUrl}/${restaurant.slug}`, { waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Croquetas de ají' })).toBeVisible();
@@ -276,6 +286,26 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
       path: test.info().outputPath('phase-six-mobile-menu.png'),
     });
     await mobileContext.close();
+
+    const helpMobileContext = await browser.newContext({
+      isMobile: true,
+      storageState: await context.storageState(),
+      viewport: { height: 844, width: 390 },
+    });
+    const helpMobilePage = await helpMobileContext.newPage();
+    await helpMobilePage.goto(`${webUrl}/admin/help`, { waitUntil: 'networkidle' });
+    await expect(helpMobilePage.getByRole('heading', {
+      name: 'Aprende a manejar tu carta desde el celular.',
+    })).toBeVisible();
+    await expect(helpMobilePage.locator('video')).toHaveCount(5);
+    expect(await helpMobilePage.evaluate(() =>
+      document.documentElement.scrollWidth <= window.innerWidth,
+    )).toBe(true);
+    await helpMobilePage.screenshot({
+      fullPage: true,
+      path: test.info().outputPath('phase-eight-mobile-help.png'),
+    });
+    await helpMobileContext.close();
 
     const disable = await request.patch(
       `${directApiUrl}/backoffice/restaurants/${restaurant.id}/status`,

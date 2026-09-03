@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="es" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  </head>
+  <body>
+    <div id="root" data-composition-id="04-publish" data-width="1080" data-height="1920" data-duration="57.131">
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:wght@500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        #root { --canvas: #f7f1e7; --paper: #fffdf8; --ink: #29271f; --olive: #315b45; --copper: #b75b38; --teal: #1598a6; position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--canvas); color: var(--ink); font-family: Montserrat, Arial, sans-serif; }
+        .scene { position: absolute; inset: 0; overflow: hidden; opacity: 0; visibility: hidden; }
+        .paper-sun { position: absolute; top: -260px; right: -170px; width: 640px; height: 640px; border: 2px solid rgba(183,91,56,.2); border-radius: 50%; box-shadow: 0 0 0 72px rgba(183,91,56,.045), 0 0 0 144px rgba(183,91,56,.025); }
+        .paper-line { position: absolute; width: 1px; background: rgba(49,91,69,.18); }
+        .paper-line-a { top: 128px; bottom: 210px; left: 72px; }
+        .paper-line-b { top: 310px; right: 72px; height: 360px; }
+        .scene-meta { position: absolute; top: 78px; right: 72px; left: 96px; display: flex; justify-content: space-between; color: var(--olive); font-size: 18px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+        .scene-meta span:last-child { color: var(--copper); font-variant-numeric: tabular-nums; }
+        .scene-copy { position: absolute; top: 164px; right: 78px; left: 96px; z-index: 2; }
+        .ticket { display: inline-flex; min-height: 42px; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; border: 2px solid var(--ink); border-radius: 7px; background: var(--paper); color: var(--olive); font-size: 16px; font-weight: 800; letter-spacing: .075em; text-transform: uppercase; box-shadow: 6px 6px 0 rgba(41,39,31,.12); }
+        .ticket b { display: grid; width: 30px; height: 28px; place-items: center; background: var(--copper); color: white; font-size: 14px; }
+        h1 { max-width: 860px; margin: 38px 0 20px; font-family: 'Archivo Black', sans-serif; font-size: 76px; font-weight: 400; letter-spacing: -.065em; line-height: .98; text-wrap: balance; }
+        .scene-copy p { max-width: 660px; margin: 0; color: #5e5a4e; font-size: 28px; font-weight: 600; line-height: 1.42; text-wrap: pretty; }
+        .phone { position: absolute; z-index: 2; right: 116px; bottom: 194px; left: 116px; height: 960px; padding: 40px 38px 30px; border: 7px solid var(--ink); border-radius: 68px; background: var(--paper); box-shadow: 16px 18px 0 var(--ink), 0 28px 54px rgba(41,39,31,.18); overflow: hidden; }
+        .phone::before { position: absolute; inset: 16px; border: 1px dashed rgba(49,91,69,.2); border-radius: 49px; content: ''; pointer-events: none; }
+        .phone-speaker { width: 172px; height: 24px; border-radius: 999px; margin: 0 auto 30px; background: var(--ink); }
+        .phone-topline { position: relative; display: flex; justify-content: space-between; color: var(--ink); font-size: 23px; font-weight: 800; letter-spacing: -.03em; }
+        .phone-live { color: var(--teal); font-size: 15px; letter-spacing: .07em; text-transform: uppercase; }
+        .phone-panel { position: relative; min-height: 700px; padding: 36px; border: 2px solid rgba(41,39,31,.14); border-radius: 30px; margin-top: 32px; background: #fff; }
+        .ui-label { max-width: 74%; color: var(--ink); font-size: 40px; font-weight: 800; letter-spacing: -.045em; line-height: 1.04; }
+        .phone-logo { display: block; width: 86px; height: 86px; border-radius: 24px; margin: 22px 0 -4px; object-fit: cover; box-shadow: 0 8px 16px rgba(41,39,31,.14); }
+        .ui-rows { display: grid; gap: 0; margin-top: 32px; }
+        .ui-row { display: flex; min-height: 78px; align-items: center; gap: 16px; border-top: 1px solid rgba(41,39,31,.13); color: #4d4a41; font-size: 23px; font-weight: 700; }
+        .row-dot { display: grid; width: 32px; height: 32px; flex: 0 0 auto; border-radius: 50%; background: #e3eee5; color: var(--olive); font-size: 12px; place-items: center; }
+        .ui-row-final { color: var(--ink); }
+        .toggle { display: grid; width: 30px; height: 30px; border-radius: 50%; margin-left: auto; background: var(--olive); color: white; font-size: 17px; place-items: center; }
+        .ui-action { position: absolute; right: 36px; bottom: 34px; left: 36px; display: flex; min-height: 68px; align-items: center; justify-content: space-between; padding: 14px 20px; border-radius: 15px; background: var(--olive); color: white; font-size: 21px; font-weight: 800; box-shadow: 0 10px 20px rgba(49,91,69,.2); }
+        .ui-action span { font-size: 28px; }
+        .phone-nav { position: absolute; right: 42px; bottom: 30px; left: 42px; display: flex; justify-content: space-around; color: #817b6c; font-size: 15px; font-weight: 800; }
+        .phone-nav-active { color: var(--olive); }
+        .phone-login .phone-panel, .phone-form .phone-panel { background: #fcfaf4; }
+        .phone-login .ui-row { padding: 0 18px; border: 2px solid rgba(41,39,31,.15); border-radius: 14px; margin-bottom: 16px; background: white; color: #817b6c; }
+        .phone-login .row-dot { display: none; }
+        .phone-navigation .phone-panel { padding-right: 0; padding-left: 0; background: var(--ink); }
+        .phone-navigation .ui-label { padding: 0 36px; color: white; }
+        .phone-navigation .ui-rows { margin-top: 26px; }
+        .phone-navigation .ui-row { min-height: 88px; padding: 0 36px; border-color: rgba(255,255,255,.15); background: transparent; color: white; }
+        .phone-navigation .ui-row:nth-child(2) { background: rgba(21,152,166,.22); }
+        .phone-navigation .row-dot { background: var(--teal); color: white; }
+        .phone-navigation .ui-action { right: 36px; left: 36px; background: var(--copper); }
+        .phone-upload .phone-panel { background: #e0f4f2; }
+        .phone-upload .ui-label::after { display: grid; width: 122px; height: 92px; border: 3px dashed var(--teal); border-radius: 18px; margin: 24px 0 -4px; color: var(--teal); content: '↑'; font-size: 52px; place-items: center; }
+        .phone-comparison .ui-row:first-child { color: #9a4038; }
+        .phone-comparison .ui-row:nth-child(2) { color: var(--olive); }
+        .comparison-note { display: block; padding: 14px; border-radius: 12px; margin-top: 22px; background: #e3eee5; color: var(--olive); font-size: 17px; font-weight: 800; }
+        .phone-processing .phone-panel { overflow: hidden; background: #0f2421; color: white; }
+        .phone-processing .ui-label, .phone-processing .ui-row { color: white; }
+        .phone-processing .ui-row { border-color: rgba(255,255,255,.17); }
+        .phone-processing .row-dot { background: var(--teal); color: white; }
+        .scan-line { position: absolute; top: 160px; right: 24px; left: 24px; height: 5px; background: var(--teal); box-shadow: 0 0 22px var(--teal); }
+        .phone-processing .ui-action { background: var(--teal); }
+        .status-mark { display: grid; width: 74px; height: 74px; border-radius: 50%; margin: 24px 0 -10px; background: var(--teal); color: white; font-size: 40px; place-items: center; }
+        .phone-success .phone-panel, .phone-closing .phone-panel { background: #e3eee5; }
+        .phone-publish .ui-action, .phone-download .ui-action, .phone-link .ui-action { background: var(--copper); }
+        .phone-preview .phone-panel { background: #f3eadb; }
+        .qr-code { display: grid; width: 198px; height: 198px; grid-template-columns: repeat(7, 1fr); grid-template-rows: repeat(7, 1fr); gap: 5px; padding: 14px; border: 8px solid var(--ink); border-radius: 14px; margin: 24px 0 10px; background: white; }
+        .qr-code i { background: transparent; }
+        .qr-code .qr-fill { background: var(--ink); }
+        .phone-qr .phone-panel, .phone-share .phone-panel { background: #e0f4f2; }
+        .phone-qr .ui-rows, .phone-share .ui-rows, .phone-closing .ui-rows { margin-top: 12px; }
+        .caption { position: absolute; z-index: 4; right: 92px; bottom: 64px; left: 92px; display: grid; min-height: 104px; align-items: center; padding: 20px 26px; border: 2px solid rgba(41,39,31,.15); border-radius: 18px; background: rgba(255,253,248,.96); box-shadow: 0 10px 30px rgba(41,39,31,.11); color: var(--ink); font-size: 21px; font-weight: 700; line-height: 1.35; text-align: center; }
+      </style>
+      <section id="scene-04-publish-0" class="scene scene-0" aria-hidden="false">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>01 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>01</b>Tutorial 4 · Publicar</span>
+      <h1>Revisa antes de publicar</h1>
+      <p>El borrador y la carta pública son distintos.</p>
+    </main>
+    <section class="phone phone-opening" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Control de publicación</div>
+      <img class="phone-logo" src=".media/images/logo_001.webp" alt="" />
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>Tu borrador</span></div><div class="ui-row"><span class="row-dot">02</span><span>Carta pública</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>QR permanente</span></div></div>
+      
+      <div class="ui-action">Abrir borrador<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Antes de publicar, revisa el borrador con calma. Es independiente de la carta pública que tus clientes ven hoy.</span></div>
+  </section>
+<section id="scene-04-publish-1" class="scene scene-1" aria-hidden="true">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>02 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>02</b>Orden de lectura</span>
+      <h1>Ordena secciones</h1>
+      <p>Haz que la carta sea fácil de leer.</p>
+    </main>
+    <section class="phone phone-list" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Categorías</div>
+      
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>01  Entradas</span></div><div class="ui-row"><span class="row-dot">02</span><span>02  Fondos</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>03  Bebidas</span></div></div>
+      
+      <div class="ui-action">Orden actualizado<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Ordena las categorías como quieres que aparezcan en el teléfono. Una carta clara ayuda a decidir más rápido.</span></div>
+  </section>
+<section id="scene-04-publish-2" class="scene scene-2" aria-hidden="true">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>03 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>03</b>Cada plato</span>
+      <h1>Ajusta cada producto</h1>
+      <p>Corrige datos y marca los agotados.</p>
+    </main>
+    <section class="phone phone-form" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Editar producto</div>
+      
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>Nombre y precio</span></div><div class="ui-row"><span class="row-dot">02</span><span>Descripción</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>Disponible</span><span class="toggle">✓</span></div></div>
+      
+      <div class="ui-action">Guardar producto<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Revisa el nombre, precio y descripción de cada plato. Si algo se agotó, marca el producto como no disponible.</span></div>
+  </section>
+<section id="scene-04-publish-3" class="scene scene-3" aria-hidden="true">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>04 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>04</b>Vista móvil</span>
+      <h1>Abre la previsualización</h1>
+      <p>Comprueba cómo se leerá tu carta.</p>
+    </main>
+    <section class="phone phone-preview" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Previsualización</div>
+      
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>Categorías claras</span></div><div class="ui-row"><span class="row-dot">02</span><span>Precios visibles</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>Lectura móvil</span></div></div>
+      
+      <div class="ui-action">Previsualizar borrador<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Abre la previsualización para comprobar cómo leerán tu carta desde el celular. Revisa categorías, productos y precios.</span></div>
+  </section>
+<section id="scene-04-publish-4" class="scene scene-4" aria-hidden="true">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>05 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>05</b>Última revisión</span>
+      <h1>Publica los cambios</h1>
+      <p>Confirma solo cuando estés conforme.</p>
+    </main>
+    <section class="phone phone-publish" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Publicar carta</div>
+      
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>Borrador revisado</span></div><div class="ui-row"><span class="row-dot">02</span><span>Cambios confirmados</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>Lista para clientes</span></div></div>
+      
+      <div class="ui-action">Publicar carta<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Cuando todo esté correcto, toca Publicar carta y confirma. Esta acción actualiza la versión que visitan tus clientes.</span></div>
+  </section>
+<section id="scene-04-publish-5" class="scene scene-5" aria-hidden="true">
+    <div class="paper-sun"></div><div class="paper-line paper-line-a"></div><div class="paper-line paper-line-b"></div>
+    <header class="scene-meta"><span>Revisa y publica</span><span>06 / 06</span></header>
+    <main class="scene-copy">
+      <span class="ticket"><b>06</b>Actualización lista</span>
+      <h1>La carta está al día</h1>
+      <p>Ahora puedes compartir tu QR.</p>
+    </main>
+    <section class="phone phone-success" aria-label="Interfaz simulada de Sirio">
+    <div class="phone-speaker"></div>
+    <div class="phone-topline"><span>Sirio</span><span class="phone-live">Guía móvil</span></div>
+    <div class="phone-panel">
+      <div class="ui-label">Carta publicada</div>
+      <span class="status-mark">✓</span>
+      <div class="ui-rows"><div class="ui-row"><span class="row-dot">01</span><span>Carta pública actualizada</span></div><div class="ui-row"><span class="row-dot">02</span><span>QR listo</span></div><div class="ui-row ui-row-final"><span class="row-dot">03</span><span>Clientes informados</span></div></div>
+      
+      <div class="ui-action">Ir a QR<span>→</span></div>
+    </div>
+    <div class="phone-nav"><span>Perfil</span><span class="phone-nav-active">Carta</span><span>QR</span></div>
+  </section>
+    <div class="caption" aria-live="off"><span>Tu carta pública ya está actualizada. El siguiente paso es usar el mismo QR para compartirla donde atiendes.</span></div>
+  </section>
+      <audio id="audio-17-review-draft" src="assets/audio/17-review-draft.wav" data-start="0" data-duration="7.091" data-track-index="40"></audio>
+<audio id="audio-18-order-categories" src="assets/audio/18-order-categories.wav" data-start="9" data-duration="8.091" data-track-index="41"></audio>
+<audio id="audio-19-product-availability" src="assets/audio/19-product-availability.wav" data-start="18" data-duration="8.331" data-track-index="42"></audio>
+<audio id="audio-20-preview" src="assets/audio/20-preview.wav" data-start="28" data-duration="9.331" data-track-index="43"></audio>
+<audio id="audio-21-publish" src="assets/audio/21-publish.wav" data-start="38" data-duration="8.931" data-track-index="44"></audio>
+<audio id="audio-22-public-updated" src="assets/audio/22-public-updated.wav" data-start="48" data-duration="8.531" data-track-index="45"></audio>
+      <div id="tap-04-publish" data-composition-id="touch-indicator" data-composition-src="compositions/components/touch-indicator.html" data-start="32.400" data-duration="0.7" data-track-index="8" data-variable-values='{"gesture":"tap","polarity":"dark","targetX":50,"targetY":74}'></div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      const tl = gsap.timeline({ paused: true });
+      const scenes = gsap.utils.toArray('#root .scene');
+      const captions = gsap.utils.toArray('#root .caption');
+      gsap.set(scenes, { autoAlpha: 0, y: 0 });
+      gsap.set(captions, { autoAlpha: 0, y: 20 });
+      tl.set(scenes[0], { autoAlpha: 1, y: 0 }, 0);
+      tl.to('#root .paper-sun', { rotation: 3, duration: 57.131, ease: 'none' }, 0);
+      tl.to('#scene-04-publish-0', { autoAlpha: 0, y: -74, duration: 0.45, ease: 'power2.inOut' }, 8.550);
+        tl.fromTo('#scene-04-publish-1', { autoAlpha: 0, y: 106 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 8.550);
+        tl.to('#scene-04-publish-1', { autoAlpha: 0, y: -74, duration: 0.45, ease: 'power2.inOut' }, 17.550);
+        tl.fromTo('#scene-04-publish-2', { autoAlpha: 0, y: 106 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 17.550);
+        tl.to('#scene-04-publish-2', { autoAlpha: 0, y: -74, duration: 0.45, ease: 'power2.inOut' }, 27.550);
+        tl.fromTo('#scene-04-publish-3', { autoAlpha: 0, y: 106 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 27.550);
+        tl.to('#scene-04-publish-3', { autoAlpha: 0, y: -74, duration: 0.45, ease: 'power2.inOut' }, 37.550);
+        tl.fromTo('#scene-04-publish-4', { autoAlpha: 0, y: 106 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 37.550);
+        tl.to('#scene-04-publish-4', { autoAlpha: 0, y: -74, duration: 0.45, ease: 'power2.inOut' }, 47.550);
+        tl.fromTo('#scene-04-publish-5', { autoAlpha: 0, y: 106 }, { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power2.out', immediateRender: false }, 47.550);
+      tl.fromTo('#scene-04-publish-0 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 0.000);
+        tl.fromTo('#scene-04-publish-1 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 9.000);
+        tl.fromTo('#scene-04-publish-2 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 18.000);
+        tl.fromTo('#scene-04-publish-3 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 28.000);
+        tl.fromTo('#scene-04-publish-4 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 38.000);
+        tl.fromTo('#scene-04-publish-5 .caption', { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out', immediateRender: false }, 48.000);
+      window.__timelines['04-publish'] = tl;
+    </script>
+  </body>
+</html>

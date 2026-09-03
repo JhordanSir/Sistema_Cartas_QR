@@ -1,0 +1,17 @@
+{
+  "name": "sirio-owner-tutorials",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.26 preview",
+    "sketches": "node scripts/generate-sketches.mjs",
+    "videos": "node scripts/generate-videos.mjs",
+    "tts": "node scripts/gemini-tts.mjs",
+    "tts:resume": "node scripts/gemini-tts.mjs --from=1 --to=28",
+    "publish:assets": "node scripts/publish-tutorial-assets.mjs",
+    "test": "node --test scripts/gemini-tts.test.mjs",
+    "check": "npx --yes hyperframes@0.8.26 check",
+    "render": "npx --yes hyperframes@0.8.26 render",
+    "publish": "npx --yes hyperframes@0.8.26 publish"
+  }
+}

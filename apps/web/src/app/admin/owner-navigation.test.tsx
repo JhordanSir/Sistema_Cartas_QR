@@ -30,6 +30,7 @@ describe('OwnerNavigation', () => {
     expect(screen.getByRole('link', { name: 'Carta' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Perfil' })).not.toHaveAttribute('aria-current');
     expect(screen.getByRole('link', { name: 'QR' })).toHaveAttribute('href', '/admin/qr');
+    expect(screen.getByRole('link', { name: 'Ayuda' })).toHaveAttribute('href', '/admin/help');
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
   });
 
