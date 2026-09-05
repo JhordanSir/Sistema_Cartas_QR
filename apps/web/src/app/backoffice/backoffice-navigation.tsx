@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { NavItem, SideRail } from '@/components/side-rail';
 
 export function BackofficeNavigation({ active }: { active: 'restaurants' | 'statistics' }) {
   const router = useRouter();
@@ -14,22 +14,13 @@ export function BackofficeNavigation({ active }: { active: 'restaurants' | 'stat
   }
 
   return (
-    <aside className="side-rail">
-      <Link className="brand-lockup" href="/">
-        <Image alt="" className="brand-mark-image" height={36} src="/brand/sirio-logo.webp" width={36} />
-        <span>Sirio <b>Automatiza</b></span>
-      </Link>
-      <nav aria-label="Backoffice">
-        <Link aria-current={active === 'restaurants' ? 'page' : undefined} className={`nav-item ${active === 'restaurants' ? 'nav-item-active' : ''}`} href="/backoffice">
-          <span aria-hidden="true">▦</span> Restaurantes
-        </Link>
-        <Link aria-current={active === 'statistics' ? 'page' : undefined} className={`nav-item ${active === 'statistics' ? 'nav-item-active' : ''}`} href="/backoffice/statistics">
-          <span aria-hidden="true">◔</span> Estadísticas
-        </Link>
-      </nav>
-      <button className="nav-item nav-button" onClick={logout} type="button">
-        <span aria-hidden="true">↗</span> Cerrar sesión
-      </button>
-    </aside>
+    <SideRail label="Backoffice" onLogout={() => void logout()}>
+      <NavItem active={active === 'restaurants'} href="/backoffice" icon="▦">
+        Restaurantes
+      </NavItem>
+      <NavItem active={active === 'statistics'} href="/backoffice/statistics" icon="◔">
+        Estadísticas
+      </NavItem>
+    </SideRail>
   );
 }

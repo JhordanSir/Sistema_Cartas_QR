@@ -2,6 +2,9 @@
 
 import { type FormEvent, useState } from 'react';
 
+import { Button, InlineAction, TextAction } from '@/components/button';
+import { Field, fieldControl } from '@/components/field';
+import { ModalBackdrop, ModalFooter, modalPanel, modalPanelWide } from '@/components/modal';
 import type {
   MenuCategory,
   MenuOption,
@@ -200,29 +203,44 @@ export function MenuManager({
 
   return (
     <>
-      <div className="menu-result-toolbar">
-        <span>{categories.length} secciones · {countProducts(menu)} productos</span>
-        <button className="text-action" onClick={() => setCategoryEditor('new')} type="button">
-          + Nueva sección
-        </button>
+      <div className="flex items-center justify-between gap-4 border-y border-line px-5 py-2 text-[11px] font-bold text-ink-muted sm:px-8">
+        <span>
+          {categories.length} secciones · {countProducts(menu)} productos
+        </span>
+        <TextAction onClick={() => setCategoryEditor('new')}>+ Nueva sección</TextAction>
       </div>
-      <div className="owner-menu-result">
+
+      <div className="grid">
         {categories.length === 0 ? (
-          <div className="menu-result-empty">
-            <span aria-hidden="true">✦</span>
-            <p>Crea la primera sección para empezar tu carta.</p>
+          <div className="grid min-h-[25rem] content-center justify-items-center gap-2 text-ink-muted">
+            <span aria-hidden="true" className="text-3xl text-copper">
+              ✦
+            </span>
+            <p className="m-0">Crea la primera sección para empezar tu carta.</p>
           </div>
         ) : null}
+
         {categories.map((category, categoryIndex) => {
           const products = category.products.filter(hasId);
           return (
-            <section className="managed-category" key={category.id}>
-              <header className="managed-category-header">
-                <div>
-                  <span className="category-folio">{String(categoryIndex + 1).padStart(2, '0')}</span>
-                  <h3>{category.name}</h3>
+            <section
+              className="border-b border-line px-5 pt-6 pb-3 last:border-b-0 sm:px-8"
+              data-testid="managed-category"
+              key={category.id}
+            >
+              <header className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+                <div className="flex items-baseline gap-2.5">
+                  <span className="font-display text-[11px] text-ink-muted tabular-nums">
+                    {String(categoryIndex + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="m-0 font-display text-xl tracking-tight text-copper sm:text-2xl">
+                    {category.name}
+                  </h3>
                 </div>
-                <div className="row-actions" aria-label={`Acciones de ${category.name}`}>
+                <div
+                  aria-label={`Acciones de ${category.name}`}
+                  className="flex flex-wrap items-center gap-1.5"
+                >
                   <OrderButtons
                     disabled={busy !== null}
                     first={categoryIndex === 0}
@@ -230,50 +248,116 @@ export function MenuManager({
                     last={categoryIndex === categories.length - 1}
                     move={(direction) => void moveCategory(categoryIndex, direction)}
                   />
-                  <button aria-label={`Editar sección ${category.name}`} onClick={() => setCategoryEditor(category)} type="button">Editar</button>
-                  <button aria-label={`Eliminar sección ${category.name}`} className="danger-action" onClick={() => void deleteCategory(category)} type="button">Eliminar</button>
+                  <InlineAction
+                    aria-label={`Editar sección ${category.name}`}
+                    onClick={() => setCategoryEditor(category)}
+                  >
+                    Editar
+                  </InlineAction>
+                  <InlineAction
+                    aria-label={`Eliminar sección ${category.name}`}
+                    danger
+                    onClick={() => void deleteCategory(category)}
+                  >
+                    Eliminar
+                  </InlineAction>
                 </div>
               </header>
+
               {products.length === 0 ? (
-                <div className="category-empty">Esta sección aún no tiene productos.</div>
-              ) : products.map((product, productIndex) => (
-                <article className={product.isAvailable === false ? 'is-unavailable' : ''} key={product.id}>
-                  {product.imagePath ? (
-                    // The image comes from the authenticated local BFF endpoint.
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt=""
-                      className="product-thumbnail"
-                      src={`/api/owner/restaurants/${restaurant.id}/menu/products/${product.id}/image?v=${encodeURIComponent(menu.updatedAt)}`}
-                    />
-                  ) : <span className="product-thumbnail product-thumbnail-empty" aria-hidden="true">✦</span>}
-                  <div className="product-copy">
-                    <div className="product-title-line">
-                      <strong>{product.name}</strong>
-                      {product.isAvailable === false ? <em>No disponible</em> : null}
+                <div className="border-t border-line py-4 text-xs text-ink-muted">
+                  Esta sección aún no tiene productos.
+                </div>
+              ) : (
+                products.map((product, productIndex) => (
+                  <article
+                    className={`grid grid-cols-[3.125rem_minmax(0,1fr)_auto] items-start gap-3 border-t border-line py-3 transition-opacity ${
+                      product.isAvailable === false ? 'opacity-60' : ''
+                    }`}
+                    key={product.id}
+                  >
+                    {product.imagePath ? (
+                      // The image comes from the authenticated local BFF endpoint.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt=""
+                        className="block size-12.5 rounded-lg bg-control object-cover"
+                        src={`/api/owner/restaurants/${restaurant.id}/menu/products/${product.id}/image?v=${encodeURIComponent(menu.updatedAt)}`}
+                      />
+                    ) : (
+                      <span
+                        aria-hidden="true"
+                        className="grid size-12.5 place-items-center rounded-lg bg-control text-copper"
+                      >
+                        ✦
+                      </span>
+                    )}
+
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <strong data-testid="product-name">{product.name}</strong>
+                        {product.isAvailable === false ? (
+                          <em className="rounded-full bg-danger-wash px-1.5 py-0.5 text-[8px] font-black tracking-[0.08em] text-danger uppercase not-italic">
+                            No disponible
+                          </em>
+                        ) : null}
+                      </div>
+                      {product.description ? (
+                        <p className="my-1 text-xs/snug text-ink-soft">{product.description}</p>
+                      ) : null}
+                      <small className="text-[10px] text-ink-muted">
+                        {product.variants.length} variantes · {product.extras.length} adicionales
+                      </small>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <OrderButtons
+                          disabled={busy !== null}
+                          first={productIndex === 0}
+                          label={product.name}
+                          last={productIndex === products.length - 1}
+                          move={(direction) => void moveProduct(category, productIndex, direction)}
+                        />
+                        <InlineAction
+                          aria-label={`Editar ${product.name}`}
+                          onClick={() => openProduct(category.id, product)}
+                        >
+                          Editar
+                        </InlineAction>
+                        <InlineAction
+                          aria-label={
+                            product.isAvailable === false
+                              ? `Hacer disponible ${product.name}`
+                              : `Marcar no disponible ${product.name}`
+                          }
+                          onClick={() => void toggleAvailability(product)}
+                        >
+                          {product.isAvailable === false ? 'Hacer disponible' : 'Marcar no disponible'}
+                        </InlineAction>
+                        <InlineAction
+                          aria-label={`Eliminar ${product.name}`}
+                          danger
+                          onClick={() => void deleteProduct(product)}
+                        >
+                          Eliminar
+                        </InlineAction>
+                      </div>
                     </div>
-                    {product.description ? <p>{product.description}</p> : null}
-                    <small>{product.variants.length} variantes · {product.extras.length} adicionales</small>
-                  </div>
-                  <span>S/ {product.basePrice}</span>
-                  <div className="product-actions">
-                    <OrderButtons
-                      disabled={busy !== null}
-                      first={productIndex === 0}
-                      label={product.name}
-                      last={productIndex === products.length - 1}
-                      move={(direction) => void moveProduct(category, productIndex, direction)}
-                    />
-                    <button aria-label={`Editar ${product.name}`} onClick={() => openProduct(category.id, product)} type="button">Editar</button>
-                    <button aria-label={product.isAvailable === false ? `Hacer disponible ${product.name}` : `Marcar no disponible ${product.name}`} onClick={() => void toggleAvailability(product)} type="button">
-                      {product.isAvailable === false ? 'Hacer disponible' : 'Marcar no disponible'}
-                    </button>
-                    <button aria-label={`Eliminar ${product.name}`} className="danger-action" onClick={() => void deleteProduct(product)} type="button">Eliminar</button>
-                  </div>
-                </article>
-              ))}
-              <button className="add-product-row" onClick={() => openProduct(category.id)} type="button">
-                <span>+</span> Añadir producto a {category.name}
+
+                    <span className="text-[13px] font-extrabold whitespace-nowrap text-ink tabular-nums">
+                      S/ {product.basePrice}
+                    </span>
+                  </article>
+                ))
+              )}
+
+              <button
+                className="w-full border-t border-dashed border-line-strong py-3 text-left text-[11px] font-extrabold text-olive"
+                onClick={() => openProduct(category.id)}
+                type="button"
+              >
+                <span className="mr-2 inline-grid size-5.5 place-items-center rounded-full bg-olive-wash">
+                  +
+                </span>
+                Añadir producto a {category.name}
               </button>
             </section>
           );
@@ -281,37 +365,150 @@ export function MenuManager({
       </div>
 
       {categoryEditor ? (
-        <div className="edit-product-backdrop" role="presentation">
-          <form aria-label={categoryEditor === 'new' ? 'Nueva sección' : `Editar ${categoryEditor.name}`} className="edit-product-modal compact-modal" onSubmit={saveCategory}>
-            <span className="kicker">Estructura de la carta</span>
-            <h2>{categoryEditor === 'new' ? 'Nueva sección' : 'Editar sección'}</h2>
-            <label className="field">
-              <span>Nombre</span>
-              <input defaultValue={categoryEditor === 'new' ? '' : categoryEditor.name} maxLength={120} name="name" required autoFocus />
-            </label>
-            <ModalFooter busy={busy !== null} close={() => setCategoryEditor(null)} label="Guardar sección" />
+        <ModalBackdrop>
+          <form
+            aria-label={categoryEditor === 'new' ? 'Nueva sección' : `Editar ${categoryEditor.name}`}
+            className={modalPanel}
+            onSubmit={saveCategory}
+          >
+            <span className="text-[11px] font-extrabold tracking-[0.14em] text-olive uppercase">
+              Estructura de la carta
+            </span>
+            <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
+              {categoryEditor === 'new' ? 'Nueva sección' : 'Editar sección'}
+            </h2>
+            <Field label="Nombre">
+              <input
+                autoFocus
+                className={fieldControl}
+                defaultValue={categoryEditor === 'new' ? '' : categoryEditor.name}
+                maxLength={120}
+                name="name"
+                required
+              />
+            </Field>
+            <EditorFooter
+              busy={busy !== null}
+              close={() => setCategoryEditor(null)}
+              label="Guardar sección"
+            />
           </form>
-        </div>
+        </ModalBackdrop>
       ) : null}
 
       {productDraft ? (
-        <div className="edit-product-backdrop" role="presentation">
-          <form aria-label={productDraft.product ? `Editar ${productDraft.product.name}` : 'Nuevo producto'} className="edit-product-modal product-editor-modal" onSubmit={saveProduct}>
-            <span className="kicker">Ficha de producto</span>
-            <h2>{productDraft.product ? 'Editar producto' : 'Nuevo producto'}</h2>
-            <div className="product-form-grid">
-              <label className="field"><span>Nombre</span><input maxLength={200} onChange={(event) => updateDraft(setProductDraft, { name: event.target.value })} required value={productDraft.name} /></label>
-              <label className="field"><span>Sección</span><select onChange={(event) => updateDraft(setProductDraft, { categoryId: event.target.value })} value={productDraft.categoryId}>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
-              <label className="field product-description-field"><span>Descripción</span><textarea maxLength={2000} onChange={(event) => updateDraft(setProductDraft, { description: event.target.value })} rows={3} value={productDraft.description} /></label>
-              <label className="field"><span>Precio base (S/)</span><input min="0" onChange={(event) => updateDraft(setProductDraft, { basePrice: event.target.value })} required step="0.01" type="number" value={productDraft.basePrice} /></label>
-              <label className="field product-image-field"><span>Imagen opcional</span><input accept="image/jpeg,image/png,image/webp" aria-label="Imagen del producto" onChange={(event) => updateDraft(setProductDraft, { image: event.target.files?.[0] ?? null, removeImage: false })} type="file" /><small>JPG, PNG o WebP · máximo 4 MB</small></label>
-              {productDraft.product?.imagePath ? <label className="remove-image-check"><input checked={productDraft.removeImage} onChange={(event) => updateDraft(setProductDraft, { removeImage: event.target.checked })} type="checkbox" /> Quitar imagen actual</label> : null}
+        <ModalBackdrop>
+          <form
+            aria-label={productDraft.product ? `Editar ${productDraft.product.name}` : 'Nuevo producto'}
+            className={`${modalPanel} ${modalPanelWide}`}
+            onSubmit={saveProduct}
+          >
+            <span className="text-[11px] font-extrabold tracking-[0.14em] text-olive uppercase">
+              Ficha de producto
+            </span>
+            <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
+              {productDraft.product ? 'Editar producto' : 'Nuevo producto'}
+            </h2>
+            <div className="grid gap-3.5 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,0.56fr)]">
+              <Field label="Nombre">
+                <input
+                  className={fieldControl}
+                  maxLength={200}
+                  onChange={(event) => updateDraft(setProductDraft, { name: event.target.value })}
+                  required
+                  value={productDraft.name}
+                />
+              </Field>
+              <Field label="Sección">
+                <select
+                  className={fieldControl}
+                  onChange={(event) =>
+                    updateDraft(setProductDraft, { categoryId: event.target.value })
+                  }
+                  value={productDraft.categoryId}
+                >
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field className="sm:col-span-2" label="Descripción">
+                <textarea
+                  className={`${fieldControl} resize-y`}
+                  maxLength={2000}
+                  onChange={(event) =>
+                    updateDraft(setProductDraft, { description: event.target.value })
+                  }
+                  rows={3}
+                  value={productDraft.description}
+                />
+              </Field>
+              <Field label="Precio base (S/)">
+                <input
+                  className={fieldControl}
+                  min="0"
+                  onChange={(event) =>
+                    updateDraft(setProductDraft, { basePrice: event.target.value })
+                  }
+                  required
+                  step="0.01"
+                  type="number"
+                  value={productDraft.basePrice}
+                />
+              </Field>
+              <Field
+                className="sm:col-span-2"
+                hint="JPG, PNG o WebP · máximo 4 MB"
+                label="Imagen opcional"
+              >
+                <input
+                  accept="image/jpeg,image/png,image/webp"
+                  aria-label="Imagen del producto"
+                  className={`${fieldControl} py-2.5 file:mr-3 file:rounded-md file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-olive`}
+                  onChange={(event) =>
+                    updateDraft(setProductDraft, {
+                      image: event.target.files?.[0] ?? null,
+                      removeImage: false,
+                    })
+                  }
+                  type="file"
+                />
+              </Field>
+              {productDraft.product?.imagePath ? (
+                <label className="flex items-center gap-2 text-xs text-ink-soft sm:col-span-2">
+                  <input
+                    checked={productDraft.removeImage}
+                    className="size-4 accent-olive"
+                    onChange={(event) =>
+                      updateDraft(setProductDraft, { removeImage: event.target.checked })
+                    }
+                    type="checkbox"
+                  />
+                  Quitar imagen actual
+                </label>
+              ) : null}
             </div>
-            <OptionEditor kind="variants" label="Variantes" options={productDraft.variants} setDraft={setProductDraft} />
-            <OptionEditor kind="extras" label="Adicionales" options={productDraft.extras} setDraft={setProductDraft} />
-            <ModalFooter busy={busy !== null} close={() => setProductDraft(null)} label={productDraft.product ? 'Guardar producto' : 'Crear producto'} />
+            <OptionEditor
+              kind="variants"
+              label="Variantes"
+              options={productDraft.variants}
+              setDraft={setProductDraft}
+            />
+            <OptionEditor
+              kind="extras"
+              label="Adicionales"
+              options={productDraft.extras}
+              setDraft={setProductDraft}
+            />
+            <EditorFooter
+              busy={busy !== null}
+              close={() => setProductDraft(null)}
+              label={productDraft.product ? 'Guardar producto' : 'Crear producto'}
+            />
           </form>
-        </div>
+        </ModalBackdrop>
       ) : null}
     </>
   );
@@ -336,16 +533,58 @@ function OptionEditor({
     } : null);
   }
   return (
-    <fieldset className="option-editor">
-      <legend>{label}</legend>
+    <fieldset className="grid gap-2 rounded-xl border border-line p-3.5">
+      <legend className="px-1.5 font-display text-base font-bold text-copper">{label}</legend>
       {options.map((option, index) => (
-        <div className="option-row" key={`${kind}-${index}`}>
-          <input aria-label={`${label} ${index + 1} nombre`} maxLength={120} onChange={(event) => change(index, { name: event.target.value })} placeholder="Nombre" required value={option.name} />
-          <input aria-label={`${label} ${index + 1} precio`} min="0" onChange={(event) => change(index, { price: event.target.value })} placeholder="S/ 0.00" required step="0.01" type="number" value={option.price} />
-          <button aria-label={`Quitar ${label.toLowerCase()} ${index + 1}`} onClick={() => setDraft((current) => current ? { ...current, [kind]: current[kind].filter((_, optionIndex) => optionIndex !== index) } : null)} type="button">×</button>
+        <div
+          className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.75rem] gap-2"
+          key={`${kind}-${index}`}
+        >
+          <input
+            aria-label={`${label} ${index + 1} nombre`}
+            className={`${fieldControl} min-h-11 border-line-strong bg-paper`}
+            maxLength={120}
+            onChange={(event) => change(index, { name: event.target.value })}
+            placeholder="Nombre"
+            required
+            value={option.name}
+          />
+          <input
+            aria-label={`${label} ${index + 1} precio`}
+            className={`${fieldControl} min-h-11 border-line-strong bg-paper`}
+            min="0"
+            onChange={(event) => change(index, { price: event.target.value })}
+            placeholder="S/ 0.00"
+            required
+            step="0.01"
+            type="number"
+            value={option.price}
+          />
+          <button
+            aria-label={`Quitar ${label.toLowerCase()} ${index + 1}`}
+            className="min-h-11 rounded-lg bg-danger-wash text-lg text-danger"
+            onClick={() =>
+              setDraft((current) => current ? {
+                ...current,
+                [kind]: current[kind].filter((_, optionIndex) => optionIndex !== index),
+              } : null)
+            }
+            type="button"
+          >
+            ×
+          </button>
         </div>
       ))}
-      <button className="text-action" onClick={() => setDraft((current) => current ? { ...current, [kind]: [...current[kind], { name: '', price: '' }] } : null)} type="button">+ Añadir {label.toLowerCase()}</button>
+      <TextAction
+        onClick={() =>
+          setDraft((current) => current ? {
+            ...current,
+            [kind]: [...current[kind], { name: '', price: '' }],
+          } : null)
+        }
+      >
+        + Añadir {label.toLowerCase()}
+      </TextAction>
     </fieldset>
   );
 }
@@ -364,19 +603,37 @@ function OrderButtons({
   move: (direction: -1 | 1) => void;
 }) {
   return (
-    <span className="order-buttons">
-      <button aria-label={`Subir ${label}`} disabled={disabled || first} onClick={() => move(-1)} title="Subir" type="button">↑</button>
-      <button aria-label={`Bajar ${label}`} disabled={disabled || last} onClick={() => move(1)} title="Bajar" type="button">↓</button>
+    <span className="inline-flex gap-1">
+      <InlineAction
+        aria-label={`Subir ${label}`}
+        disabled={disabled || first}
+        onClick={() => move(-1)}
+        title="Subir"
+      >
+        ↑
+      </InlineAction>
+      <InlineAction
+        aria-label={`Bajar ${label}`}
+        disabled={disabled || last}
+        onClick={() => move(1)}
+        title="Bajar"
+      >
+        ↓
+      </InlineAction>
     </span>
   );
 }
 
-function ModalFooter({ busy, close, label }: { busy: boolean; close: () => void; label: string }) {
+function EditorFooter({ busy, close, label }: { busy: boolean; close: () => void; label: string }) {
   return (
-    <footer>
-      <button className="button button-secondary" disabled={busy} onClick={close} type="button">Cancelar</button>
-      <button className="button button-primary" disabled={busy} type="submit">{busy ? 'Guardando…' : label}</button>
-    </footer>
+    <ModalFooter>
+      <Button disabled={busy} onClick={close} tone="secondary">
+        Cancelar
+      </Button>
+      <Button disabled={busy} type="submit">
+        {busy ? 'Guardando…' : label}
+      </Button>
+    </ModalFooter>
   );
 }
 

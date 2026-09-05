@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { Button } from '@/components/button';
+import { Kicker, StatusPill } from '@/components/surfaces';
+import { menuFontClassName } from '@/lib/menu-fonts';
 import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 const TEMPLATES: Array<{
@@ -51,12 +54,23 @@ export function MenuPublicationControls({
 
   return (
     <>
-      <section className="publication-ticket" aria-labelledby="publication-title">
-        <div className="publication-ticket-heading">
-          <span className="ticket-notch" aria-hidden="true">✦</span>
-          <div>
-            <span className="kicker">Orden de publicación</span>
-            <h2 id="publication-title">
+      <section
+        aria-labelledby="publication-title"
+        className="relative mb-6 overflow-hidden rounded-2xl border-t-[3px] border-t-teal bg-paper p-6 shadow-soft sm:p-8"
+      >
+        <div className="flex items-start gap-3.5">
+          <span
+            aria-hidden="true"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-teal-wash text-lg text-teal"
+          >
+            ✦
+          </span>
+          <div className="min-w-0 flex-1">
+            <Kicker tone="teal">Orden de publicación</Kicker>
+            <h2
+              className="mt-1 mb-0 font-display text-2xl tracking-[-0.025em]"
+              id="publication-title"
+            >
               {menu.publication.hasUnpublishedChanges
                 ? 'Tienes cambios por publicar'
                 : menu.publication.hasPublishedMenu
@@ -64,24 +78,37 @@ export function MenuPublicationControls({
                   : 'Prepara la primera carta'}
             </h2>
           </div>
-          <span className={`publication-state${menu.publication.hasUnpublishedChanges ? ' is-draft' : ''}`}>
-            {menu.publication.hasUnpublishedChanges ? 'Borrador' : menu.publication.hasPublishedMenu ? 'En vivo' : 'Sin publicar'}
-          </span>
+          <div className="shrink-0">
+            <StatusPill tone={menu.publication.hasUnpublishedChanges ? 'draft' : menu.publication.hasPublishedMenu ? 'positive' : 'muted'}>
+              {menu.publication.hasUnpublishedChanges
+                ? 'Borrador'
+                : menu.publication.hasPublishedMenu
+                  ? 'En vivo'
+                  : 'Sin publicar'}
+            </StatusPill>
+          </div>
         </div>
-        <p>
+        <p className="mt-2 mb-0 max-w-[64ch] text-[13px]/relaxed text-ink-soft sm:ml-12.5">
           {menu.publication.hasUnpublishedChanges
             ? 'La versión que ven tus clientes no cambia hasta que confirmes la publicación.'
             : menu.publication.hasPublishedMenu
               ? 'Tu QR sigue mostrando esta versión. Puedes editar con tranquilidad.'
               : 'Tu QR mostrará “Próximamente” hasta que publiques al menos un producto disponible.'}
         </p>
-        <div className="template-selector" aria-label="Plantilla del borrador">
-          <span>Plantilla del borrador</span>
-          <div role="radiogroup">
+
+        <div aria-label="Plantilla del borrador" className="mt-4 grid gap-2 border-t border-line pt-4">
+          <span className="text-[10px] font-black tracking-[0.1em] text-ink-muted uppercase">
+            Plantilla del borrador
+          </span>
+          <div className="flex flex-wrap gap-2" role="radiogroup">
             {TEMPLATES.map((template) => (
               <button
                 aria-checked={menu.template === template.id}
-                className={menu.template === template.id ? 'is-selected' : ''}
+                className={`min-h-11 rounded-lg border px-3 text-[11px] font-bold transition-colors duration-150 ease-soft active:scale-[0.97] disabled:cursor-wait ${
+                  menu.template === template.id
+                    ? 'border-teal bg-teal-wash text-teal'
+                    : 'border-line-strong bg-paper text-ink-soft hover:border-teal hover:text-teal'
+                }`}
                 disabled={templateSaving || menu.template === template.id}
                 key={template.id}
                 onClick={() => void onTemplate(template.id)}
@@ -94,66 +121,116 @@ export function MenuPublicationControls({
             ))}
           </div>
         </div>
-        <div className="publication-actions">
-          <button className="button button-secondary" onClick={() => setPreviewOpen(true)} type="button">
+
+        <div className="mt-5 grid gap-2 sm:flex sm:justify-end">
+          <Button onClick={() => setPreviewOpen(true)} tone="secondary">
             Previsualizar borrador
-          </button>
-          <button
-            className="button button-primary"
+          </Button>
+          <Button
             disabled={!canPublish || !hasDraft || publishing}
             onClick={() => setConfirmationOpen(true)}
-            type="button"
           >
-            {publishing ? 'Publicando…' : menu.publication.hasPublishedMenu ? 'Publicar cambios' : 'Publicar carta'}
-          </button>
+            {publishing
+              ? 'Publicando…'
+              : menu.publication.hasPublishedMenu
+                ? 'Publicar cambios'
+                : 'Publicar carta'}
+          </Button>
         </div>
       </section>
 
-      <dialog className="menu-preview-dialog" onClose={() => setPreviewOpen(false)} ref={previewDialog}>
-        <div className="menu-preview-dialog-bar">
-          <div><span className="kicker">Solo tú ves esto</span><strong>Previsualización del borrador</strong></div>
-          <button aria-label="Cerrar previsualización" onClick={() => setPreviewOpen(false)} type="button">×</button>
+      <dialog
+        className="max-h-[calc(100dvh-2rem)] w-[min(calc(100%-2rem),47.5rem)] overflow-auto rounded-2xl bg-paper-raised p-0 shadow-raised backdrop:bg-ink/55 backdrop:backdrop-blur-[3px]"
+        onClose={() => setPreviewOpen(false)}
+        ref={previewDialog}
+      >
+        <div className="flex items-center justify-between gap-5 border-b border-line px-5 py-4 sm:px-6">
+          <div className="grid gap-1">
+            <Kicker tone="teal">Solo tú ves esto</Kicker>
+            <strong className="font-display text-xl">Previsualización del borrador</strong>
+          </div>
+          <button
+            aria-label="Cerrar previsualización"
+            className="grid size-11 shrink-0 place-items-center rounded-full bg-control text-2xl/none text-ink"
+            onClick={() => setPreviewOpen(false)}
+            type="button"
+          >
+            ×
+          </button>
         </div>
         <section
-          className="draft-menu-preview"
+          className={`menu-themed grid min-h-[28rem] gap-6 p-6 sm:p-10 lg:p-13 ${menuFontClassName(menu.style.fontFamily)}`}
           style={{
             '--menu-background': menu.style.backgroundColor,
             '--menu-foreground': menu.style.textColor,
-            '--menu-font': menu.style.fontFamily,
           } as React.CSSProperties}
         >
-          <span>Carta digital · borrador</span>
-          <h2>{restaurant.name}</h2>
-          {menu.categories.flatMap((category) => category.products.filter((product) => product.isAvailable !== false).map((product) => ({ category, product }))).length === 0 ? (
-            <p className="draft-preview-empty">Agrega un producto disponible para revisar tu carta.</p>
-          ) : menu.categories.map((category) => {
-            const products = category.products.filter((product) => product.isAvailable !== false);
-            if (products.length === 0) return null;
-            return (
-              <section key={category.id ?? category.name}>
-                <h3>{category.name}</h3>
-                {products.map((product) => (
-                  <article key={product.id ?? product.name}>
-                    <div><strong>{product.name}</strong>{product.description ? <p>{product.description}</p> : null}</div>
-                    <b>S/ {product.basePrice}</b>
-                  </article>
-                ))}
-              </section>
-            );
-          })}
+          <span className="text-[10px] font-extrabold tracking-[0.1em] uppercase opacity-65">
+            Carta digital · borrador
+          </span>
+          <h2 className="-mt-2.5 mb-1 max-w-[16ch] text-4xl leading-[0.98] sm:text-5xl">
+            {restaurant.name}
+          </h2>
+          {menu.categories.flatMap((category) =>
+            category.products.filter((product) => product.isAvailable !== false),
+          ).length === 0 ? (
+            <p className="m-0 opacity-75">Agrega un producto disponible para revisar tu carta.</p>
+          ) : (
+            menu.categories.map((category) => {
+              const products = category.products.filter(
+                (product) => product.isAvailable !== false,
+              );
+              if (products.length === 0) return null;
+              return (
+                <section
+                  className="grid gap-2 border-t border-current/20 pt-5"
+                  key={category.id ?? category.name}
+                >
+                  <h3 className="mt-0 mb-1 text-[13px] tracking-[0.1em] uppercase">
+                    {category.name}
+                  </h3>
+                  {products.map((product) => (
+                    <article
+                      className="flex items-baseline justify-between gap-4 border-t border-current/15 py-3"
+                      key={product.id ?? product.name}
+                    >
+                      <div>
+                        <strong className="text-[15px]">{product.name}</strong>
+                        {product.description ? (
+                          <p className="mt-1 mb-0 text-xs/snug opacity-75">{product.description}</p>
+                        ) : null}
+                      </div>
+                      <b className="text-[15px] whitespace-nowrap">S/ {product.basePrice}</b>
+                    </article>
+                  ))}
+                </section>
+              );
+            })
+          )}
         </section>
       </dialog>
 
-      <dialog className="publish-confirmation-dialog" onClose={() => setConfirmationOpen(false)} ref={confirmationDialog}>
-        <form method="dialog">
-          <span className="kicker">Confirmar publicación</span>
-          <h2>Actualiza la carta que ve tu QR.</h2>
-          <p>La versión anterior dejará de mostrarse y este borrador será la nueva carta pública. El enlace del QR no cambia.</p>
-          <div className="dialog-actions">
-            <button className="button button-secondary" type="submit">Volver a revisar</button>
-            <button className="button button-primary" disabled={publishing} onClick={() => void confirmPublication()} type="button">
+      <dialog
+        className="w-[min(calc(100%-2rem),32.5rem)] rounded-2xl bg-paper-raised p-0 shadow-raised backdrop:bg-ink/55 backdrop:backdrop-blur-[3px]"
+        onClose={() => setConfirmationOpen(false)}
+        ref={confirmationDialog}
+      >
+        <form className="grid gap-4 p-6 sm:p-8" method="dialog">
+          <Kicker>Confirmar publicación</Kicker>
+          <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
+            Actualiza la carta que ve tu QR.
+          </h2>
+          <p className="m-0 text-[13px]/relaxed text-ink-soft">
+            La versión anterior dejará de mostrarse y este borrador será la nueva carta pública. El
+            enlace del QR no cambia.
+          </p>
+          <div className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button tone="secondary" type="submit">
+              Volver a revisar
+            </Button>
+            <Button disabled={publishing} onClick={() => void confirmPublication()}>
               {publishing ? 'Publicando…' : 'Sí, publicar carta'}
-            </button>
+            </Button>
           </div>
         </form>
       </dialog>

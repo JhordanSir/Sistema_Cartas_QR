@@ -72,9 +72,9 @@ test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
     await page.getByLabel(/Contraseña inicial/).fill(ownerPassword);
     await page.getByRole('button', { name: 'Crear restaurante' }).click();
 
-    const row = page.locator('.restaurant-row').filter({ hasText: ownerEmail });
+    const row = page.getByTestId('restaurant-row').filter({ hasText: ownerEmail });
     await expect(row).toBeVisible();
-    const publicLink = row.locator('.restaurant-identity a');
+    const publicLink = row.getByTestId('public-menu-link');
     const href = await publicLink.getAttribute('href');
     if (!href) throw new Error('The restaurant public URL was not rendered');
     const slug = href.slice(1);

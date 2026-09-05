@@ -11,6 +11,11 @@ import {
   useState,
 } from 'react';
 
+import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
+import { Button } from '@/components/button';
+import { Field, fieldControl } from '@/components/field';
+import { RestaurantSwitcher } from '@/components/restaurant-switcher';
+import { Card, ErrorBanner, Kicker, Notice, NumberedHeading, Skeleton } from '@/components/surfaces';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from './owner-navigation';
@@ -108,39 +113,51 @@ export function RestaurantProfilePanel() {
   }
 
   return (
-    <main className="backoffice-shell owner-admin-shell">
-      <OwnerNavigation active="profile" />
+    <AppShell navigation={<OwnerNavigation active="profile" />}>
+      <Workspace className="max-w-[80rem]">
+        <WorkspaceHeader
+          actions={
+            <RestaurantSwitcher
+              onChange={(event) => setSelectedId(event.target.value)}
+              restaurants={restaurants}
+              selectedId={selected?.id}
+            />
+          }
+        >
+          <Kicker>Panel del restaurante</Kicker>
+          <PageTitle>Tu perfil</PageTitle>
+          <SupportingCopy>
+            Haz que las personas reconozcan tu restaurante y sepan cómo encontrarte.
+          </SupportingCopy>
+        </WorkspaceHeader>
 
-      <section className="workspace owner-workspace">
-        <header className="workspace-header owner-workspace-header">
-          <div>
-            <span className="kicker">Panel del restaurante</span>
-            <h1>Tu perfil</h1>
-            <p className="supporting-copy">
-              Haz que las personas reconozcan tu restaurante y sepan cómo encontrarte.
-            </p>
+        {notice ? <Notice onDismiss={() => setNotice(null)}>{notice}</Notice> : null}
+        {error ? <ErrorBanner>{error}</ErrorBanner> : null}
+        {loading ? (
+          <div
+            aria-label="Cargando perfil"
+            className="grid gap-6 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
+            role="status"
+          >
+            <Skeleton className="min-h-60" />
+            <Skeleton className="min-h-[32rem]" />
           </div>
-          {restaurants.length > 1 ? (
-            <label className="restaurant-switcher">
-              <span>Restaurante</span>
-              <select onChange={(event) => setSelectedId(event.target.value)} value={selected?.id}>
-                {restaurants.map((restaurant) => (
-                  <option key={restaurant.id} value={restaurant.id}>{restaurant.name}</option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </header>
-
-        {notice ? <div className="notice" role="status">{notice}</div> : null}
-        {error ? <div className="error-banner" role="alert">{error}</div> : null}
-        {loading ? <ProfileSkeleton /> : null}
+        ) : null}
         {!loading && !selected ? (
-          <section className="profile-empty">
-            <span className="empty-stamp" aria-hidden="true">S/</span>
-            <h2>No encontramos un restaurante asociado</h2>
-            <p>Contacta al administrador para revisar tu cuenta.</p>
-          </section>
+          <Card className="grid min-h-[22rem] content-center justify-items-center p-10 text-center">
+            <span
+              aria-hidden="true"
+              className="grid size-14 -rotate-6 place-items-center rounded-full border border-line-strong font-display font-bold text-copper"
+            >
+              S/
+            </span>
+            <h2 className="mt-5 mb-0 font-display text-2xl tracking-tight">
+              No encontramos un restaurante asociado
+            </h2>
+            <p className="mt-1.5 mb-0 text-[13px]/relaxed text-ink-soft">
+              Contacta al administrador para revisar tu cuenta.
+            </p>
+          </Card>
         ) : null}
         {!loading && selected ? (
           <ProfileForm
@@ -153,8 +170,8 @@ export function RestaurantProfilePanel() {
             saving={saving}
           />
         ) : null}
-      </section>
-    </main>
+      </Workspace>
+    </AppShell>
   );
 }
 
@@ -186,105 +203,153 @@ function ProfileForm({
   ].filter(Boolean).length;
 
   return (
-    <form className="profile-layout" onSubmit={onSubmit}>
-      <aside className="identity-card" aria-label="Vista previa de identidad">
-        <span className="ticket-number">Así te verán</span>
-        <div className="logo-preview">
+    <form
+      className="grid items-start gap-6 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
+      onSubmit={onSubmit}
+    >
+      <Card
+        accent="teal"
+        className="grid justify-items-center p-7 text-center lg:sticky lg:top-8"
+      >
+        <Kicker className="justify-self-start" tone="teal">
+          Así te verán
+        </Kicker>
+        <div className="relative mt-7 mb-5 grid size-32 place-items-center overflow-hidden rounded-[2rem] bg-olive-wash font-display text-5xl font-bold text-olive shadow-[inset_0_0_0_1px_rgb(29_41_33/0.1)] sm:size-40 sm:rounded-[2.25rem] sm:text-6xl">
           {logoUrl ? (
-            <Image
-              alt={`Logo de ${profile.name}`}
-              fill
-              sizes="160px"
-              src={logoUrl}
-              unoptimized
-            />
+            <Image alt={`Logo de ${profile.name}`} fill sizes="160px" src={logoUrl} unoptimized />
           ) : (
             <span aria-hidden="true">{profile.name.charAt(0).toLocaleUpperCase('es')}</span>
           )}
         </div>
-        <h2>{profile.name}</h2>
-        <a className="identity-public-link" href={`/${profile.slug}`} rel="noreferrer" target="_blank">
+        <h2 className="m-0 max-w-[14ch] font-display text-3xl leading-tight tracking-[-0.035em] text-balance">
+          {profile.name}
+        </h2>
+        <a
+          className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-olive-wash px-3 text-xs font-extrabold text-olive no-underline hover:bg-olive-wash/70"
+          href={`/${profile.slug}`}
+          rel="noreferrer"
+          target="_blank"
+        >
           <span aria-hidden="true">↗</span> Abrir carta pública
         </a>
-        <div className="profile-progress" aria-label={`${completed} de 5 datos completados`}>
-          <div><span style={{ width: `${completed * 20}%` }} /></div>
-          <p><strong>{completed}/5</strong> datos que ayudan a tus clientes</p>
+        <div
+          aria-label={`${completed} de 5 datos completados`}
+          className="my-6 w-full border-y border-line py-5"
+        >
+          <div className="h-1.5 overflow-hidden rounded-full bg-control">
+            <span
+              className="block h-full rounded-full bg-copper transition-[width] duration-200 ease-soft"
+              style={{ width: `${completed * 20}%` }}
+            />
+          </div>
+          <p className="mt-2.5 mb-0 text-[11px] text-ink-muted">
+            <strong className="text-ink tabular-nums">{completed}/5</strong> datos que ayudan a tus
+            clientes
+          </p>
         </div>
-        <label className="logo-picker">
-          <span>{logo ? 'Cambiar selección' : profile.logoPath ? 'Reemplazar logo' : 'Subir logo'}</span>
+        <label className="relative inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-control px-4 text-[13px] font-bold text-ink hover:bg-control-hover">
+          <span>
+            {logo ? 'Cambiar selección' : profile.logoPath ? 'Reemplazar logo' : 'Subir logo'}
+          </span>
           <input
             accept="image/png,image/jpeg,image/webp"
             aria-label="Logo del restaurante"
+            className="absolute size-px opacity-0"
             name="logo"
             onChange={onLogoChange}
             type="file"
           />
         </label>
-        <small>PNG, JPG o WebP · máximo 2 MB</small>
-      </aside>
+        <small className="mt-2 text-[10px] text-ink-muted">PNG, JPG o WebP · máximo 2 MB</small>
+      </Card>
 
-      <section className="profile-form-card">
-        <div className="profile-section-heading">
-          <span className="section-number">01</span>
-          <div>
-            <h2>Cómo te encuentran</h2>
-            <p>Agrega los datos que tus clientes necesitan para ubicarte o escribirte.</p>
-          </div>
-        </div>
-        <div className="profile-fields">
-          <label className="field">
-            <span>Teléfono</span>
-            <input defaultValue={profile.contactPhone ?? ''} inputMode="tel" maxLength={32} name="contactPhone" placeholder="(01) 555 0123" />
-          </label>
-          <label className="field">
-            <span>WhatsApp</span>
-            <input defaultValue={profile.whatsapp ?? ''} inputMode="tel" maxLength={32} name="whatsapp" placeholder="+51 999 999 999" />
-          </label>
-          <label className="field field-wide">
-            <span>Dirección</span>
-            <input defaultValue={profile.address ?? ''} maxLength={500} name="address" placeholder="Av. Principal 123, Miraflores" />
-          </label>
-        </div>
-
-        <div className="profile-section-heading profile-section-divider">
-          <span className="section-number">02</span>
-          <div>
-            <h2>Dónde te siguen</h2>
-            <p>Usa enlaces completos que comiencen con https://.</p>
-          </div>
-        </div>
-        <div className="profile-fields">
-          <label className="field field-wide">
-            <span>Instagram</span>
-            <input defaultValue={profile.instagramUrl ?? ''} maxLength={2048} name="instagramUrl" placeholder="https://instagram.com/tu_restaurante" type="url" />
-          </label>
-          <label className="field">
-            <span>Facebook</span>
-            <input defaultValue={profile.facebookUrl ?? ''} maxLength={2048} name="facebookUrl" placeholder="https://facebook.com/tu-restaurante" type="url" />
-          </label>
-          <label className="field">
-            <span>TikTok</span>
-            <input defaultValue={profile.tiktokUrl ?? ''} maxLength={2048} name="tiktokUrl" placeholder="https://tiktok.com/@tu_restaurante" type="url" />
-          </label>
+      <Card className="overflow-hidden">
+        <NumberedHeading
+          body="Agrega los datos que tus clientes necesitan para ubicarte o escribirte."
+          number="01"
+          title="Cómo te encuentran"
+        />
+        <div className="grid gap-4 px-5 pt-2 pb-6 sm:grid-cols-2 sm:px-8">
+          <Field label="Teléfono">
+            <input
+              className={fieldControl}
+              defaultValue={profile.contactPhone ?? ''}
+              inputMode="tel"
+              maxLength={32}
+              name="contactPhone"
+              placeholder="(01) 555 0123"
+            />
+          </Field>
+          <Field label="WhatsApp">
+            <input
+              className={fieldControl}
+              defaultValue={profile.whatsapp ?? ''}
+              inputMode="tel"
+              maxLength={32}
+              name="whatsapp"
+              placeholder="+51 999 999 999"
+            />
+          </Field>
+          <Field className="sm:col-span-2" label="Dirección">
+            <input
+              className={fieldControl}
+              defaultValue={profile.address ?? ''}
+              maxLength={500}
+              name="address"
+              placeholder="Av. Principal 123, Miraflores"
+            />
+          </Field>
         </div>
 
-        <footer className="profile-actions">
-          <p>El nombre y la dirección pública los administra la plataforma.</p>
-          <button className="button button-primary" disabled={saving} type="submit">
+        <NumberedHeading
+          body="Usa enlaces completos que comiencen con https://."
+          divider
+          number="02"
+          title="Dónde te siguen"
+        />
+        <div className="grid gap-4 px-5 pt-2 pb-6 sm:grid-cols-2 sm:px-8">
+          <Field className="sm:col-span-2" label="Instagram">
+            <input
+              className={fieldControl}
+              defaultValue={profile.instagramUrl ?? ''}
+              maxLength={2048}
+              name="instagramUrl"
+              placeholder="https://instagram.com/tu_restaurante"
+              type="url"
+            />
+          </Field>
+          <Field label="Facebook">
+            <input
+              className={fieldControl}
+              defaultValue={profile.facebookUrl ?? ''}
+              maxLength={2048}
+              name="facebookUrl"
+              placeholder="https://facebook.com/tu-restaurante"
+              type="url"
+            />
+          </Field>
+          <Field label="TikTok">
+            <input
+              className={fieldControl}
+              defaultValue={profile.tiktokUrl ?? ''}
+              maxLength={2048}
+              name="tiktokUrl"
+              placeholder="https://tiktok.com/@tu_restaurante"
+              type="url"
+            />
+          </Field>
+        </div>
+
+        <footer className="flex flex-col gap-4 bg-control/55 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p className="m-0 max-w-[48ch] text-[11px]/relaxed text-ink-muted">
+            El nombre y la dirección pública los administra la plataforma.
+          </p>
+          <Button className="max-sm:w-full" disabled={saving} type="submit">
             {saving ? 'Guardando…' : 'Guardar perfil'}
-          </button>
+          </Button>
         </footer>
-      </section>
+      </Card>
     </form>
-  );
-}
-
-function ProfileSkeleton() {
-  return (
-    <div className="profile-skeleton" aria-label="Cargando perfil" role="status">
-      <span />
-      <span />
-    </div>
   );
 }
 

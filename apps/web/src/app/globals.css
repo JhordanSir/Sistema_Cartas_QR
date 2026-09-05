@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/*
+ * Sirio design tokens. The identity is unchanged — warm paper, olive, copper and
+ * teal — but five values were deepened so every text/background pair clears WCAG
+ * AA (4.5:1) at the sizes actually used, and --color-copper-wash now exists.
+ */
+@theme {
+  /* Surfaces */
+  --color-canvas: #f7f1e7;
+  --color-paper: #fffdf8;
+  --color-paper-raised: #ffffff;
+  --color-control: #f2ecdf;
+  --color-control-hover: #e6e1d5;
+
+  /* Ink */
+  --color-ink: #29271f;
+  --color-ink-soft: #5e5a4e;
+  --color-ink-muted: #706b5e;
+
+  /* Accents */
+  --color-olive: #315b45;
+  --color-olive-hover: #254735;
+  --color-olive-wash: #e3eee5;
+  --color-copper: #ac5635;
+  --color-copper-wash: #f8f0ed;
+  --color-teal: #117884;
+  --color-teal-wash: #e0f4f2;
+  --color-danger: #9a4038;
+  --color-danger-hover: #7f322d;
+  --color-danger-wash: #f9e8e3;
+
+  /* Hairlines */
+  --color-line: rgb(41 39 31 / 0.12);
+  --color-line-strong: rgb(41 39 31 / 0.22);
+
+  /* Typography */
+  --font-display: var(--font-display-family), Georgia, serif;
+  --font-body: var(--font-body-family), "Avenir Next", Avenir, "Segoe UI", sans-serif;
+
+  /* Elevation */
+  --shadow-soft:
+    0 0 0 1px rgb(41 39 31 / 0.05), 0 2px 5px rgb(41 39 31 / 0.04),
+    0 18px 42px rgb(41 39 31 / 0.07);
+  --shadow-raised: 0 24px 80px rgb(29 41 33 / 0.25);
+
+  /* Motion */
+  --ease-soft: cubic-bezier(0.23, 1, 0.32, 1);
+  --animate-orbit: orbit 1.8s linear infinite;
+
+  @keyframes orbit {
+    to {
+      transform: rotate(360deg) translateX(2rem);
+    }
+  }
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color-scheme: light;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    min-height: 100dvh;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-copper) 45%, transparent);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Mobile Safari zooms the page when a focused field renders below 16px, which
+   * pushes the layout sideways and is one of the worst offenders on a phone.
+   */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+@layer components {
+  /*
+   * The published menu is themed from the database: template plus the colours and
+   * family Gemini detected. These variables are set inline on the menu shell.
+   */
+  .menu-themed {
+    background: var(--menu-background);
+    color: var(--menu-foreground);
+  }
+}
+
+@utility no-scrollbar {
+  /* Horizontal rails scroll by touch; the bar itself would only add noise. */
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility tap-target {
+  /* Minimum comfortable touch area. */
+  min-height: --spacing(11);
+  min-width: --spacing(11);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

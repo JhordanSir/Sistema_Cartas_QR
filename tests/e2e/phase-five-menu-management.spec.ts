@@ -83,7 +83,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await createCategory(page, 'Fondos');
     await createCategory(page, 'Bebidas');
     await page.getByRole('button', { name: 'Subir Bebidas' }).click();
-    await expect.poll(async () => page.locator('.managed-category h3').allTextContents())
+    await expect.poll(async () => page.getByTestId('managed-category').locator('h3').allTextContents())
       .toEqual(['Bebidas', 'Fondos']);
 
     await page.getByRole('button', { name: 'Editar sección Fondos' }).click();
@@ -118,8 +118,8 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await page.getByLabel('Precio base (S/)').fill('18.00');
     await page.getByRole('button', { name: 'Crear producto' }).click();
     await page.getByRole('button', { name: 'Subir Ensalada fresca' }).click();
-    const productNames = page.locator('.managed-category', { hasText: 'Platos de fondo' })
-      .locator('article .product-title-line strong');
+    const productNames = page.getByTestId('managed-category').filter({ hasText: 'Platos de fondo' })
+      .getByTestId('product-name');
     await expect.poll(async () => productNames.allTextContents())
       .toEqual(['Ensalada fresca', 'Hamburguesa Sirio']);
 

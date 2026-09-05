@@ -37,7 +37,7 @@ export function SessionGate({ children, redirectTo, role }: SessionGateProps) {
 
   if (authorized) return children;
   return (
-    <main className="session-gate">
+    <main className="grid min-h-dvh place-items-center bg-canvas p-6 text-[13px] text-ink-muted">
       <p role="status">Comprobando tu sesión…</p>
     </main>
   );

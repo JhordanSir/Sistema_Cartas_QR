@@ -109,10 +109,10 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
       timeout: 90_000,
     });
     await expect(
-      page.locator('.managed-category article').filter({ hasText: 'Lomo Salatado' }).getByText('Lomo Salatado'),
+      page.getByTestId('managed-category').locator('article').filter({ hasText: 'Lomo Salatado' }).getByText('Lomo Salatado'),
     ).toBeVisible();
     await expect(
-      page.locator('.managed-category article').filter({ hasText: 'Lomo Salatado' }).getByText('S/ 28.00'),
+      page.getByTestId('managed-category').locator('article').filter({ hasText: 'Lomo Salatado' }).getByText('S/ 28.00'),
     ).toBeVisible();
 
     await page.getByRole('radio', { name: 'Casual' }).click();
@@ -138,7 +138,7 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
     await page.getByRole('button', { name: 'Guardar producto' }).click();
     await expect(page.getByText('Producto actualizado en el borrador.')).toBeVisible();
     await expect(
-      page.locator('.managed-category article').filter({ hasText: 'Lomo Saltado' }).getByText('Lomo Saltado'),
+      page.getByTestId('managed-category').locator('article').filter({ hasText: 'Lomo Saltado' }).getByText('Lomo Saltado'),
     ).toBeVisible();
 
     await page.goto(`${webUrl}/${restaurant.slug}`);

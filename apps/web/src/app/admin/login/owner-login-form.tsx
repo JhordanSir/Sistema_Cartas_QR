@@ -1,7 +1,10 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { type FormEvent, useState } from 'react';
+
+import { Button } from '@/components/button';
+import { Field, FormError, fieldControl } from '@/components/field';
 
 export function OwnerLoginForm() {
   const router = useRouter();
@@ -36,31 +39,32 @@ export function OwnerLoginForm() {
   }
 
   return (
-    <form className="login-form" onSubmit={handleSubmit}>
-      <label className="field">
-        <span>Correo del propietario</span>
+    <form className="grid gap-5" onSubmit={handleSubmit}>
+      <Field label="Correo del propietario">
         <input
           autoComplete="email"
+          className={fieldControl}
+          inputMode="email"
           name="email"
           placeholder="hola@turestaurante.pe"
           required
           type="email"
         />
-      </label>
-      <label className="field">
-        <span>Contraseña</span>
+      </Field>
+      <Field label="Contraseña">
         <input
           autoComplete="current-password"
+          className={fieldControl}
           minLength={8}
           name="password"
           required
           type="password"
         />
-      </label>
-      {error ? <p className="form-error" role="alert">{error}</p> : null}
-      <button className="button button-primary button-full" disabled={submitting} type="submit">
+      </Field>
+      {error ? <FormError>{error}</FormError> : null}
+      <Button disabled={submitting} full type="submit">
         {submitting ? 'Ingresando…' : 'Entrar a mi restaurante'}
-      </button>
+      </Button>
     </form>
   );
 }
