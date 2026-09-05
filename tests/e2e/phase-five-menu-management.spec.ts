@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 const directApiUrl = process.env.E2E_DIRECT_API_URL ?? 'http://127.0.0.1:3001/api';
 const webUrl = process.env.E2E_WEB_URL ?? 'http://127.0.0.1:3000';
@@ -19,6 +19,17 @@ async function login(
   });
   expect(response.ok()).toBe(true);
   return ((await response.json()) as { accessToken: string }).accessToken;
+}
+
+/**
+ * Las acciones de un producto viven en una hoja inferior en móvil y en línea desde
+ * lg. Este ayudante abre la hoja solo cuando el disparador está visible, así la
+ * misma spec sirve en los tres perfiles.
+ */
+async function productAction(page: Page, product: string, action: string): Promise<void> {
+  const trigger = page.getByRole('button', { name: `Acciones de ${product}` });
+  if (await trigger.isVisible()) await trigger.click();
+  await page.getByRole('button', { name: action }).click();
 }
 
 test.describe.serial('gestión completa de carta de la Fase 5', () => {
@@ -117,7 +128,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await page.getByLabel('Nombre').fill('Ensalada fresca');
     await page.getByLabel('Precio base (S/)').fill('18.00');
     await page.getByRole('button', { name: 'Crear producto' }).click();
-    await page.getByRole('button', { name: 'Subir Ensalada fresca' }).click();
+    await productAction(page, 'Ensalada fresca', 'Subir Ensalada fresca');
     const productNames = page.getByTestId('managed-category').filter({ hasText: 'Platos de fondo' })
       .getByTestId('product-name');
     await expect.poll(async () => productNames.allTextContents())
@@ -137,7 +148,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByText('Queso S/ 3.00')).toBeVisible();
     await expect(publicPage.getByAltText('Hamburguesa Sirio')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Marcar no disponible Hamburguesa Sirio' }).click();
+    await productAction(page, 'Hamburguesa Sirio', 'Marcar no disponible Hamburguesa Sirio');
     await expect(page.getByText('Producto marcado como no disponible en el borrador.')).toBeVisible();
     await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
@@ -147,7 +158,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await expect(publicPage).toHaveURL(publicUrl);
 
-    await page.getByRole('button', { name: 'Hacer disponible Hamburguesa Sirio' }).click();
+    await productAction(page, 'Hamburguesa Sirio', 'Hacer disponible Hamburguesa Sirio');
     await expect(page.getByText('Producto marcado como disponible en el borrador.')).toBeVisible();
     await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
@@ -157,7 +168,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
 
     page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: 'Eliminar Hamburguesa Sirio' }).click();
+    await productAction(page, 'Hamburguesa Sirio', 'Eliminar Hamburguesa Sirio');
     await expect(page.getByText('Producto eliminado del borrador.')).toBeVisible();
     await expect(page.getByText('Hamburguesa Sirio')).toHaveCount(0);
     await publicPage.reload({ waitUntil: 'networkidle' });

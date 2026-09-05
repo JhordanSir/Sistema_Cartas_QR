@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
 import { Kicker } from '@/components/surfaces';
 
@@ -7,17 +9,23 @@ import { OwnerNavigation } from '../owner-navigation';
 
 import { ownerTutorials } from './tutorials';
 
+/**
+ * Written walkthroughs. The recorded tutorials were retired because they show the
+ * previous interface; the .mp4, .vtt and poster assets stay in public/tutorials for
+ * the eventual re-recording.
+ *
+ * Built on native <details> so it opens without JavaScript and screen readers
+ * announce the expanded state for free. The first step is open by default.
+ */
 export function OwnerHelpLibrary() {
   return (
     <AppShell navigation={<OwnerNavigation active="help" />}>
-      <Workspace className="max-w-[74rem]">
+      <Workspace className="max-w-[62rem]">
         <WorkspaceHeader
           actions={
-            <p className="inline-flex min-h-9 items-center gap-2 rounded-full bg-teal-wash px-3 text-[10px] font-extrabold tracking-[0.06em] text-teal uppercase">
-              <span aria-hidden="true" className="text-olive">
-                ●
-              </span>
-              Menos de 1 minuto por paso
+            <p className="m-0 inline-flex min-h-9 items-center gap-2 self-start rounded-full bg-teal-wash px-3 text-[10px] font-extrabold tracking-[0.06em] text-teal uppercase">
+              <span aria-hidden="true">●</span>
+              5 pasos · lectura de 1 minuto
             </p>
           }
         >
@@ -26,60 +34,78 @@ export function OwnerHelpLibrary() {
             Aprende a manejar tu carta desde el celular.
           </PageTitle>
           <SupportingCopy>
-            Cinco videos cortos para completar, publicar y compartir tu carta sin salir del panel.
+            Cinco guías breves para completar, publicar y compartir tu carta sin salir del panel.
           </SupportingCopy>
         </WorkspaceHeader>
 
-        <ol className="grid list-none gap-4 p-0 sm:gap-5">
+        <ol className="grid list-none gap-3 p-0">
           {ownerTutorials.map((tutorial, index) => (
-            <li
-              className="relative overflow-hidden rounded-2xl border border-line bg-paper shadow-soft before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-copper before:content-['']"
-              key={tutorial.id}
-            >
-              <article className="grid items-center gap-5 p-5 pl-7 sm:gap-7 md:grid-cols-[minmax(0,1fr)_minmax(11rem,18rem)] md:p-6 md:pl-8">
-                <div className="grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-3.5 sm:gap-4">
-                  <span className="grid size-9 place-items-center rounded-lg border border-line-strong bg-canvas text-[11px] font-black text-copper">
+            <li key={tutorial.id}>
+              <details
+                className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-soft"
+                open={index === 0}
+              >
+                <summary className="flex cursor-pointer list-none items-start gap-3.5 p-4 sm:gap-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-line-strong bg-canvas text-[11px] font-black text-copper">
                     {String(index + 1).padStart(2, '0')}
                   </span>
-                  <div>
-                    <p className="m-0 mb-1.5 text-[11px] font-extrabold tracking-[0.14em] text-teal uppercase">
-                      Paso {index + 1}
-                    </p>
-                    <h2 className="mt-0 mb-2 max-w-[18ch] font-display text-2xl leading-tight font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-display text-xl leading-tight font-semibold tracking-[-0.03em] text-ink sm:text-2xl">
                       {tutorial.title}
-                    </h2>
-                    <p className="m-0 max-w-[52ch] text-[13px]/relaxed font-medium text-ink-soft">
+                    </span>
+                    <span className="mt-1 block text-[13px]/relaxed text-ink-soft">
                       {tutorial.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="w-full max-w-[16.5rem] justify-self-center rounded-[1.25rem] border border-line-strong bg-ink p-1.5 shadow-[0.5rem_0.5rem_0_var(--color-teal-wash)] md:justify-self-end">
-                  <video
-                    aria-describedby={`${tutorial.id}-description`}
-                    className="block aspect-[9/16] w-full rounded-[0.8rem] bg-canvas object-cover"
-                    controls
-                    playsInline
-                    poster={`/tutorials/${tutorial.id}.jpg`}
-                    preload="metadata"
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="grid size-11 shrink-0 place-items-center text-lg text-ink-muted transition-transform duration-200 ease-soft group-open:rotate-180"
                   >
-                    <source src={`/tutorials/${tutorial.id}.mp4`} type="video/mp4" />
-                    <track
-                      default
-                      kind="subtitles"
-                      label="Español"
-                      src={`/tutorials/${tutorial.id}.vtt`}
-                      srcLang="es"
-                    />
-                    Tu navegador no puede reproducir este video.
-                  </video>
+                    ⌄
+                  </span>
+                </summary>
+
+                <div className="border-t border-line px-4 pt-4 pb-5 sm:px-5">
+                  <ol className="m-0 grid list-none gap-3 p-0">
+                    {tutorial.steps.map((step, stepIndex) => (
+                      <li className="flex gap-3 text-sm/relaxed text-ink-soft" key={step}>
+                        <span
+                          aria-hidden="true"
+                          className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-olive-wash text-[10px] font-black text-olive"
+                        >
+                          {stepIndex + 1}
+                        </span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  {tutorial.destination ? (
+                    <Link
+                      className="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg bg-olive-wash px-3.5 text-[13px] font-extrabold text-olive no-underline hover:bg-olive-wash/70"
+                      href={tutorial.destination.href}
+                    >
+                      {tutorial.destination.label}
+                      <span aria-hidden="true">→</span>
+                    </Link>
+                  ) : null}
                 </div>
-                <p className="sr-only" id={`${tutorial.id}-description`}>
-                  {tutorial.description}
-                </p>
-              </article>
+              </details>
             </li>
           ))}
         </ol>
+
+        <p className="mt-6 rounded-2xl border border-line bg-paper p-5 text-[13px]/relaxed text-ink-soft shadow-soft">
+          ¿Algo no encaja con lo que ves en pantalla? Escríbenos por WhatsApp al{' '}
+          <a
+            className="font-extrabold text-olive"
+            href="https://wa.me/51973502261"
+            rel="noreferrer"
+            target="_blank"
+          >
+            +51 973 502 261
+          </a>{' '}
+          y lo resolvemos contigo.
+        </p>
       </Workspace>
     </AppShell>
   );

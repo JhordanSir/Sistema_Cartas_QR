@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from 'react';
 
+import { ActionSheet } from '@/components/action-sheet';
 import { Button, InlineAction, TextAction } from '@/components/button';
 import { Field, fieldControl } from '@/components/field';
 import { ModalBackdrop, ModalFooter, modalPanel, modalPanelWide } from '@/components/modal';
@@ -56,6 +57,7 @@ export function MenuManager({
   const [categoryEditor, setCategoryEditor] = useState<ManagedCategory | 'new' | null>(null);
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [openActions, setOpenActions] = useState<string | null>(null);
 
   const categories = menu.categories.filter(hasId);
 
@@ -308,37 +310,64 @@ export function MenuManager({
                       <small className="text-[10px] text-ink-muted">
                         {product.variants.length} variantes · {product.extras.length} adicionales
                       </small>
-                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <OrderButtons
-                          disabled={busy !== null}
-                          first={productIndex === 0}
-                          label={product.name}
-                          last={productIndex === products.length - 1}
-                          move={(direction) => void moveProduct(category, productIndex, direction)}
-                        />
+                      <div className="mt-2">
                         <InlineAction
-                          aria-label={`Editar ${product.name}`}
-                          onClick={() => openProduct(category.id, product)}
+                          aria-label={`Acciones de ${product.name}`}
+                          className="lg:hidden"
+                          onClick={() => setOpenActions(product.id)}
                         >
-                          Editar
+                          Acciones ⌄
                         </InlineAction>
-                        <InlineAction
-                          aria-label={
-                            product.isAvailable === false
-                              ? `Hacer disponible ${product.name}`
-                              : `Marcar no disponible ${product.name}`
-                          }
-                          onClick={() => void toggleAvailability(product)}
+                        <ActionSheet
+                          label={`Acciones de ${product.name}`}
+                          onClose={() => setOpenActions(null)}
+                          open={openActions === product.id}
                         >
-                          {product.isAvailable === false ? 'Hacer disponible' : 'Marcar no disponible'}
-                        </InlineAction>
-                        <InlineAction
-                          aria-label={`Eliminar ${product.name}`}
-                          danger
-                          onClick={() => void deleteProduct(product)}
-                        >
-                          Eliminar
-                        </InlineAction>
+                          <OrderButtons
+                            disabled={busy !== null}
+                            first={productIndex === 0}
+                            label={product.name}
+                            last={productIndex === products.length - 1}
+                            move={(direction) => {
+                              setOpenActions(null);
+                              void moveProduct(category, productIndex, direction);
+                            }}
+                          />
+                          <InlineAction
+                            aria-label={`Editar ${product.name}`}
+                            onClick={() => {
+                              setOpenActions(null);
+                              openProduct(category.id, product);
+                            }}
+                          >
+                            Editar
+                          </InlineAction>
+                          <InlineAction
+                            aria-label={
+                              product.isAvailable === false
+                                ? `Hacer disponible ${product.name}`
+                                : `Marcar no disponible ${product.name}`
+                            }
+                            onClick={() => {
+                              setOpenActions(null);
+                              void toggleAvailability(product);
+                            }}
+                          >
+                            {product.isAvailable === false
+                              ? 'Hacer disponible'
+                              : 'Marcar no disponible'}
+                          </InlineAction>
+                          <InlineAction
+                            aria-label={`Eliminar ${product.name}`}
+                            danger
+                            onClick={() => {
+                              setOpenActions(null);
+                              void deleteProduct(product);
+                            }}
+                          >
+                            Eliminar
+                          </InlineAction>
+                        </ActionSheet>
                       </div>
                     </div>
 

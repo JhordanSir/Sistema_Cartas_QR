@@ -297,7 +297,8 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     await expect(helpMobilePage.getByRole('heading', {
       name: 'Aprende a manejar tu carta desde el celular.',
     })).toBeVisible();
-    await expect(helpMobilePage.locator('video')).toHaveCount(5);
+    await expect(helpMobilePage.locator('details')).toHaveCount(5);
+    await expect(helpMobilePage.getByRole('link', { name: /Ir a QR/ })).toBeVisible();
     expect(await helpMobilePage.evaluate(() =>
       document.documentElement.scrollWidth <= window.innerWidth,
     )).toBe(true);

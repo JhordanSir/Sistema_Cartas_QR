@@ -55,11 +55,100 @@
   }
 }
 
+/*
+ * Dark palette for the owner panel and the backoffice.
+ *
+ * Only the tokens are redefined, so every utility built on them adapts without a
+ * single dark: modifier. The published menu is immune by construction: it paints
+ * itself from --menu-background / --menu-foreground, which come from the database,
+ * so a diner never sees a theme the owner did not choose.
+ *
+ * Three states: data-theme="dark" forces it, data-theme="light" forbids it, and no
+ * attribute (or "system") follows the operating system.
+ */
+@layer theme {
+  :root[data-theme='dark'],
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      --color-canvas: #141310;
+      --color-paper: #1c1b17;
+      --color-paper-raised: #232119;
+      --color-control: #2a2821;
+      --color-control-hover: #35322a;
+
+      --color-ink: #f2ece0;
+      --color-ink-soft: #cbc4b4;
+      --color-ink-muted: #a29a89;
+
+      --color-olive: #84c4a1;
+      --color-olive-hover: #9ad2b3;
+      --color-olive-wash: #1e3328;
+      --color-copper: #e39068;
+      --color-copper-wash: #332319;
+      --color-teal: #5cc6d4;
+      --color-teal-wash: #123035;
+      --color-danger: #e58a82;
+      --color-danger-hover: #eda49d;
+      --color-danger-wash: #3a2320;
+
+      --color-line: rgb(242 236 224 / 0.14);
+      --color-line-strong: rgb(242 236 224 / 0.26);
+
+      --shadow-soft:
+        0 0 0 1px rgb(242 236 224 / 0.06), 0 2px 5px rgb(0 0 0 / 0.3),
+        0 18px 42px rgb(0 0 0 / 0.36);
+      --shadow-raised: 0 24px 80px rgb(0 0 0 / 0.55);
+    }
+  }
+
+  /* An explicit choice wins over the operating system in both directions. */
+  :root[data-theme='dark'] {
+    --color-canvas: #141310;
+    --color-paper: #1c1b17;
+    --color-paper-raised: #232119;
+    --color-control: #2a2821;
+    --color-control-hover: #35322a;
+
+    --color-ink: #f2ece0;
+    --color-ink-soft: #cbc4b4;
+    --color-ink-muted: #a29a89;
+
+    --color-olive: #84c4a1;
+    --color-olive-hover: #9ad2b3;
+    --color-olive-wash: #1e3328;
+    --color-copper: #e39068;
+    --color-copper-wash: #332319;
+    --color-teal: #5cc6d4;
+    --color-teal-wash: #123035;
+    --color-danger: #e58a82;
+    --color-danger-hover: #eda49d;
+    --color-danger-wash: #3a2320;
+
+    --color-line: rgb(242 236 224 / 0.14);
+    --color-line-strong: rgb(242 236 224 / 0.26);
+
+    --shadow-soft:
+      0 0 0 1px rgb(242 236 224 / 0.06), 0 2px 5px rgb(0 0 0 / 0.3),
+      0 18px 42px rgb(0 0 0 / 0.36);
+    --shadow-raised: 0 24px 80px rgb(0 0 0 / 0.55);
+  }
+}
+
 @layer base {
   html {
     background: var(--color-canvas);
     color-scheme: light;
     -webkit-font-smoothing: antialiased;
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+  }
+
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      color-scheme: dark;
+    }
   }
 
   body {

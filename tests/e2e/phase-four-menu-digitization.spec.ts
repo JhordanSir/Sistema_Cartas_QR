@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
 const directApiUrl = process.env.E2E_DIRECT_API_URL ?? 'http://127.0.0.1:3001/api';
 const webUrl = process.env.E2E_WEB_URL ?? 'http://127.0.0.1:3000';
@@ -19,6 +19,16 @@ async function login(
   });
   expect(response.ok()).toBe(true);
   return ((await response.json()) as { accessToken: string }).accessToken;
+}
+
+/**
+ * Las acciones de un producto viven en una hoja inferior en móvil y en línea desde
+ * lg. Este ayudante abre la hoja solo cuando el disparador está visible.
+ */
+async function productAction(page: Page, product: string, action: string): Promise<void> {
+  const trigger = page.getByRole('button', { name: `Acciones de ${product}` });
+  if (await trigger.isVisible()) await trigger.click();
+  await page.getByRole('button', { name: action }).click();
 }
 
 test.describe.serial('digitalización de carta de la Fase 4', () => {
@@ -133,7 +143,7 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
     await expect(page.getByRole('heading', { name: 'Lomo Salatado' })).toBeVisible();
 
     await page.goto(`${webUrl}/admin/menu`);
-    await page.getByRole('button', { name: 'Editar Lomo Salatado' }).click();
+    await productAction(page, 'Lomo Salatado', 'Editar Lomo Salatado');
     await page.getByLabel('Nombre').fill('Lomo Saltado');
     await page.getByRole('button', { name: 'Guardar producto' }).click();
     await expect(page.getByText('Producto actualizado en el borrador.')).toBeVisible();

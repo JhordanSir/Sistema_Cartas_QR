@@ -36,7 +36,10 @@ export function Workspace({
   return (
     <section
       className={cn(
-        'mx-auto w-full px-4 pt-8 pb-16 sm:px-6 lg:px-10 lg:pt-12 xl:px-16',
+        // Clears the fixed top bar and the bottom tab bar on a phone; from lg both
+        // collapse into the side rail and the offsets go away.
+        'mx-auto w-full px-4 pt-18 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6',
+        'lg:px-10 lg:pt-12 lg:pb-16 xl:px-16',
         className ?? 'max-w-[90rem]',
       )}
     >
