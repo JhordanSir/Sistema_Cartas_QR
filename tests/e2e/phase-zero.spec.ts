@@ -24,7 +24,7 @@ test("la API esta lista y conectada a PostgreSQL", async ({ request }) => {
   });
 });
 
-test("la web sirve la pagina inicial", async ({ page }) => {
+test("la web sirve la pagina inicial", { tag: "@movil" }, async ({ page }) => {
   await page.goto(webUrl);
 
   await expect(

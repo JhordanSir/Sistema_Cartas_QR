@@ -1,6 +1,11 @@
 import "dotenv/config";
 
-import { defineConfig } from "@playwright/test";
+import { defineConfig, devices } from "@playwright/test";
+
+// Tests tagged @movil exercise the interface and also run on the two mobile
+// profiles. The rest cover API contracts, authorization or expensive flows such as
+// Gemini digitization, where running them three times would only slow the suite.
+const mobileScope = /@movil/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -13,4 +18,20 @@ export default defineConfig({
   use: {
     trace: "retain-on-failure",
   },
+  projects: [
+    {
+      name: "desktop-chromium",
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "mobile-chrome",
+      grep: mobileScope,
+      use: { ...devices["Pixel 7"] },
+    },
+    {
+      name: "mobile-safari",
+      grep: mobileScope,
+      use: { ...devices["iPhone 14"] },
+    },
+  ],
 });

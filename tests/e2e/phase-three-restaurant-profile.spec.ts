@@ -69,7 +69,7 @@ test.describe.serial('perfil del restaurante de la Fase 3', () => {
     restaurant = null;
   });
 
-  test('el dueño sube su logo y conserva los datos al recargar', async ({
+  test('el dueño sube su logo y conserva los datos al recargar', { tag: '@movil' }, async ({
     page,
     request,
   }) => {

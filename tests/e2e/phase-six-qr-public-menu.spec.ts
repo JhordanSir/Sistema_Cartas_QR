@@ -132,7 +132,7 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     restaurant = null;
   });
 
-  test('materializa un QR fijo, descarga ambos formatos y publica una carta móvil', async ({
+  test('materializa un QR fijo, descarga ambos formatos y publica una carta móvil', { tag: '@movil' }, async ({
     browser,
     context,
     page,

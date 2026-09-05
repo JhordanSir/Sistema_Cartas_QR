@@ -67,7 +67,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     restaurant = null;
   });
 
-  test('crea, ordena, publica, oculta y elimina productos sin cambiar la URL pública', async ({
+  test('crea, ordena, publica, oculta y elimina productos sin cambiar la URL pública', { tag: '@movil' }, async ({
     context,
     page,
   }) => {

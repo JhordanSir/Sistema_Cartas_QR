@@ -62,7 +62,7 @@ test.describe.serial('Estadísticas de visualización de la Fase 7', () => {
     restaurant = null;
   });
 
-  test('deduplica por visitante y día, y muestra el análisis al dueño y al administrador', async ({
+  test('deduplica por visitante y día, y muestra el análisis al dueño y al administrador', { tag: '@movil' }, async ({
     page,
     request,
   }) => {

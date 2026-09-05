@@ -86,7 +86,7 @@ test.describe.serial('sesión vencida y límites IDOR de propietario', () => {
     if (first) await removeRestaurant(request, adminToken, first.restaurant);
   });
 
-  test('limpia una sesión vencida y deja el formulario de propietario en el login', async ({
+  test('limpia una sesión vencida y deja el formulario de propietario en el login', { tag: '@movil' }, async ({
     context,
     page,
   }) => {

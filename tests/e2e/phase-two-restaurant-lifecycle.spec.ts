@@ -43,7 +43,7 @@ test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
     created = null;
   });
 
-  test('crea, deshabilita, reactiva y elimina definitivamente desde el backoffice', async ({
+  test('crea, deshabilita, reactiva y elimina definitivamente desde el backoffice', { tag: '@movil' }, async ({
     context,
     page,
     request,
