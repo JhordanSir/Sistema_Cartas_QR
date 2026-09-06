@@ -81,11 +81,16 @@ pnpm check:dead-code
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec playwright install chromium
+pnpm exec playwright install chromium webkit
 pnpm test:e2e
+pnpm test:visual
 ```
 
-La suite E2E presupone que el Compose está levantado. `pnpm peers check` permite confirmar que las versiones fijadas no tienen peer dependencies incompatibles.
+La suite E2E presupone que el Compose está levantado y corre en tres perfiles: Chromium de escritorio, Chrome móvil (Pixel 7) y Safari móvil (iPhone 14). WebKit se instala aparte, de ahí el `webkit` en el comando de instalación.
+
+`pnpm test:visual` no hace aserciones: recorre las doce pantallas a 390, 768 y 1280 px y escribe PNG en `artifacts/capturas/<VISUAL_LABEL>/` para revisión de diseño.
+
+`pnpm peers check` permite confirmar que las versiones fijadas no tienen peer dependencies incompatibles.
 
 ## Variables de entorno
 
