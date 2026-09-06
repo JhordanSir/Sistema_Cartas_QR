@@ -82,7 +82,7 @@ test.describe.serial('perfil del restaurante de la Fase 3', () => {
     await page.getByLabel('Correo del propietario').fill(ownerEmail);
     await page.getByLabel('Contraseña').fill(ownerPassword);
     await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
-    await expect(page).toHaveURL(`${webUrl}/admin`);
+    await expect(page).toHaveURL(`${webUrl}/admin`, { timeout: 20_000 });
 
     await page.getByLabel('Logo del restaurante').setInputFiles({
       buffer: Buffer.from(

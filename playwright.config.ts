@@ -29,8 +29,13 @@ export default defineConfig({
       use: { ...devices["Pixel 7"] },
     },
     {
-      name: "mobile-safari",
+      // WebKit is markedly slower here than Chromium: client-side navigation and the
+      // session guard routinely need more than the default 5s. Giving the profile
+      // room beats scattering per-call timeouts across every spec.
+      expect: { timeout: 20_000 },
       grep: mobileScope,
+      name: "mobile-safari",
+      timeout: 180_000,
       use: { ...devices["iPhone 14"] },
     },
   ],

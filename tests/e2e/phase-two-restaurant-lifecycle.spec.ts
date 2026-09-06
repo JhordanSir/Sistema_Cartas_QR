@@ -28,6 +28,10 @@ async function adminAccessToken(request: APIRequestContext): Promise<string> {
 }
 
 test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
+  // Alta, deshabilitado, reactivación y borrado definitivo en un solo recorrido:
+  // WebKit necesita bastante más que los 30 s por defecto.
+  test.describe.configure({ timeout: 120_000 });
+
   let created: CreatedRestaurant | null = null;
 
   test.afterEach(async ({ request }) => {

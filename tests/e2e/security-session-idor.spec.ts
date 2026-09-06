@@ -104,9 +104,11 @@ test.describe.serial('sesión vencida y límites IDOR de propietario', () => {
     await expect(page).toHaveURL(`${webUrl}/admin/login`);
     await expect(page.getByRole('heading', { name: 'Tu carta empieza aquí.' })).toBeVisible();
     expect(navigations).not.toContain(`${webUrl}/admin`);
-    expect((await context.cookies()).map((cookie) => cookie.name)).not.toEqual(
-      expect.arrayContaining(['sirio_access', 'sirio_refresh', 'sirio_role']),
-    );
+    // El guard limpia las cookies cuando su comprobación de sesión termina, después
+    // de que la página ya se pintó. Hay que sondear en lugar de leer una sola vez.
+    await expect
+      .poll(async () => (await context.cookies()).map((cookie) => cookie.name))
+      .not.toEqual(expect.arrayContaining(['sirio_access', 'sirio_refresh', 'sirio_role']));
   });
 
   test('deniega por API y BFF todos los recursos de otro propietario', async ({

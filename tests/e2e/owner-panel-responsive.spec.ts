@@ -70,7 +70,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     expect(created.ok()).toBe(true);
     restaurant = (await created.json()) as CreatedRestaurant;
 
-    await page.goto(`${webUrl}/admin/login`, { waitUntil: 'networkidle' });
+    await page.goto(`${webUrl}/admin/login`);
     await page.getByLabel('Correo del propietario').fill(ownerEmail);
     await page.getByLabel('Contraseña').fill(ownerPassword);
     await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
@@ -100,7 +100,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     { tag: '@movil' },
     async ({ page }) => {
       for (const screen of OWNER_SCREENS) {
-        await page.goto(`${webUrl}${screen.path}`, { waitUntil: 'networkidle' });
+        await page.goto(`${webUrl}${screen.path}`);
 
         const navigation = page.getByRole('navigation', { name: 'Panel del restaurante' });
         // El panel se pinta tras validar la sesión en cliente; WebKit tarda bastante
@@ -127,7 +127,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     'cada destino y acción respeta el objetivo táctil de 44 píxeles',
     { tag: '@movil' },
     async ({ page }) => {
-      await page.goto(`${webUrl}/admin`, { waitUntil: 'networkidle' });
+      await page.goto(`${webUrl}/admin`);
 
       const navigation = page.getByRole('navigation', { name: 'Panel del restaurante' });
       await expect(navigation).toBeVisible({ timeout: 20_000 });
@@ -146,7 +146,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     'el conmutador de tema aplica la elección y la conserva al navegar',
     { tag: '@movil' },
     async ({ page }) => {
-      await page.goto(`${webUrl}/admin`, { waitUntil: 'networkidle' });
+      await page.goto(`${webUrl}/admin`);
       await expect(page.getByRole('button', { name: /Cambiar tema/ })).toBeVisible({
         timeout: 20_000,
       });
@@ -162,12 +162,12 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
       expect(await readTheme()).toBe('dark');
 
       // La elección sobrevive a una recarga, sin parpadeo: la aplica el script del layout.
-      await page.reload({ waitUntil: 'networkidle' });
+      await page.reload();
       expect(await readTheme()).toBe('dark');
 
       // La carta pública no obedece al tema del panel: sus colores los fija el dueño.
       if (!restaurant) throw new Error('No se preparó el restaurante');
-      await page.goto(`${webUrl}/${restaurant.slug}`, { waitUntil: 'networkidle' });
+      await page.goto(`${webUrl}/${restaurant.slug}`);
       const menuBackground = await page.evaluate(() => {
         const main = document.querySelector('main');
         return main ? getComputedStyle(main).getPropertyValue('--menu-background').trim() : '';
@@ -181,7 +181,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     { tag: '@movil' },
     async ({ page }) => {
       if (!restaurant) throw new Error('No se preparó el restaurante');
-      await page.goto(`${webUrl}/admin/menu`, { waitUntil: 'networkidle' });
+      await page.goto(`${webUrl}/admin/menu`);
 
       const newSection = page.getByRole('button', { name: '+ Nueva sección' });
       await expect(newSection).toBeVisible({ timeout: 20_000 });
