@@ -103,7 +103,9 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
         await page.goto(`${webUrl}${screen.path}`, { waitUntil: 'networkidle' });
 
         const navigation = page.getByRole('navigation', { name: 'Panel del restaurante' });
-        await expect(navigation).toBeVisible();
+        // El panel se pinta tras validar la sesión en cliente; WebKit tarda bastante
+        // más que Chromium en hidratar y resolver esa comprobación.
+        await expect(navigation).toBeVisible({ timeout: 20_000 });
 
         for (const destination of OWNER_DESTINATIONS) {
           await expect(navigation.getByRole('link', { name: destination })).toBeVisible();
@@ -128,6 +130,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
       await page.goto(`${webUrl}/admin`, { waitUntil: 'networkidle' });
 
       const navigation = page.getByRole('navigation', { name: 'Panel del restaurante' });
+      await expect(navigation).toBeVisible({ timeout: 20_000 });
       for (const destination of OWNER_DESTINATIONS) {
         const box = await navigation.getByRole('link', { name: destination }).boundingBox();
         expect(box, `${destination} debe ocupar espacio`).not.toBeNull();
@@ -144,6 +147,9 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     { tag: '@movil' },
     async ({ page }) => {
       await page.goto(`${webUrl}/admin`, { waitUntil: 'networkidle' });
+      await expect(page.getByRole('button', { name: /Cambiar tema/ })).toBeVisible({
+        timeout: 20_000,
+      });
       const readTheme = () => page.evaluate(() => document.documentElement.dataset.theme ?? null);
 
       expect(await readTheme()).toBeNull();
@@ -177,7 +183,9 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
       if (!restaurant) throw new Error('No se preparó el restaurante');
       await page.goto(`${webUrl}/admin/menu`, { waitUntil: 'networkidle' });
 
-      await page.getByRole('button', { name: '+ Nueva sección' }).click();
+      const newSection = page.getByRole('button', { name: '+ Nueva sección' });
+      await expect(newSection).toBeVisible({ timeout: 20_000 });
+      await newSection.click();
       await page.getByLabel('Nombre').fill('Entradas');
       await page.getByRole('button', { name: 'Guardar sección' }).click();
 
@@ -198,7 +206,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
       await expect(editAction).toBeVisible();
       expect((await editAction.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
 
-      await page.getByRole('button', { name: 'Cerrar' }).click();
+      await page.getByRole('button', { exact: true, name: 'Cerrar' }).click();
       await expect(editAction).toBeHidden();
 
       expect(await scrollsSideways(page)).toBe(false);

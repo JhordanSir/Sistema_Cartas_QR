@@ -1,22 +1,29 @@
 import type { AuthPrincipal } from '../../../auth/domain/auth.types.js';
 import type { PublishedMenu } from '../../../digitization/domain/menu.types.js';
 import { MenuManagementApplicationError } from '../../domain/menu-management.errors.js';
-import { assertOwner, normalizeCategoryName, normalizeOrderedIds } from '../menu-management.validation.js';
+import {
+  assertOwner,
+  normalizeCategoryLayout,
+  normalizeCategoryName,
+  normalizeOrderedIds,
+} from '../menu-management.validation.js';
 import type { CategoryManagementRepository } from '../ports/menu-management.repositories.js';
 
 export class CreateCategory {
   constructor(private readonly repository: CategoryManagementRepository) {}
 
   async execute(input: {
+    layout?: unknown;
     name: unknown;
     principal: AuthPrincipal;
     restaurantId: string;
   }): Promise<PublishedMenu> {
     assertOwner(input.principal);
+    const layout = normalizeCategoryLayout(input.layout);
     const menu = await this.repository.createCategory(
       input.principal.accountId,
       input.restaurantId,
-      normalizeCategoryName(input.name),
+      { name: normalizeCategoryName(input.name), ...(layout ? { layout } : {}) },
     );
     return requireMenu(menu);
   }
@@ -27,16 +34,18 @@ export class UpdateCategory {
 
   async execute(input: {
     categoryId: string;
+    layout?: unknown;
     name: unknown;
     principal: AuthPrincipal;
     restaurantId: string;
   }): Promise<PublishedMenu> {
     assertOwner(input.principal);
+    const layout = normalizeCategoryLayout(input.layout);
     const menu = await this.repository.updateCategory(
       input.principal.accountId,
       input.restaurantId,
       input.categoryId,
-      normalizeCategoryName(input.name),
+      { name: normalizeCategoryName(input.name), ...(layout ? { layout } : {}) },
     );
     if (!menu) {
       throw new MenuManagementApplicationError('CATEGORY_NOT_FOUND', 'Category not found.');

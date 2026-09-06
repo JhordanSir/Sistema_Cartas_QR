@@ -28,7 +28,9 @@ async function login(
 async function productAction(page: Page, product: string, action: string): Promise<void> {
   const trigger = page.getByRole('button', { name: `Acciones de ${product}` });
   if (await trigger.isVisible()) await trigger.click();
-  await page.getByRole('button', { name: action }).click();
+  const control = page.getByRole('button', { name: action, exact: true });
+  await expect(control).toBeVisible();
+  await control.click();
 }
 
 test.describe.serial('digitalización de carta de la Fase 4', () => {

@@ -27,6 +27,8 @@ describe('menu extraction validation', () => {
     expect(menu).toEqual({
       categories: [
         {
+          // Una carta recién digitalizada siempre nace como lista compacta.
+          layout: 'LIST',
           name: 'Fondos',
           products: [
             {

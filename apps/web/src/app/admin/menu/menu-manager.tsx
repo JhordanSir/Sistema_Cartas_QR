@@ -7,6 +7,7 @@ import { Button, InlineAction, TextAction } from '@/components/button';
 import { Field, fieldControl } from '@/components/field';
 import { ModalBackdrop, ModalFooter, modalPanel, modalPanelWide } from '@/components/modal';
 import type {
+  CategoryLayout,
   MenuCategory,
   MenuOption,
   MenuProduct,
@@ -25,6 +26,23 @@ interface MenuManagerProps {
 interface ManagedCategory extends MenuCategory {
   id: string;
 }
+
+const LAYOUT_OPTIONS: Array<{
+  description: string;
+  id: CategoryLayout;
+  label: string;
+}> = [
+  {
+    description: 'Filas densas. Se recorre rápido, aunque falten fotos.',
+    id: 'LIST',
+    label: 'Lista compacta',
+  },
+  {
+    description: 'Cada plato en su tarjeta, con la foto como protagonista.',
+    id: 'CARDS',
+    label: 'Tarjetas con foto',
+  },
+];
 
 interface ManagedProduct extends MenuProduct {
   id: string;
@@ -90,7 +108,7 @@ export function MenuManager({
     const nextMenu = await mutate(
       editing ? `/categories/${categoryEditor.id}` : '/categories',
       {
-        body: JSON.stringify({ name: data.get('name') }),
+        body: JSON.stringify({ layout: data.get('layout'), name: data.get('name') }),
         headers: { 'content-type': 'application/json' },
         method: editing ? 'PATCH' : 'POST',
       },
@@ -416,6 +434,37 @@ export function MenuManager({
                 required
               />
             </Field>
+            <fieldset className="grid gap-2">
+              <legend className="text-[13px] font-bold text-ink-soft">
+                Cómo se ve en la carta
+              </legend>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {LAYOUT_OPTIONS.map((option) => (
+                  <label
+                    className="grid cursor-pointer gap-1 rounded-xl border border-line-strong p-3 transition-colors has-checked:border-olive has-checked:bg-olive-wash"
+                    key={option.id}
+                  >
+                    <span className="flex items-center gap-2 text-[13px] font-bold text-ink">
+                      <input
+                        className="size-4 accent-olive"
+                        defaultChecked={
+                          categoryEditor === 'new'
+                            ? option.id === 'LIST'
+                            : categoryEditor.layout === option.id
+                        }
+                        name="layout"
+                        type="radio"
+                        value={option.id}
+                      />
+                      {option.label}
+                    </span>
+                    <span className="pl-6 text-[11px]/relaxed text-ink-muted">
+                      {option.description}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
             <EditorFooter
               busy={busy !== null}
               close={() => setCategoryEditor(null)}

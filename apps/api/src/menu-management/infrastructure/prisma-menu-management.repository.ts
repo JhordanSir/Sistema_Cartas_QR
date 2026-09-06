@@ -2,6 +2,8 @@ import type { PrismaService } from '../../prisma/prisma.service.js';
 import type {
   CategoryDeletionResult,
   CategoryManagementRepository,
+  CategoryPatch,
+  CategoryValues,
   ProductDeletionResult,
   ProductImageReadRepository,
   ProductManagementRepository,
@@ -30,7 +32,7 @@ export class PrismaMenuManagementRepository
   async createCategory(
     ownerId: string,
     restaurantId: string,
-    name: string,
+    values: CategoryValues,
   ): Promise<PublishedMenu | null> {
     const created = await this.prisma.$transaction(async (transaction) => {
       if (!(await this.isOwned(transaction, ownerId, restaurantId))) return false;
@@ -41,7 +43,7 @@ export class PrismaMenuManagementRepository
       });
       await transaction.category.create({
         data: {
-          name,
+          ...values,
           restaurantId,
           sortOrder: (aggregate._max.sortOrder ?? -1) + 1,
         },
@@ -56,7 +58,7 @@ export class PrismaMenuManagementRepository
     ownerId: string,
     restaurantId: string,
     categoryId: string,
-    name: string,
+    values: CategoryPatch,
   ): Promise<PublishedMenu | null> {
     const updated = await this.prisma.$transaction(async (transaction) => {
       const category = await transaction.category.findFirst({
@@ -69,7 +71,7 @@ export class PrismaMenuManagementRepository
       });
       if (!category) return false;
       await preserveCurrentPublicMenu(transaction, restaurantId);
-      await transaction.category.update({ data: { name }, where: { id: categoryId } });
+      await transaction.category.update({ data: values, where: { id: categoryId } });
       await this.touchRestaurant(transaction, restaurantId);
       return true;
     });

@@ -175,9 +175,15 @@ test.describe.serial('capturas de referencia de todas las superficies', () => {
       const auth = { authorization: `Bearer ${ownerToken}` };
       const menuUrl = `${directApiUrl}/owner/restaurants/${restaurant.id}/menu`;
 
-      for (const category of ['Entradas', 'Fondos', 'Bebidas']) {
+      // Fondos usa tarjetas para que las capturas muestren los dos estilos de sección.
+      const seedCategories = [
+        { layout: 'LIST', name: 'Entradas' },
+        { layout: 'CARDS', name: 'Fondos' },
+        { layout: 'LIST', name: 'Bebidas' },
+      ];
+      for (const category of seedCategories) {
         const response = await api.post(`${menuUrl}/categories`, {
-          data: { name: category },
+          data: category,
           headers: auth,
         });
         expect(response.ok()).toBe(true);

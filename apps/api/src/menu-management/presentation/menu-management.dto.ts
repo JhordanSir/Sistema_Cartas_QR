@@ -5,6 +5,7 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   IsUUID,
@@ -14,12 +15,21 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+import {
+  CATEGORY_LAYOUTS,
+  type CategoryLayout,
+} from '../../digitization/domain/menu.types.js';
+
 const PRICE_PATTERN = /^\d{1,8}(?:\.\d{1,2})?$/;
 
 export class CategoryNameDto {
   @IsString()
   @Length(1, 160)
   name!: string;
+
+  @IsOptional()
+  @IsIn(CATEGORY_LAYOUTS)
+  layout?: CategoryLayout;
 }
 
 export class ReorderMenuItemsDto {

@@ -4,6 +4,7 @@ const baseRecord = {
   backgroundColor: '#ffffff',
   categories: [{
     id: 'category-1',
+    layout: 'LIST',
     name: 'Fondos',
     products: [{
       basePrice: { toFixed: (): string => '24.00' },
@@ -42,7 +43,7 @@ describe('estado de publicación de carta', () => {
     expect(menu.publication.hasPublishedMenu).toBe(true);
   });
 
-  it('no marca cambios cuando PostgreSQL devuelve el snapshot con otro orden de claves', () => {
+  it('no marca cambios cuando el snapshot llega con otro orden de claves ni con secciones sin estilo', () => {
     const menu = toOwnedMenu({
       ...baseRecord,
       publicationInitialized: true,
@@ -62,6 +63,73 @@ describe('estado de publicación de carta', () => {
           name: 'Fondos',
           id: 'category-1',
         }],
+      },
+    });
+
+    // El snapshot guardado no trae "layout": es una carta publicada antes de que las
+    // secciones pudieran elegir estilo. Debe seguir considerándose idéntica.
+    expect(menu.publication.hasUnpublishedChanges).toBe(false);
+  });
+
+  it('marca cambios por publicar cuando una sección pasa a tarjetas', () => {
+    const publishedMenu = {
+      categories: [{
+        id: 'category-1',
+        layout: 'LIST',
+        name: 'Fondos',
+        products: [{
+          basePrice: '24.00',
+          description: null,
+          extras: [],
+          id: 'product-1',
+          imagePath: null,
+          isAvailable: true,
+          name: 'Lomo saltado',
+          variants: [],
+        }],
+      }],
+      style: { backgroundColor: '#ffffff', fontFamily: 'Inter', textColor: '#111827' },
+    };
+
+    const unchanged = toOwnedMenu({
+      ...baseRecord,
+      publicationInitialized: true,
+      publishedMenu,
+    });
+    expect(unchanged.publication.hasUnpublishedChanges).toBe(false);
+
+    const switchedToCards = toOwnedMenu({
+      ...baseRecord,
+      categories: [{ ...baseRecord.categories[0]!, layout: 'CARDS' }],
+      publicationInitialized: true,
+      publishedMenu,
+    });
+
+    // El estilo forma parte de lo publicado: la carta pública no cambia hasta publicar.
+    expect(switchedToCards.publication.hasUnpublishedChanges).toBe(true);
+  });
+
+  it('ignora un estilo corrupto en el snapshot y lo trata como lista', () => {
+    const menu = toOwnedMenu({
+      ...baseRecord,
+      publicationInitialized: true,
+      publishedMenu: {
+        categories: [{
+          id: 'category-1',
+          layout: 'MOSAICO',
+          name: 'Fondos',
+          products: [{
+            basePrice: '24.00',
+            description: null,
+            extras: [],
+            id: 'product-1',
+            imagePath: null,
+            isAvailable: true,
+            name: 'Lomo saltado',
+            variants: [],
+          }],
+        }],
+        style: { backgroundColor: '#ffffff', fontFamily: 'Inter', textColor: '#111827' },
       },
     });
 

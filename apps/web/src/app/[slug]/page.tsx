@@ -161,49 +161,19 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
                     <h2 className="m-0 text-[15px] tracking-[0.11em] uppercase">{category.name}</h2>
                   </header>
 
-                  <div className="grid">
-                    {category.products.map((product) => (
-                      <article
-                        className={`border-b border-current/12 py-5 sm:py-6 ${
-                          product.hasImage
-                            ? 'grid grid-cols-[5.25rem_minmax(0,1fr)] items-start gap-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-5'
-                            : ''
-                        }`}
-                        key={product.id}
-                      >
-                        {product.hasImage ? (
-                          // Product images are served from the same public origin and sized by CSS.
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            alt={product.name}
-                            className="block aspect-square w-full rounded-2xl border border-current/15 object-cover"
-                            src={`/api/public/restaurants/${encodeURIComponent(restaurant.slug)}/products/${product.id}/image`}
-                          />
-                        ) : null}
-                        <div className="min-w-0">
-                          <div className="flex items-start justify-between gap-2.5 sm:items-baseline sm:gap-4">
-                            <h3 className="m-0 text-[17px] tracking-[-0.02em] sm:text-[19px]">
-                              {product.name}
-                            </h3>
-                            <strong className="shrink-0 rounded-md bg-current/8 px-1.5 py-1 text-xs whitespace-nowrap tabular-nums sm:text-[13px]">
-                              S/ {product.basePrice}
-                            </strong>
-                          </div>
-                          {product.description ? (
-                            <p className="mt-2 mb-0 max-w-[54ch] text-[13px]/normal opacity-75">
-                              {product.description}
-                            </p>
-                          ) : null}
-                          {product.variants.length > 0 ? (
-                            <OptionList items={product.variants} title="Presentaciones" />
-                          ) : null}
-                          {product.extras.length > 0 ? (
-                            <OptionList items={product.extras} title="Adicionales" />
-                          ) : null}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
+                  {category.layout === 'CARDS' ? (
+                    <div className="grid gap-4 pt-5 sm:grid-cols-2 sm:gap-5">
+                      {category.products.map((product) => (
+                        <ProductCard key={product.id} product={product} slug={restaurant.slug} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid">
+                      {category.products.map((product) => (
+                        <ProductRow key={product.id} product={product} slug={restaurant.slug} />
+                      ))}
+                    </div>
+                  )}
                 </section>
               ))}
             </div>
@@ -284,6 +254,89 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
         </a>
       ) : null}
     </main>
+  );
+}
+
+type PublicProduct = PublicRestaurant['categories'][number]['products'][number];
+
+/** Dense row: the default, and the only shape that reads well without photos. */
+function ProductRow({ product, slug }: { product: PublicProduct; slug: string }) {
+  return (
+    <article
+      data-testid="product-row"
+      className={`border-b border-current/12 py-5 sm:py-6 ${
+        product.hasImage
+          ? 'grid grid-cols-[5.25rem_minmax(0,1fr)] items-start gap-3.5 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-5'
+          : ''
+      }`}
+    >
+      {product.hasImage ? (
+        // Product images are served from the same public origin and sized by CSS.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={product.name}
+          className="block aspect-square w-full rounded-2xl border border-current/15 object-cover"
+          src={`/api/public/restaurants/${encodeURIComponent(slug)}/products/${product.id}/image`}
+        />
+      ) : null}
+      <div className="min-w-0">
+        <ProductHeading product={product} />
+        <ProductDetails product={product} />
+      </div>
+    </article>
+  );
+}
+
+/**
+ * Photo-first card, chosen per section by the owner. A product without an image
+ * simply renders a shorter, text-only card: no placeholder art, no broken frame.
+ */
+function ProductCard({ product, slug }: { product: PublicProduct; slug: string }) {
+  return (
+    <article
+      className="grid content-start overflow-hidden rounded-2xl border border-current/15"
+      data-testid="product-card"
+    >
+      {product.hasImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt={product.name}
+          className="block aspect-4/3 w-full object-cover"
+          src={`/api/public/restaurants/${encodeURIComponent(slug)}/products/${product.id}/image`}
+        />
+      ) : null}
+      <div className="min-w-0 p-4">
+        <ProductHeading product={product} />
+        <ProductDetails product={product} />
+      </div>
+    </article>
+  );
+}
+
+function ProductHeading({ product }: { product: PublicProduct }) {
+  return (
+    <div className="flex items-start justify-between gap-2.5 sm:items-baseline sm:gap-4">
+      <h3 className="m-0 text-[17px] tracking-[-0.02em] sm:text-[19px]">{product.name}</h3>
+      <strong className="shrink-0 rounded-md bg-current/8 px-1.5 py-1 text-xs whitespace-nowrap tabular-nums sm:text-[13px]">
+        S/ {product.basePrice}
+      </strong>
+    </div>
+  );
+}
+
+function ProductDetails({ product }: { product: PublicProduct }) {
+  return (
+    <>
+      {product.description ? (
+        <p className="mt-2 mb-0 max-w-[54ch] text-[13px]/normal opacity-75">
+          {product.description}
+        </p>
+      ) : null}
+      {product.variants.length > 0 ? (
+        <OptionList items={product.variants} title="Presentaciones" />
+      ) : null}
+      {product.extras.length > 0 ? <OptionList items={product.extras} title="Adicionales" /> : null}
+    </>
   );
 }
 

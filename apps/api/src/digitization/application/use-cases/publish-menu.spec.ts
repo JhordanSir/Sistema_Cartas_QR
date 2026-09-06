@@ -12,7 +12,7 @@ const OWNER: AuthPrincipal = {
 };
 
 const menu: PublishedMenu = {
-  categories: [{ name: 'Fondos', products: [{ basePrice: '28.00', description: null, extras: [], imagePath: null, isAvailable: true, name: 'Lomo', variants: [] }] }],
+  categories: [{ layout: 'LIST', name: 'Fondos', products: [{ basePrice: '28.00', description: null, extras: [], imagePath: null, isAvailable: true, name: 'Lomo', variants: [] }] }],
   publication: { hasPublishedMenu: true, hasUnpublishedChanges: false, publishedAt: '2026-09-01T12:00:00.000Z' },
   restaurantId: 'restaurant-1',
   style: { backgroundColor: '#ffffff', fontFamily: 'Inter', textColor: '#111827' },

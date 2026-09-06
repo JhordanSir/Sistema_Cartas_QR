@@ -1,5 +1,6 @@
 import { AuthRole } from '../../auth/domain/auth-role.js';
 import type { AuthPrincipal } from '../../auth/domain/auth.types.js';
+import { CATEGORY_LAYOUTS, type CategoryLayout } from '../../digitization/domain/menu.types.js';
 import { MenuManagementApplicationError } from '../domain/menu-management.errors.js';
 import {
   PRODUCT_IMAGE_LIMITS,
@@ -19,6 +20,21 @@ export function assertOwner(principal: AuthPrincipal): void {
 
 export function normalizeCategoryName(value: unknown): string {
   return normalizeText(value, 1, 160, 'nombre de categoría');
+}
+
+/**
+ * The layout is optional on every request: omitting it leaves the section as it is,
+ * which keeps a rename from silently resetting a card layout back to a list.
+ */
+export function normalizeCategoryLayout(value: unknown): CategoryLayout | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== 'string' || !CATEGORY_LAYOUTS.includes(value as CategoryLayout)) {
+    throw new MenuManagementApplicationError(
+      'INVALID_INPUT',
+      'El estilo de la sección debe ser LIST o CARDS.',
+    );
+  }
+  return value as CategoryLayout;
 }
 
 export function normalizeProductValues(input: {

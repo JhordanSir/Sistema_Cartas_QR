@@ -57,8 +57,16 @@ export interface MenuProduct {
   variants: MenuVariant[];
 }
 
+export const CATEGORY_LAYOUTS = ['LIST', 'CARDS'] as const;
+
+export type CategoryLayout = (typeof CATEGORY_LAYOUTS)[number];
+
+export const DEFAULT_CATEGORY_LAYOUT: CategoryLayout = 'LIST';
+
 export interface MenuCategory {
   id?: string;
+  /** How the published menu lays this section out. Chosen by the owner. */
+  layout: CategoryLayout;
   name: string;
   products: MenuProduct[];
 }

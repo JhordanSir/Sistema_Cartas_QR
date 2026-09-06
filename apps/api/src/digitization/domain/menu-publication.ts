@@ -1,10 +1,13 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 
-import type {
-  ExtractedMenu,
-  MenuStyle,
-  PublishedMenu,
+import {
+  CATEGORY_LAYOUTS,
+  DEFAULT_CATEGORY_LAYOUT,
+  type CategoryLayout,
+  type ExtractedMenu,
+  type MenuStyle,
+  type PublishedMenu,
 } from './menu.types.js';
 
 export const MENU_TEMPLATE_IDS = ['ORIGINAL', 'TRADITIONAL', 'CASUAL', 'PREMIUM'] as const;
@@ -57,6 +60,7 @@ type MenuRecord = {
   backgroundColor: string;
   categories: Array<{
     id: string;
+    layout: string;
     name: string;
     products: Array<{
       basePrice: { toFixed(digits: number): string };
@@ -86,6 +90,7 @@ export function toMenuSnapshot(record: MenuRecord): ExtractedMenu {
   return {
     categories: record.categories.map((category) => ({
       id: category.id,
+      layout: normalizeCategoryLayout(category.layout),
       name: category.name,
       products: category.products.map((product) => ({
         basePrice: product.basePrice.toFixed(2),
@@ -141,7 +146,22 @@ export function parseMenuSnapshot(value: Prisma.JsonValue | null): ExtractedMenu
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const snapshot = value as Partial<ExtractedMenu>;
   if (!Array.isArray(snapshot.categories) || !isMenuStyle(snapshot.style)) return null;
-  return snapshot as ExtractedMenu;
+  return {
+    ...(snapshot as ExtractedMenu),
+    // Menus published before sections had a layout carry no such field. Filling it
+    // with the default keeps them comparable, so nobody sees a phantom
+    // "tienes cambios por publicar" the day this ships.
+    categories: snapshot.categories.map((category) => ({
+      ...category,
+      layout: normalizeCategoryLayout((category as { layout?: unknown }).layout),
+    })),
+  };
+}
+
+function normalizeCategoryLayout(value: unknown): CategoryLayout {
+  return CATEGORY_LAYOUTS.includes(value as CategoryLayout)
+    ? (value as CategoryLayout)
+    : DEFAULT_CATEGORY_LAYOUT;
 }
 
 export function parseStoredMenuStyle(value: Prisma.JsonValue | null): MenuStyle | null {

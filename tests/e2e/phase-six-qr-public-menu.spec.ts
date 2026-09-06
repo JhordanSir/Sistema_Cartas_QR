@@ -255,10 +255,11 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     await expect(page.getByRole('heading', {
       name: 'Aprende a manejar tu carta desde el celular.',
     })).toBeVisible();
-    const tutorials = page.locator('video');
-    await expect(tutorials).toHaveCount(5);
-    await expect(tutorials.first()).toHaveAttribute('playsinline', '');
-    await expect(tutorials.first().locator('track[kind="subtitles"]')).toHaveAttribute('src', '/tutorials/01-access.vtt');
+    const guides = page.locator('details');
+    await expect(guides).toHaveCount(5);
+    // La primera guía llega desplegada; el resto se abren a demanda.
+    await expect(guides.first()).toHaveAttribute('open', '');
+    await expect(page.getByText('Ingresa a tu panel')).toBeVisible();
 
     const publicPage = await context.newPage();
     await publicPage.goto(`${webUrl}/${restaurant.slug}`, { waitUntil: 'networkidle' });
@@ -320,6 +321,8 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
       name: 'Aprende a manejar tu carta desde el celular.',
     })).toBeVisible();
     await expect(helpMobilePage.locator('details')).toHaveCount(5);
+    // Las guías se abren a demanda; al desplegar la del QR aparece su acceso directo.
+    await helpMobilePage.locator('summary').filter({ hasText: 'Comparte tu QR' }).click();
     await expect(helpMobilePage.getByRole('link', { name: /Ir a QR/ })).toBeVisible();
     expect(await helpMobilePage.evaluate(() =>
       document.documentElement.scrollWidth <= window.innerWidth,

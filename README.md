@@ -170,13 +170,13 @@ Endpoints del propietario:
 
 ## Gestión de la carta
 
-Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
+Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada sección elige además cómo se presenta en la carta pública: `LIST` (filas compactas, el valor por defecto) o `CARDS` (una tarjeta por plato, con la foto como protagonista). El estilo viaja en el borrador y en el snapshot publicado, así que cambiarlo marca la carta como pendiente de publicar y no llega al comensal hasta confirmarlo. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
 
 La disponibilidad es independiente de la eliminación: marcar un producto como no disponible conserva todos sus datos en el panel y lo retira inmediatamente de la carta pública. Al volver a habilitarlo reaparece en la misma URL `/{slug}`; ninguna edición cambia el enlace que usará el QR.
 
 Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 
-- `POST /categories`, `PATCH|DELETE /categories/:categoryId` y `PUT /categories-order`.
+- `POST /categories`, `PATCH|DELETE /categories/:categoryId` y `PUT /categories-order`. El alta y la edición aceptan `layout` opcional (`LIST` o `CARDS`); omitirlo conserva el estilo actual.
 - `POST /products`, `PATCH|DELETE /products/:productId` y `PATCH /products/:productId/availability`.
 - `PUT /categories/:categoryId/products-order`.
 - `PUT|GET|DELETE /products/:productId/image`.

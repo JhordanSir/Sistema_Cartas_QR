@@ -30,7 +30,10 @@ export function SideRail({
   return (
     <aside
       className={cn(
-        'fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-canvas/95 px-3 py-2 backdrop-blur',
+        // Deliberately no backdrop-blur here: backdrop-filter turns an element into the
+        // containing block for its position: fixed descendants, which would anchor the
+        // bottom tab bar inside this header and cover the header's own controls.
+        'fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-canvas px-3 py-2',
         'lg:sticky lg:inset-x-auto lg:h-dvh lg:flex-col lg:items-stretch lg:justify-start lg:gap-0 lg:border-r lg:border-b-0 lg:px-4 lg:py-6',
       )}
     >

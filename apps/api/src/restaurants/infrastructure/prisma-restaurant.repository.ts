@@ -255,6 +255,7 @@ export class PrismaRestaurantRepository
     const draftMenu = {
       categories: restaurant.categories.map((category) => ({
         id: category.id,
+        layout: category.layout,
         name: category.name,
         products: category.products.map((product) => ({
           basePrice: product.basePrice.toFixed(2),
@@ -290,12 +291,14 @@ export class PrismaRestaurantRepository
       categories: menu.categories
         .map((category) => ({
           id: category.id ?? category.name,
+          layout: category.layout,
           name: category.name,
           products: category.products.filter((product) => product.isAvailable),
         }))
         .filter((category) => category.products.length > 0)
         .map((category) => ({
           id: category.id,
+          layout: category.layout,
           name: category.name,
           products: category.products.map((product) => ({
             basePrice: product.basePrice,

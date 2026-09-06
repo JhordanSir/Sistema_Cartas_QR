@@ -56,8 +56,12 @@ export interface MenuProduct {
   variants: MenuOption[];
 }
 
+export type CategoryLayout = 'LIST' | 'CARDS';
+
 export interface MenuCategory {
   id?: string;
+  /** How the published menu lays this section out. Chosen by the owner. */
+  layout: CategoryLayout;
   name: string;
   products: MenuProduct[];
 }

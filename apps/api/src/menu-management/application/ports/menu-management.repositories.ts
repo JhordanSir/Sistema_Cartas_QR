@@ -1,4 +1,4 @@
-import type { PublishedMenu } from '../../../digitization/domain/menu.types.js';
+import type { CategoryLayout, PublishedMenu } from '../../../digitization/domain/menu.types.js';
 import type {
   ProductAssetRecord,
   ProductPatch,
@@ -15,11 +15,22 @@ export interface ProductDeletionResult {
   menu: PublishedMenu;
 }
 
+export interface CategoryValues {
+  layout?: CategoryLayout;
+  name: string;
+}
+
+/** Omitted fields are left untouched, so renaming never resets the layout. */
+export interface CategoryPatch {
+  layout?: CategoryLayout;
+  name?: string;
+}
+
 export interface CategoryManagementRepository {
-  createCategory(ownerId: string, restaurantId: string, name: string): Promise<PublishedMenu | null>;
+  createCategory(ownerId: string, restaurantId: string, values: CategoryValues): Promise<PublishedMenu | null>;
   deleteCategory(ownerId: string, restaurantId: string, categoryId: string): Promise<CategoryDeletionResult | null>;
   reorderCategories(ownerId: string, restaurantId: string, orderedIds: string[]): Promise<PublishedMenu | null>;
-  updateCategory(ownerId: string, restaurantId: string, categoryId: string, name: string): Promise<PublishedMenu | null>;
+  updateCategory(ownerId: string, restaurantId: string, categoryId: string, values: CategoryPatch): Promise<PublishedMenu | null>;
 }
 
 export interface ProductManagementRepository {

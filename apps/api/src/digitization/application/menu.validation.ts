@@ -1,5 +1,6 @@
 import { DigitizationApplicationError } from '../domain/digitization.errors.js';
 import {
+  DEFAULT_CATEGORY_LAYOUT,
   MENU_FONT_FAMILIES,
   MENU_PHOTO_LIMITS,
   type ExtractedMenu,
@@ -86,6 +87,9 @@ function parseCategory(value: unknown, categoryIndex: number): MenuCategory {
     invalidResponse(`La categoría ${categoryIndex + 1} no contiene productos válidos.`);
   }
   return {
+    // Gemini never picks a layout: a freshly digitized menu starts as a list and the
+    // owner decides afterwards which sections deserve cards.
+    layout: DEFAULT_CATEGORY_LAYOUT,
     name: parseText(category.name, 1, 160, 'categoría'),
     products: category.products.map((product, productIndex) =>
       parseProduct(product, categoryIndex, productIndex),

@@ -1,5 +1,6 @@
 import { MenuManagementApplicationError } from '../domain/menu-management.errors.js';
 import {
+  normalizeCategoryLayout,
   normalizeOrderedIds,
   normalizeProductPatch,
   normalizeProductValues,
@@ -67,5 +68,26 @@ describe('menu management validation', () => {
     expect(() => validateProductImage({ bytes: png, contentType: 'image/jpeg' })).toThrow(
       'La imagen debe ser un archivo PNG, JPG o WebP válido',
     );
+  });
+
+  describe('estilo de sección', () => {
+    it('acepta los dos estilos publicables', () => {
+      expect(normalizeCategoryLayout('LIST')).toBe('LIST');
+      expect(normalizeCategoryLayout('CARDS')).toBe('CARDS');
+    });
+
+    it('devuelve undefined cuando no se envía, para no pisar el estilo actual', () => {
+      expect(normalizeCategoryLayout(undefined)).toBeUndefined();
+      expect(normalizeCategoryLayout(null)).toBeUndefined();
+    });
+
+    it('rechaza cualquier otro valor', () => {
+      for (const value of ['MOSAICO', 'list', '', 3, true, {}, []]) {
+        expect(() => normalizeCategoryLayout(value)).toThrow(MenuManagementApplicationError);
+        expect(() => normalizeCategoryLayout(value)).toThrow(
+          'El estilo de la sección debe ser LIST o CARDS.',
+        );
+      }
+    });
   });
 });

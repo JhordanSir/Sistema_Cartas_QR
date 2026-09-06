@@ -1,3 +1,4 @@
+import type { CategoryLayout } from '../../digitization/domain/menu.types.js';
 import type { RestaurantStatus } from './restaurant-status.js';
 
 interface RestaurantOwnerSummary {
@@ -51,6 +52,7 @@ interface PublicMenuProduct {
 
 interface PublicMenuCategory {
   id: string;
+  layout: CategoryLayout;
   name: string;
   products: PublicMenuProduct[];
 }

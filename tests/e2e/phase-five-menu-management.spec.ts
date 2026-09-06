@@ -29,11 +29,15 @@ async function login(
 async function productAction(page: Page, product: string, action: string): Promise<void> {
   const trigger = page.getByRole('button', { name: `Acciones de ${product}` });
   if (await trigger.isVisible()) await trigger.click();
-  await page.getByRole('button', { name: action }).click();
+  const control = page.getByRole('button', { name: action, exact: true });
+  await expect(control).toBeVisible();
+  await control.click();
 }
 
 test.describe.serial('gestión completa de carta de la Fase 5', () => {
-  test.describe.configure({ timeout: 60_000 });
+  // El recorrido publica y recarga varias veces; WebKit necesita bastante más margen
+  // que Chromium para completarlo en este entorno.
+  test.describe.configure({ timeout: 150_000 });
 
   let restaurant: CreatedRestaurant | null = null;
   let ownerEmail = '';
@@ -128,6 +132,8 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await page.getByLabel('Nombre').fill('Ensalada fresca');
     await page.getByLabel('Precio base (S/)').fill('18.00');
     await page.getByRole('button', { name: 'Crear producto' }).click();
+    // El modal debe cerrarse antes de tocar la fila: si no, tapa el disparador.
+    await expect(page.getByText('Producto creado en el borrador.')).toBeVisible();
     await productAction(page, 'Ensalada fresca', 'Subir Ensalada fresca');
     const productNames = page.getByTestId('managed-category').filter({ hasText: 'Platos de fondo' })
       .getByTestId('product-name');
@@ -180,6 +186,55 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage).toHaveURL(publicUrl);
     await publicPage.close();
   });
+  test(
+    'el dueño elige el estilo de cada sección y solo cambia al publicar',
+    { tag: '@movil' },
+    async ({ context, page }) => {
+      if (!restaurant) throw new Error('Restaurant fixture was not created');
+      await page.goto(`${webUrl}/admin/login`);
+      await page.getByLabel('Correo del propietario').fill(ownerEmail);
+      await page.getByLabel('Contraseña').fill(ownerPassword);
+      await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
+      await page.getByRole('link', { name: /Carta/ }).click();
+
+      await createCategory(page, 'Postres');
+      await page.getByRole('button', { name: 'Añadir producto a Postres' }).click();
+      await page.getByLabel('Nombre').fill('Suspiro limeño');
+      await page.getByLabel('Precio base (S/)').fill('16.00');
+      await page.getByRole('button', { name: 'Crear producto' }).click();
+      await expect(page.getByText('Producto creado en el borrador.')).toBeVisible();
+
+      await page.getByRole('button', { name: 'Publicar carta' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+      await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
+
+      const publicPage = await context.newPage();
+      await publicPage.goto(`${webUrl}/${restaurant.slug}`, { waitUntil: 'networkidle' });
+      // Toda sección nace como lista compacta.
+      await expect(publicPage.getByTestId('product-row')).toHaveCount(1);
+      await expect(publicPage.getByTestId('product-card')).toHaveCount(0);
+
+      await page.getByRole('button', { name: 'Editar sección Postres' }).click();
+      await page.getByRole('radio', { name: /Tarjetas con foto/ }).click();
+      await page.getByRole('button', { name: 'Guardar sección' }).click();
+      await expect(page.getByText('Sección actualizada en el borrador.')).toBeVisible();
+
+      // Publicación atómica: el cambio de estilo vive en el borrador hasta confirmarlo.
+      await publicPage.reload({ waitUntil: 'networkidle' });
+      await expect(publicPage.getByTestId('product-row')).toHaveCount(1);
+      await expect(publicPage.getByTestId('product-card')).toHaveCount(0);
+
+      await page.getByRole('button', { name: 'Publicar cambios' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+      await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
+
+      await publicPage.reload({ waitUntil: 'networkidle' });
+      await expect(publicPage.getByTestId('product-card')).toHaveCount(1);
+      await expect(publicPage.getByTestId('product-row')).toHaveCount(0);
+      await expect(publicPage.getByRole('heading', { name: 'Suspiro limeño' })).toBeVisible();
+      await publicPage.close();
+    },
+  );
 });
 
 async function createCategory(page: import('@playwright/test').Page, name: string): Promise<void> {
