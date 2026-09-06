@@ -75,6 +75,11 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     await page.getByLabel('Contraseña').fill(ownerPassword);
     await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
     await page.waitForURL(`${webUrl}/admin`);
+    // El guard valida la sesión en cliente después de aterrizar. Si el test arranca
+    // antes de que termine, su redirección interrumpe la siguiente navegación.
+    await expect(page.getByRole('navigation', { name: 'Panel del restaurante' })).toBeVisible({
+      timeout: 20_000,
+    });
   });
 
   test.afterEach(async ({ request }) => {
@@ -100,7 +105,7 @@ test.describe.serial('el panel del dueño se maneja con el pulgar', () => {
     { tag: '@movil' },
     async ({ page }) => {
       for (const screen of OWNER_SCREENS) {
-        await page.goto(`${webUrl}${screen.path}`);
+        await page.goto(`${webUrl}${screen.path}`, { waitUntil: 'commit' });
 
         const navigation = page.getByRole('navigation', { name: 'Panel del restaurante' });
         // El panel se pinta tras validar la sesión en cliente; WebKit tarda bastante

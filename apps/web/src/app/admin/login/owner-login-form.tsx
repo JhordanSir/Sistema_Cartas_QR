@@ -5,6 +5,7 @@ import { type FormEvent, useState } from 'react';
 
 import { Button } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
+import { PasswordField } from '@/components/password-field';
 
 export function OwnerLoginForm() {
   const router = useRouter();
@@ -51,16 +52,7 @@ export function OwnerLoginForm() {
           type="email"
         />
       </Field>
-      <Field label="Contraseña">
-        <input
-          autoComplete="current-password"
-          className={fieldControl}
-          minLength={8}
-          name="password"
-          required
-          type="password"
-        />
-      </Field>
+      <PasswordField autoComplete="current-password" minLength={8} name="password" required />
       {error ? <FormError>{error}</FormError> : null}
       <Button disabled={submitting} full type="submit">
         {submitting ? 'Ingresando…' : 'Entrar a mi restaurante'}

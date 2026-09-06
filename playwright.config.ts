@@ -9,6 +9,10 @@ const mobileScope = /@movil/;
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  // La suite corre en serie contra el stack real en Docker. Los 5 s por defecto de
+  // Playwright son ajustados cuando la máquina va cargada, y producían fallos que
+  // desaparecían al reejecutar el test aislado.
+  expect: { timeout: 10_000 },
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,

@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { BrandLockup } from '@/components/brand-lockup';
@@ -20,43 +19,68 @@ const CAPABILITIES = [
   },
 ];
 
-const STEPS = ['Digitaliza', 'Publica', 'Comparte'];
+const QUESTIONS = [
+  {
+    answer:
+      'No. El código se imprime una sola vez y apunta siempre a la misma dirección. Puedes cambiar platos, precios, fotos o el nombre visible sin volver a imprimir nada.',
+    question: '¿El QR cambia si actualizo mi carta?',
+  },
+  {
+    answer:
+      'No. Escanean con la cámara de su teléfono y la carta se abre en el navegador, sin descargas ni registros.',
+    question: '¿Mis clientes necesitan instalar algo?',
+  },
+  {
+    answer:
+      'Envías de una a cinco fotos de tus páginas y las convertimos en un borrador editable, con sus categorías, precios, variantes y adicionales. Después corriges lo que haga falta.',
+    question: '¿Cómo cargo mi carta la primera vez?',
+  },
+  {
+    answer:
+      'Tú, desde tu celular. Cada cambio queda en borrador y solo llega a tus clientes cuando confirmas la publicación, así nunca ven una carta a medio editar.',
+    question: '¿Quién actualiza la carta después?',
+  },
+  {
+    answer:
+      'Lo marcas como no disponible y desaparece de la carta al instante, conservando su descripción y su precio para cuando vuelva.',
+    question: '¿Puedo ocultar un plato que se acabó?',
+  },
+];
+
+const PREVIEW_DISHES = [
+  { name: 'Ceviche clásico', price: '38' },
+  { name: 'Lomo saltado', price: '42' },
+  { name: 'Causa de pulpo', price: '26' },
+];
 
 export default function HomePage() {
   return (
     <main className={`min-h-dvh overflow-hidden bg-canvas text-ink ${shellFontClassName}`}>
       <div className="relative isolate mx-auto w-full max-w-[82.5rem] px-4 pt-5 sm:px-6 lg:px-16">
-        {/* Concentric rings and hairline, purely decorative. */}
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-24 -right-40 -z-10 size-[28rem] rounded-full border border-copper/15 shadow-[0_0_0_5.5rem_rgb(172_86_53/0.035),0_0_0_11rem_rgb(172_86_53/0.02)] sm:-right-52 sm:size-[36rem] lg:top-40 lg:-right-60 lg:size-[42rem]"
+          className="pointer-events-none absolute top-40 -right-52 -z-10 hidden size-[36rem] rounded-full border border-copper/15 shadow-[0_0_0_5.5rem_rgb(172_86_53/0.035),0_0_0_11rem_rgb(172_86_53/0.02)] sm:block lg:-right-60 lg:size-[42rem]"
         />
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute top-24 bottom-28 left-4 -z-10 hidden w-px bg-gradient-to-b from-transparent via-olive/15 to-transparent sm:left-6 lg:left-[6%] lg:block"
+          className="pointer-events-none absolute top-24 bottom-28 left-[6%] -z-10 hidden w-px bg-gradient-to-b from-transparent via-olive/15 to-transparent lg:block"
         />
 
-        <header className="flex min-h-13 items-center justify-between gap-4">
+        <header className="flex min-h-13 items-center justify-between gap-3">
           <BrandLockup />
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Link
-              className="inline-flex min-h-11 items-center px-1 text-xs font-extrabold text-ink-soft no-underline hover:text-olive"
-              href="/login"
-            >
-              Administración
-            </Link>
-            <Link
-              className="inline-flex min-h-11 items-center rounded-full bg-ink px-4 text-xs font-extrabold text-paper no-underline shadow-md transition-colors hover:bg-olive"
-              href="/admin/login"
-            >
-              Ingresar como propietario
-            </Link>
-          </div>
+          {/* Un único acceso arriba: el dueño es quien lo necesita a la vista.
+              "Administración" vive en el pie, donde el admin sabe buscarlo. */}
+          <Link
+            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ink px-4 text-xs font-extrabold whitespace-nowrap text-paper no-underline shadow-md transition-colors hover:bg-olive"
+            href="/admin/login"
+          >
+            Ingresar
+          </Link>
         </header>
 
         <section
           aria-labelledby="hero-title"
-          className="grid items-center gap-12 py-16 sm:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(23.75rem,0.82fr)] lg:gap-20 lg:py-28 xl:gap-28"
+          className="grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(21rem,0.8fr)] lg:gap-20 lg:py-24"
         >
           <div className="relative z-10">
             <p className="m-0 flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.16em] text-olive uppercase">
@@ -74,11 +98,7 @@ export default function HomePage() {
               consultan la carta vigente y tú conservas el control desde un solo lugar.
             </p>
             <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
-              <ButtonLink
-                className="min-h-12.5"
-                href="/admin/login"
-                tone="primary"
-              >
+              <ButtonLink className="min-h-12.5" href="/admin/login" tone="primary">
                 Ingresar a mi restaurante <span aria-hidden="true">→</span>
               </ButtonLink>
               <ButtonLink
@@ -96,56 +116,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <aside
-            aria-label="Sirio conecta una carta con el código QR del restaurante"
-            className="relative grid w-full max-w-[30rem] justify-items-center gap-0 justify-self-center overflow-hidden rounded-[2px_1.75rem_2px_1.75rem] border border-line bg-paper px-8 py-12 shadow-[1.25rem_1.25rem_0_var(--color-teal-wash),var(--shadow-soft)] sm:px-10 lg:min-h-[30rem] lg:content-center"
-          >
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-5 border border-dashed border-olive/20"
-            />
-            <div className="absolute top-6 right-7 left-7 flex items-center justify-between text-[9px] font-extrabold tracking-[0.15em] text-ink-muted uppercase">
-              <span>Servicio de carta</span>
-              <span aria-hidden="true" className="text-xs text-copper">
-                ●
-              </span>
-            </div>
-            <div className="relative z-10 aspect-square w-full max-w-[13.5rem] overflow-hidden rounded-full border-[0.625rem] border-[#f3eadb] bg-[#0b1024] shadow-[0_0_0_1px_var(--color-line),0_1.125rem_2.25rem_rgb(41_39_31/0.18)]">
-              <Image
-                alt="Logo de Sirio Automatiza"
-                className="object-cover"
-                fill
-                priority
-                sizes="(max-width: 640px) 216px, 246px"
-                src="/brand/sirio-logo.webp"
-              />
-            </div>
-            <div aria-hidden="true" className="relative z-10 mt-6 flex flex-wrap justify-center gap-2">
-              {STEPS.map((step, index) => (
-                <span
-                  className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-control px-2.5 py-1 text-[10px] font-bold text-ink-soft"
-                  key={step}
-                >
-                  <b className="grid size-4 place-items-center rounded-full bg-olive text-[9px] text-white">
-                    {index + 1}
-                  </b>
-                  {step}
-                </span>
-              ))}
-            </div>
-            <div className="relative z-10 mt-6 grid w-full max-w-[18.75rem] gap-2 text-center">
-              <span className="inline-flex items-center justify-center gap-2 text-[10px] font-extrabold tracking-[0.12em] text-olive uppercase">
-                <i
-                  aria-hidden="true"
-                  className="size-1.5 rounded-full bg-current shadow-[0_0_0_4px_var(--color-olive-wash)]"
-                />
-                Carta conectada
-              </span>
-              <strong className="max-w-[20ch] justify-self-center font-display text-2xl leading-none font-semibold tracking-[-0.045em] text-ink">
-                De tu cocina a cada mesa.
-              </strong>
-            </div>
-          </aside>
+          <MenuPreviewArt />
         </section>
 
         <section
@@ -189,11 +160,118 @@ export default function HomePage() {
           </div>
         </section>
 
-        <footer className="flex flex-col gap-2 border-t border-line py-6 text-[10px] font-bold tracking-[0.06em] text-ink-muted uppercase sm:flex-row sm:items-center sm:justify-between">
-          <span>Sirio Automatiza · Cartas QR</span>
-          <span className="sm:text-right">Actualiza una vez. Llega a todas las mesas.</span>
+        <section
+          aria-labelledby="questions-title"
+          className="grid gap-8 border-t border-line py-12 lg:grid-cols-[minmax(15.6rem,0.75fr)_minmax(0,1.25fr)] lg:gap-24 lg:py-16"
+        >
+          <div>
+            <p className="m-0 flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.16em] text-olive uppercase">
+              <span aria-hidden="true" className="h-px w-5.5 bg-current" />
+              Antes de empezar
+            </p>
+            <h2
+              className="mt-4 mb-0 max-w-[13ch] font-display text-3xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-4xl lg:text-5xl"
+              id="questions-title"
+            >
+              Lo que todos preguntan.
+            </h2>
+          </div>
+          <div className="grid gap-2">
+            {QUESTIONS.map((entry) => (
+              <details
+                className="group rounded-xl border border-line bg-paper px-4 shadow-soft"
+                key={entry.question}
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[15px] font-bold text-ink [&::-webkit-details-marker]:hidden">
+                  {entry.question}
+                  <span
+                    aria-hidden="true"
+                    className="grid size-8 shrink-0 place-items-center text-lg text-ink-muted transition-transform duration-200 ease-soft group-open:rotate-180"
+                  >
+                    ⌄
+                  </span>
+                </summary>
+                <p className="mt-0 mb-4 max-w-[58ch] text-[13px]/relaxed text-ink-soft">
+                  {entry.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <footer className="flex flex-col gap-3 border-t border-line py-6 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-[10px] font-bold tracking-[0.06em] text-ink-muted uppercase">
+            Sirio Automatiza · Cartas QR
+          </span>
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
+            <span className="text-[10px] font-bold tracking-[0.06em] text-ink-muted uppercase">
+              Actualiza una vez. Llega a todas las mesas.
+            </span>
+            <Link
+              className="inline-flex min-h-11 items-center text-[10px] font-extrabold tracking-[0.06em] text-ink-soft uppercase no-underline hover:text-olive"
+              href="/login"
+            >
+              Administración
+            </Link>
+          </div>
         </footer>
       </div>
     </main>
+  );
+}
+
+/**
+ * Decorative rendering of the product itself: the published menu as a diner sees it,
+ * next to the permanent code. It replaces a large Sirio logo that took half the
+ * screen on a phone without explaining anything.
+ */
+function MenuPreviewArt() {
+  return (
+    <div
+      aria-hidden="true"
+      className="relative mx-auto grid w-full max-w-[22rem] grid-cols-[minmax(0,1fr)_auto] items-end gap-3 justify-self-center sm:max-w-[24rem] sm:gap-4"
+    >
+      {/* Phone showing a published menu. */}
+      <div className="rounded-[1.75rem] border-[6px] border-ink bg-paper p-3 shadow-[0_1.25rem_2.5rem_rgb(41_39_31/0.18)] sm:p-4">
+        <span className="mx-auto mb-3 block h-1 w-10 rounded-full bg-ink/15" />
+        <span className="block text-[8px] font-extrabold tracking-[0.16em] text-olive uppercase">
+          Carta digital
+        </span>
+        <strong className="mt-1 block font-display text-lg leading-tight font-semibold tracking-[-0.03em] text-ink sm:text-xl">
+          Cevichería Luna
+        </strong>
+        <span className="mt-3 block border-t border-line pt-2 text-[8px] font-black tracking-[0.14em] text-ink-muted uppercase">
+          Fondos
+        </span>
+        {PREVIEW_DISHES.map((dish) => (
+          <span
+            className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0"
+            key={dish.name}
+          >
+            <span className="text-[11px] font-semibold text-ink">{dish.name}</span>
+            <span className="text-[11px] font-bold text-ink-soft tabular-nums">
+              S/ {dish.price}
+            </span>
+          </span>
+        ))}
+      </div>
+
+      {/* The permanent code that opens it. */}
+      <div className="grid justify-items-center gap-2 rounded-2xl border border-line bg-paper p-3 shadow-soft">
+        <span className="grid grid-cols-5 gap-[2px]">
+          {[
+            1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1,
+          ].map((filled, index) => (
+            <span
+              className={`size-1.5 rounded-[1px] ${filled ? 'bg-ink' : 'bg-transparent'}`}
+              key={index}
+            />
+          ))}
+        </span>
+        <span className="text-[7px] font-black tracking-[0.12em] text-ink-muted uppercase">
+          Escanea
+        </span>
+      </div>
+    </div>
   );
 }
