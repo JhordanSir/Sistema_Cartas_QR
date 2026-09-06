@@ -1,22 +1,55 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 
 import { apiInternalUrl } from '@/lib/api-server';
+import { socialLinks, telHref, whatsappHref } from '@/lib/contact';
 import { menuFontClassName } from '@/lib/menu-fonts';
 import type { PublicRestaurant } from '@/lib/restaurant-types';
 
 import { PublicViewTracker } from './public-view-tracker';
 
-export default async function PublicRestaurantPage({
-  params,
-}: PageProps<'/[slug]'>) {
-  const { slug } = await params;
+/**
+ * Cached per request so generateMetadata and the page itself share one API call.
+ */
+const loadRestaurant = cache(async (slug: string): Promise<PublicRestaurant | null> => {
   const response = await fetch(
     `${apiInternalUrl()}/api/restaurants/public/${encodeURIComponent(slug)}`,
     { cache: 'no-store' },
   );
-  if (response.status === 404) notFound();
+  if (response.status === 404) return null;
   if (!response.ok) throw new Error('Restaurant menu could not be loaded');
-  const restaurant = (await response.json()) as PublicRestaurant;
+  return (await response.json()) as PublicRestaurant;
+});
+
+export async function generateMetadata({ params }: PageProps<'/[slug]'>): Promise<Metadata> {
+  const { slug } = await params;
+  const restaurant = await loadRestaurant(slug);
+  if (!restaurant) {
+    return { title: 'Carta no disponible | Sirio Automatiza' };
+  }
+
+  const title = `${restaurant.name} · Carta digital`;
+  const description = restaurant.address
+    ? `Carta de ${restaurant.name} en ${restaurant.address}. Platos, precios y disponibilidad al día.`
+    : `Carta de ${restaurant.name}. Platos, precios y disponibilidad al día.`;
+
+  return {
+    description,
+    openGraph: { description, locale: 'es_PE', title, type: 'website' },
+    title,
+  };
+}
+
+export default async function PublicRestaurantPage({ params }: PageProps<'/[slug]'>) {
+  const { slug } = await params;
+  const restaurant = await loadRestaurant(slug);
+  if (!restaurant) notFound();
+
+  const whatsapp = whatsappHref(restaurant.whatsapp);
+  const phone = telHref(restaurant.contactPhone);
+  const socials = socialLinks(restaurant);
+  const hasContact = Boolean(whatsapp ?? phone ?? restaurant.address) || socials.length > 0;
 
   return (
     <main
@@ -46,11 +79,27 @@ export default async function PublicRestaurantPage({
               {restaurant.categories.length ? 'Carta publicada' : 'Próximamente'}
             </span>
           </div>
-          <h1 className="mt-5 mb-3 max-w-[14ch] text-4xl leading-[0.98] font-semibold tracking-[-0.045em] wrap-anywhere sm:text-5xl lg:text-6xl">
-            {restaurant.name}
-          </h1>
+
+          <div className="mt-5 flex items-center gap-4 sm:gap-5">
+            {restaurant.hasLogo ? (
+              // Served by the public BFF route, which only resolves enabled restaurants.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`Logo de ${restaurant.name}`}
+                className="size-16 shrink-0 rounded-2xl border border-current/15 object-cover sm:size-20"
+                src={`/api/public/restaurants/${encodeURIComponent(restaurant.slug)}/logo`}
+              />
+            ) : null}
+            <h1 className="m-0 max-w-[14ch] text-4xl leading-[0.98] font-semibold tracking-[-0.045em] wrap-anywhere sm:text-5xl lg:text-6xl">
+              {restaurant.name}
+            </h1>
+          </div>
+
+          {restaurant.address ? (
+            <p className="mt-3 mb-0 text-[13px]/relaxed opacity-75">{restaurant.address}</p>
+          ) : null}
           {restaurant.categories.length > 0 ? (
-            <p className="m-0 max-w-[48ch] text-[13px]/relaxed opacity-75 text-pretty">
+            <p className="mt-2 mb-0 max-w-[48ch] text-[13px]/relaxed opacity-75 text-pretty">
               Elige una sección y encuentra tu próximo favorito.
             </p>
           ) : null}
@@ -161,6 +210,54 @@ export default async function PublicRestaurantPage({
           </>
         )}
 
+        {hasContact ? (
+          <section
+            aria-labelledby="contacto-titulo"
+            className="mt-11 grid gap-3 border-t border-current/20 pt-8"
+          >
+            <h2
+              className="m-0 text-[11px] font-extrabold tracking-[0.14em] uppercase opacity-60"
+              id="contacto-titulo"
+            >
+              Contacto
+            </h2>
+            <div className="grid gap-2 text-[13px]/relaxed">
+              {restaurant.address ? <p className="m-0 opacity-80">{restaurant.address}</p> : null}
+              {phone ? (
+                <a className="inline-flex min-h-11 w-fit items-center font-bold no-underline" href={phone}>
+                  {restaurant.contactPhone}
+                </a>
+              ) : null}
+              {whatsapp ? (
+                <a
+                  className="inline-flex min-h-11 w-fit items-center gap-2 font-bold no-underline"
+                  href={whatsapp}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <span aria-hidden="true">✆</span> Escribir por WhatsApp
+                </a>
+              ) : null}
+            </div>
+            {socials.length > 0 ? (
+              <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+                {socials.map((social) => (
+                  <li key={social.href}>
+                    <a
+                      className="inline-flex min-h-11 items-center rounded-full border border-current/20 px-3.5 text-[12px] font-bold no-underline transition-colors hover:bg-current/10"
+                      href={social.href}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {social.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ) : null}
+
         <footer className="flex items-center justify-center gap-2 pt-11 text-[9px] font-bold tracking-[0.08em] uppercase opacity-50">
           <span
             aria-hidden="true"
@@ -171,6 +268,21 @@ export default async function PublicRestaurantPage({
           Carta digital publicada con Sirio
         </footer>
       </section>
+
+      {whatsapp ? (
+        <a
+          aria-label="Escribir al restaurante por WhatsApp"
+          className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 inline-flex min-h-13 items-center gap-2 rounded-full bg-[#25d366] px-4 text-[13px] font-extrabold text-[#06331a] no-underline shadow-[0_0.5rem_1.5rem_rgb(0_0_0/0.25)] transition-transform active:scale-95 sm:right-8 sm:bottom-8"
+          href={whatsapp}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <span aria-hidden="true" className="text-base">
+            ✆
+          </span>
+          WhatsApp
+        </a>
+      ) : null}
     </main>
   );
 }

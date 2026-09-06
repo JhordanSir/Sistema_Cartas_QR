@@ -137,7 +137,7 @@ Endpoints de administración bajo `/api/backoffice/restaurants`:
 - `PATCH /:id/status`: deshabilitar o reactivar sin bloquear el panel del dueño.
 - `DELETE /:id`: eliminación definitiva; exige `acknowledgePermanentDeletion: true` y el texto exacto `ELIMINAR <slug>`.
 
-`GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados con sus categorías y productos disponibles. La ruta web `/{slug}` muestra la carta publicada y responde con la página 404 cuando el local está deshabilitado o eliminado.
+`GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados con sus categorías y productos disponibles, junto con los datos de contacto que el dueño haya cargado: `contactPhone`, `whatsapp`, `address`, `instagramUrl`, `facebookUrl`, `tiktokUrl` y `hasLogo`. `GET /api/restaurants/public/:slug/logo` sirve el logo con la misma regla: un restaurante deshabilitado deja de exponerlo en el mismo instante en que su carta responde 404. La ruta web `/{slug}` muestra la carta publicada y responde con la página 404 cuando el local está deshabilitado o eliminado.
 
 La eliminación usa cascadas de PostgreSQL, elimina al dueño si ya no administra otro restaurante y registra primero una tarea durable de limpieza del directorio `restaurants/<uuid>`. Si el volumen falla, la API conserva la tarea y la reintenta al arrancar, evitando archivos sin seguimiento.
 
@@ -194,6 +194,8 @@ La web expone rutas BFF de Next.js bajo `/api/owner/...`; estas reenvían al end
 - `GET /api/owner/restaurants/:restaurantId/qr`: devuelve la identidad y URL pública fija.
 - `GET /api/owner/restaurants/:restaurantId/qr/png` y `.../svg`: muestran el documento QR.
 - `GET /api/owner/restaurants/:restaurantId/qr/png?download=true` y `.../svg?download=true`: entregan el archivo como descarga con un nombre basado en el slug.
+
+La carta pública muestra el logo, la dirección, el teléfono, el WhatsApp y las redes que el dueño haya completado en su perfil; los campos vacíos simplemente no se pintan. Cuando hay WhatsApp se ofrece además un botón flotante siempre accesible. Cada carta declara sus propios metadatos (`generateMetadata`), así que compartir el enlace muestra el nombre del restaurante en lugar del título genérico de Sirio.
 
 La carta pública está en `/{slug}`, no requiere inicio de sesión y se sirve solo mientras el restaurante esté habilitado. Muestra únicamente productos disponibles y omite del índice y de la carta las categorías que quedan sin productos visibles; en móvil ofrece un índice horizontal de las categorías restantes que lleva a cada sección sin ocultar la navegación principal. Si el restaurante se deshabilita, el QR conserva su identidad, pero la URL pública responde 404 hasta reactivarlo.
 

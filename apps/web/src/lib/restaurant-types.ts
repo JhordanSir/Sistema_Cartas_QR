@@ -22,14 +22,20 @@ export interface PaginatedRestaurants {
 }
 
 export interface PublicRestaurant {
+  address: string | null;
   backgroundColor: string;
   categories: MenuCategory[];
+  contactPhone: string | null;
+  facebookUrl: string | null;
   fontFamily: string;
+  hasLogo: boolean;
   id: string;
-  logoPath: string | null;
+  instagramUrl: string | null;
   name: string;
   slug: string;
   textColor: string;
+  tiktokUrl: string | null;
+  whatsapp: string | null;
 }
 
 export interface MenuOption {

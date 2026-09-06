@@ -95,12 +95,14 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
   let restaurant: CreatedRestaurant | null = null;
   let adminToken = '';
   let ownerEmail = '';
+  let restaurantName = '';
   let ownerToken = '';
   const ownerPassword = 'OwnerPass-6!';
 
   test.beforeEach(async ({ request }) => {
     const suffix = `${Date.now()}-${test.info().parallelIndex}`;
     ownerEmail = `phase6-${suffix}@example.test`;
+    restaurantName = `Mesa QR ${suffix}`;
     const adminEmail = process.env.INITIAL_ADMIN_EMAIL;
     const adminPassword = process.env.INITIAL_ADMIN_PASSWORD;
     if (!adminEmail || !adminPassword) {
@@ -111,7 +113,7 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
       data: {
         email: ownerEmail,
         initialPassword: ownerPassword,
-        name: `Mesa QR ${suffix}`,
+        name: restaurantName,
       },
       headers: { authorization: `Bearer ${adminToken}` },
     });
@@ -198,7 +200,12 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     expect(priceEdit.ok()).toBe(true);
     const profileEdit = await request.patch(`${baseOwnerUrl}/profile`, {
       headers: ownerHeaders,
-      multipart: { contactPhone: '+51 999 888 777' },
+      multipart: {
+        address: 'Av. La Marina 1234, San Miguel',
+        contactPhone: '+51 999 888 777',
+        instagramUrl: 'https://instagram.com/mesa_qr',
+        whatsapp: '+51 999 888 777',
+      },
     });
     expect(profileEdit.ok()).toBe(true);
     const svgAfterEdits = await request.get(`${baseOwnerUrl}/qr/svg?download=true`, {
@@ -269,6 +276,21 @@ test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () =>
     });
     const mobilePage = await mobileContext.newPage();
     await mobilePage.goto(`${webUrl}/${restaurant.slug}`, { waitUntil: 'networkidle' });
+
+    // El perfil del dueño llega hasta el comensal: dirección, contacto y redes.
+    await expect(mobilePage.getByText('Av. La Marina 1234, San Miguel').first()).toBeVisible();
+    const whatsappButton = mobilePage.getByRole('link', {
+      name: 'Escribir al restaurante por WhatsApp',
+    });
+    await expect(whatsappButton).toBeVisible();
+    await expect(whatsappButton).toHaveAttribute('href', 'https://wa.me/51999888777');
+    await expect(mobilePage.getByRole('link', { name: 'Instagram' })).toHaveAttribute(
+      'href',
+      'https://instagram.com/mesa_qr',
+    );
+    // Compartir el enlace debe mostrar el restaurante, no el título genérico de Sirio.
+    await expect(mobilePage).toHaveTitle(new RegExp(restaurantName));
+
     const categoryNavigation = mobilePage.getByRole('navigation', {
       name: 'Secciones de la carta',
     });

@@ -285,6 +285,7 @@ export class PrismaRestaurantRepository
       ? { categories: [], style: draftMenu.style }
       : draftMenu);
     return {
+      address: restaurant.address,
       backgroundColor: menu.style.backgroundColor,
       categories: menu.categories
         .map((category) => ({
@@ -314,13 +315,28 @@ export class PrismaRestaurantRepository
             })),
           })),
         })),
+      contactPhone: restaurant.contactPhone,
+      facebookUrl: restaurant.facebookUrl,
       fontFamily: menu.style.fontFamily,
+      hasLogo: restaurant.logoPath !== null,
       id: restaurant.id,
-      logoPath: restaurant.logoPath,
+      instagramUrl: restaurant.instagramUrl,
       name: restaurant.name,
       slug: restaurant.slug,
       textColor: menu.style.textColor,
+      tiktokUrl: restaurant.tiktokUrl,
+      whatsapp: restaurant.whatsapp,
     };
+  }
+
+  async findPublicLogoPath(slug: string): Promise<string | null> {
+    // Mirrors the public menu rule: a disabled restaurant exposes nothing, so its
+    // logo stops being reachable at the same moment its carta responds 404.
+    const restaurant = await this.prisma.restaurant.findFirst({
+      select: { logoPath: true },
+      where: { slug, status: RestaurantStatus.ENABLED },
+    });
+    return restaurant?.logoPath ?? null;
   }
 
   async scheduleDeletion(

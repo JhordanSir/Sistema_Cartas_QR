@@ -33,6 +33,8 @@ export interface RestaurantRepository {
   create(input: CreateRestaurantRecord): Promise<CreateRestaurantResult>;
   findById(id: string): Promise<RestaurantSummary | null>;
   findPublicBySlug(slug: string): Promise<PublicRestaurant | null>;
+  /** Logo path of an ENABLED restaurant; null when disabled, missing or without logo. */
+  findPublicLogoPath(slug: string): Promise<string | null>;
   list(query: ListRestaurantsQuery): Promise<PaginatedRestaurants>;
   listPendingAssetDeletions(): Promise<AssetDeletionJob[]>;
   markAssetDeletionFailed(jobId: string, message: string): Promise<void>;

@@ -33,6 +33,7 @@ function repository(): jest.Mocked<RestaurantRepository> {
     create: jest.fn(),
     findById: jest.fn().mockResolvedValue(RESTAURANT),
     findPublicBySlug: jest.fn(),
+    findPublicLogoPath: jest.fn(),
     list: jest.fn(),
     listPendingAssetDeletions: jest.fn(),
     markAssetDeletionFailed: jest.fn(),

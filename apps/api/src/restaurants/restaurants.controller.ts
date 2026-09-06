@@ -34,6 +34,7 @@ import {
   type DeleteRestaurantResult,
 } from './application/use-cases/delete-restaurant.js';
 import { GetPublicRestaurant } from './application/use-cases/get-public-restaurant.js';
+import { GetPublicRestaurantLogo } from './application/use-cases/get-public-restaurant-logo.js';
 import { GenerateRestaurantQr } from './application/use-cases/generate-restaurant-qr.js';
 import { GetRestaurantLogo } from './application/use-cases/get-restaurant-logo.js';
 import { GetRestaurantProfile } from './application/use-cases/get-restaurant-profile.js';
@@ -54,6 +55,7 @@ import {
   DELETE_RESTAURANT,
   GENERATE_RESTAURANT_QR,
   GET_PUBLIC_RESTAURANT,
+  GET_PUBLIC_RESTAURANT_LOGO,
   GET_RESTAURANT_LOGO,
   GET_RESTAURANT_PROFILE,
   LIST_RESTAURANTS,
@@ -84,6 +86,8 @@ export class RestaurantsController {
     private readonly deleteRestaurant: DeleteRestaurant,
     @Inject(GET_PUBLIC_RESTAURANT)
     private readonly getPublicRestaurant: GetPublicRestaurant,
+    @Inject(GET_PUBLIC_RESTAURANT_LOGO)
+    private readonly getPublicRestaurantLogo: GetPublicRestaurantLogo,
     @Inject(LIST_OWNED_RESTAURANTS)
     private readonly listOwnedRestaurants: ListOwnedRestaurants,
     @Inject(GET_RESTAURANT_PROFILE)
@@ -273,5 +277,18 @@ export class RestaurantsController {
       throw new NotFoundException('Restaurant menu is unavailable');
     }
     return restaurant;
+  }
+
+  @Public()
+  @Get('restaurants/public/:slug/logo')
+  async publicLogo(@Param('slug') slug: string): Promise<StreamableFile> {
+    const logo = await this.getPublicRestaurantLogo.execute(slug);
+    if (!logo) {
+      throw new NotFoundException('Restaurant logo is unavailable');
+    }
+    return new StreamableFile(Buffer.from(logo.bytes), {
+      disposition: 'inline',
+      type: logo.contentType,
+    });
   }
 }

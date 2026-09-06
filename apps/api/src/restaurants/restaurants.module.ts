@@ -16,6 +16,7 @@ import type {
 import { CreateRestaurant } from './application/use-cases/create-restaurant.js';
 import { DeleteRestaurant } from './application/use-cases/delete-restaurant.js';
 import { GetPublicRestaurant } from './application/use-cases/get-public-restaurant.js';
+import { GetPublicRestaurantLogo } from './application/use-cases/get-public-restaurant-logo.js';
 import { GenerateRestaurantQr } from './application/use-cases/generate-restaurant-qr.js';
 import { GetRestaurantLogo } from './application/use-cases/get-restaurant-logo.js';
 import { GetRestaurantProfile } from './application/use-cases/get-restaurant-profile.js';
@@ -33,6 +34,7 @@ import {
   DELETE_RESTAURANT,
   GENERATE_RESTAURANT_QR,
   GET_PUBLIC_RESTAURANT,
+  GET_PUBLIC_RESTAURANT_LOGO,
   GET_RESTAURANT_LOGO,
   GET_RESTAURANT_PROFILE,
   LIST_RESTAURANTS,
@@ -136,6 +138,14 @@ import { RestaurantsController } from './restaurants.controller.js';
       provide: GET_PUBLIC_RESTAURANT,
       useFactory: (repository: RestaurantRepository): GetPublicRestaurant =>
         new GetPublicRestaurant(repository),
+    },
+    {
+      inject: [RESTAURANT_REPOSITORY, RESTAURANT_LOGO_STORAGE],
+      provide: GET_PUBLIC_RESTAURANT_LOGO,
+      useFactory: (
+        repository: RestaurantRepository,
+        storage: RestaurantLogoStorage,
+      ): GetPublicRestaurantLogo => new GetPublicRestaurantLogo(repository, storage),
     },
     {
       inject: [RESTAURANT_PROFILE_REPOSITORY],
