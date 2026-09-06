@@ -67,8 +67,70 @@ describe('RestaurantBackoffice', () => {
 
     expect(await screen.findByText('1 en servicio')).toBeVisible();
     expect(screen.getByText('1 pausados')).toBeVisible();
-    expect(screen.getByText('Folio 001')).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Abrir carta /casa-oliva' })).toHaveAttribute('href', '/casa-oliva');
+
+    // La fila plegada identifica el local: nombre, estado y propietario.
+    expect(screen.getByText('Casa Oliva')).toBeVisible();
+    expect(screen.getByText('Habilitado')).toBeVisible();
+    expect(screen.getByText('Deshabilitado')).toBeVisible();
+    expect(screen.getByText('casa.oliva@example.test')).toBeVisible();
+  });
+
+  it('guarda el detalle y las acciones detrás del despliegue de cada fila', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        items: [restaurant('Casa Oliva', 'ENABLED')],
+        page: 1,
+        pageSize: 20,
+        total: 1,
+      }),
+      ok: true,
+      status: 200,
+    } as unknown as Response);
+
+    const { container } = render(<RestaurantBackoffice />);
+    await screen.findByText('Casa Oliva');
+
+    const row = container.querySelector('details[data-testid="restaurant-row"]');
+    expect(row).not.toBeNull();
+    expect(row).not.toHaveAttribute('open');
+
+    // El contenido existe en el documento aunque el navegador aún no lo muestre.
+    expect(screen.getByRole('link', { name: /Abrir carta/ })).toHaveAttribute(
+      'href',
+      '/casa-oliva',
+    );
+    expect(screen.getByRole('link', { name: /Ver estadísticas/ })).toHaveAttribute(
+      'href',
+      '/backoffice/statistics?restaurante=11111111-1111-4111-8111-111111111111',
+    );
+    expect(screen.getByRole('button', { name: 'Deshabilitar' })).toBeInTheDocument();
+    expect(screen.getByText('Folio')).toBeInTheDocument();
+    expect(screen.getByText('001')).toBeInTheDocument();
+  });
+
+  it('aparta el borrado definitivo de la acción de todos los días', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        items: [restaurant('Casa Oliva', 'ENABLED')],
+        page: 1,
+        pageSize: 20,
+        total: 1,
+      }),
+      ok: true,
+      status: 200,
+    } as unknown as Response);
+
+    render(<RestaurantBackoffice />);
+    await screen.findByText('Casa Oliva');
+
+    // Eliminar no comparte fila con Deshabilitar: vive tras su propio menú.
+    expect(screen.getByRole('button', { name: 'Acciones de Casa Oliva' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Eliminar Casa Oliva' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Eliminar Casa Oliva' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled();
   });
 });
 

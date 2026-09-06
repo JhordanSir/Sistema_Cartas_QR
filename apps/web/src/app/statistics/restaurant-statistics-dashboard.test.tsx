@@ -5,8 +5,11 @@ import { RestaurantStatisticsDashboard } from './restaurant-statistics-dashboard
 const replace = jest.fn();
 const refresh = jest.fn();
 
+let searchParams = new URLSearchParams();
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ replace, refresh }),
+  useRouter: () => ({ refresh, replace }),
+  useSearchParams: () => searchParams,
 }));
 
 const profile = {
@@ -42,11 +45,44 @@ const statistics = {
 
 describe('RestaurantStatisticsDashboard', () => {
   beforeEach(() => {
+    searchParams = new URLSearchParams();
     global.fetch = jest.fn().mockImplementation((url: string) => Promise.resolve(
       url === '/api/owner/restaurants'
         ? apiResponse([profile])
         : apiResponse(statistics),
     ));
+  });
+
+  it('abre el local que pide el backoffice desde su fila del registro', async () => {
+    const second = { ...profile, id: '55555555-5555-4555-8555-555555555555', name: 'Mesa Sur', slug: 'mesa-sur' };
+    searchParams = new URLSearchParams({ restaurante: second.id });
+    global.fetch = jest.fn().mockImplementation((url: string) => Promise.resolve(
+      url.startsWith('/api/backoffice/restaurants?')
+        ? apiResponse({ items: [profile, second], page: 1, pageSize: 100, total: 2 })
+        : apiResponse(statistics),
+    ));
+
+    render(<RestaurantStatisticsDashboard scope="backoffice" />);
+
+    // Sin el parámetro se habría abierto el primero de la lista.
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Mesa Sur', level: 2 })).toBeVisible(),
+    );
+  });
+
+  it('ignora un identificador que no está en la lista y abre el primero', async () => {
+    searchParams = new URLSearchParams({ restaurante: 'no-existe' });
+    global.fetch = jest.fn().mockImplementation((url: string) => Promise.resolve(
+      url.startsWith('/api/backoffice/restaurants?')
+        ? apiResponse({ items: [profile], page: 1, pageSize: 100, total: 1 })
+        : apiResponse(statistics),
+    ));
+
+    render(<RestaurantStatisticsDashboard scope="backoffice" />);
+
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Mesa Norte', level: 2 })).toBeVisible(),
+    );
   });
 
   it('shows the selected restaurant, unique-view periods and service rhythms', async () => {

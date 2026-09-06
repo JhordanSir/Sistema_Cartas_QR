@@ -27,6 +27,25 @@ async function adminAccessToken(request: APIRequestContext): Promise<string> {
   return ((await login.json()) as { accessToken: string }).accessToken;
 }
 
+/**
+ * Cada restaurante es una fila plegable: el detalle y las acciones solo existen en
+ * el árbol de accesibilidad cuando está abierta.
+ */
+async function openRow(row: Locator): Promise<void> {
+  if (await row.evaluate((node) => (node as HTMLDetailsElement).open)) return;
+  await row.locator('summary').click();
+}
+
+/**
+ * El borrado definitivo vive en su propio menú, separado de la acción diaria. En
+ * móvil hay que abrirlo; desde lg ya está en línea.
+ */
+async function rowAction(row: Locator, restaurantName: string, action: string): Promise<void> {
+  const trigger = row.getByRole('button', { name: `Acciones de ${restaurantName}` });
+  if (await trigger.isVisible()) await trigger.click();
+  await row.getByRole('button', { name: action, exact: true }).click();
+}
+
 test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
   // Alta, deshabilitado, reactivación y borrado definitivo en un solo recorrido:
   // WebKit necesita bastante más que los 30 s por defecto.
@@ -36,6 +55,12 @@ test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
 
   test.afterEach(async ({ request }) => {
     if (!created) return;
+    // Desde la fila se llega a las estadísticas de ese local, ya preseleccionado.
+    await expect(row.getByRole('link', { name: /Ver estadísticas/ })).toHaveAttribute(
+      'href',
+      new RegExp('/backoffice/statistics\?restaurante='),
+    );
+
     const token = await adminAccessToken(request);
     await request.delete(`${directApiUrl}/backoffice/restaurants/${created.id}`, {
       data: {
@@ -78,6 +103,7 @@ test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
 
     const row = page.getByTestId('restaurant-row').filter({ hasText: ownerEmail });
     await expect(row).toBeVisible();
+    await openRow(row);
     const publicLink = row.getByTestId('public-menu-link');
     const href = await publicLink.getAttribute('href');
     if (!href) throw new Error('The restaurant public URL was not rendered');
@@ -121,7 +147,7 @@ test.describe.serial('ciclo de vida de restaurantes de la Fase 2', () => {
       publicPage.getByRole('heading', { name: restaurantName, level: 1 }),
     ).toBeVisible();
 
-    await row.getByRole('button', { name: `Eliminar ${restaurantName}` }).click();
+    await rowAction(row, restaurantName, `Eliminar ${restaurantName}`);
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled();
     await dialog.getByLabel(new RegExp(`Escribe ELIMINAR ${slug}`)).fill(

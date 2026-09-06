@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { hasSessionCookieForRole } from '@/lib/api-server';
 import { RestaurantStatisticsDashboard } from '@/app/statistics/restaurant-statistics-dashboard';
@@ -9,7 +10,9 @@ export default async function OwnerStatisticsPage() {
   if (!(await hasSessionCookieForRole('OWNER'))) redirect('/admin/login');
   return (
     <SessionGate redirectTo="/admin/login" role="OWNER">
-      <RestaurantStatisticsDashboard scope="owner" />
+      <Suspense fallback={null}>
+        <RestaurantStatisticsDashboard scope="owner" />
+      </Suspense>
     </SessionGate>
   );
 }

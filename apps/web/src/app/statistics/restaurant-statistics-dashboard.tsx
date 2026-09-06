@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
@@ -27,6 +27,9 @@ const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScope }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // El backoffice enlaza a un local concreto desde su fila del registro.
+  const requestedId = scope === 'backoffice' ? searchParams.get('restaurante') : null;
   const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [statistics, setStatistics] = useState<RestaurantViewStatistics | null>(null);
@@ -61,9 +64,13 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       ? data.map(toOwnerOption)
       : data.items.map(toBackofficeOption);
     setRestaurants(options);
-    setSelectedId((current) => current || options[0]?.id || '');
+    setSelectedId((current) => {
+      if (current) return current;
+      const requested = options.find((option) => option.id === requestedId);
+      return requested?.id ?? options[0]?.id ?? '';
+    });
     setLoadingRestaurants(false);
-  }, [router, scope]);
+  }, [requestedId, router, scope]);
 
   const loadStatistics = useCallback(async () => {
     if (!selectedId) return;

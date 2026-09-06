@@ -1,10 +1,12 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
+import { ActionSheet } from '@/components/action-sheet';
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
-import { Button } from '@/components/button';
+import { Button, InlineAction } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
 import { Card, ErrorBanner, Kicker, Notice, StatusPill } from '@/components/surfaces';
 import type {
@@ -15,10 +17,12 @@ import type {
 
 import { BackofficeNavigation } from './backoffice-navigation';
 
+const PAGE_STEP = 20;
+
 const EMPTY_LIST: PaginatedRestaurants = {
   items: [],
   page: 1,
-  pageSize: 20,
+  pageSize: PAGE_STEP,
   total: 0,
 };
 
@@ -34,15 +38,17 @@ export function RestaurantBackoffice() {
   const [notice, setNotice] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<RestaurantStatus | ''>('');
+  const [visible, setVisible] = useState(PAGE_STEP);
   const [showCreate, setShowCreate] = useState(false);
   const [deleting, setDeleting] = useState<RestaurantSummary | null>(null);
   const visibleCount = data.items.filter((restaurant) => restaurant.status === 'ENABLED').length;
   const pausedCount = data.items.length - visibleCount;
+  const remaining = Math.max(data.total - data.items.length, 0);
 
   const loadRestaurants = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams({ page: '1', pageSize: '100' });
+    const params = new URLSearchParams({ page: '1', pageSize: String(visible) });
     if (query.trim()) params.set('query', query.trim());
     if (status) params.set('status', status);
     const response = await fetch(`/api/backoffice/restaurants?${params}`);
@@ -57,12 +63,13 @@ export function RestaurantBackoffice() {
     }
     setData((await response.json()) as PaginatedRestaurants);
     setLoading(false);
-  }, [query, router, status]);
+  }, [query, router, status, visible]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 180);
     return () => window.clearTimeout(timeout);
   }, [loadRestaurants]);
+
 
   async function createRestaurant(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -138,7 +145,10 @@ export function RestaurantBackoffice() {
           <div className="grid gap-5 border-b border-line p-5 sm:p-6 lg:grid-cols-[minmax(13.75rem,0.8fr)_minmax(0,1.2fr)] lg:items-end lg:gap-8">
             <div>
               <Kicker tone="copper">Registro operativo</Kicker>
-              <h2 className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]" id="registry-title">
+              <h2
+                className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]"
+                id="registry-title"
+              >
                 Registro de locales
               </h2>
               <p className="m-0 text-sm text-ink-muted tabular-nums">
@@ -160,14 +170,18 @@ export function RestaurantBackoffice() {
                 </span>
               </div>
               <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_11rem] lg:w-auto">
-                <label className="flex min-h-11 items-center gap-2 rounded-lg bg-control px-3 hover:border-line-strong">
+                <label className="flex min-h-11 items-center gap-2 rounded-lg bg-control px-3">
                   <span className="sr-only">Buscar restaurante</span>
                   <span aria-hidden="true" className="text-ink-muted">
                     ⌕
                   </span>
                   <input
                     className="w-full border-0 bg-transparent text-base text-ink outline-0"
-                    onChange={(event) => setQuery(event.target.value)}
+                    onChange={(event) => {
+                      // Una búsqueda nueva empieza por el principio del listado.
+                      setQuery(event.target.value);
+                      setVisible(PAGE_STEP);
+                    }}
                     placeholder="Buscar nombre, slug o correo"
                     type="search"
                     value={query}
@@ -177,7 +191,10 @@ export function RestaurantBackoffice() {
                   <span className="sr-only">Filtrar por estado</span>
                   <select
                     className={fieldControl}
-                    onChange={(event) => setStatus(event.target.value as RestaurantStatus | '')}
+                    onChange={(event) => {
+                      setStatus(event.target.value as RestaurantStatus | '');
+                      setVisible(PAGE_STEP);
+                    }}
                     value={status}
                   >
                     <option value="">Todos los estados</option>
@@ -189,13 +206,10 @@ export function RestaurantBackoffice() {
             </div>
           </div>
 
-          {loading ? (
+          {loading && data.items.length === 0 ? (
             <div aria-label="Cargando restaurantes" className="grid" role="status">
               {[0, 1, 2].map((item) => (
-                <span
-                  className="h-26 animate-pulse border-b border-line bg-ink/3"
-                  key={item}
-                />
+                <span className="h-16 animate-pulse border-b border-line bg-ink/3" key={item} />
               ))}
             </div>
           ) : null}
@@ -210,10 +224,12 @@ export function RestaurantBackoffice() {
               <h3 className="mt-4 mb-1.5 font-display text-xl font-semibold tracking-tight">
                 No hay restaurantes en esta vista
               </h3>
-              <p className="m-0 text-sm text-ink-soft">Cambia los filtros o crea el primer registro.</p>
+              <p className="m-0 text-sm text-ink-soft">
+                Cambia los filtros o crea el primer registro.
+              </p>
             </div>
           ) : null}
-          {!loading && data.items.length > 0 ? (
+          {data.items.length > 0 ? (
             <div className="grid">
               {data.items.map((restaurant, index) => (
                 <RestaurantRow
@@ -224,6 +240,21 @@ export function RestaurantBackoffice() {
                   restaurant={restaurant}
                 />
               ))}
+            </div>
+          ) : null}
+
+          {remaining > 0 ? (
+            <div className="border-t border-line p-4 text-center">
+              <Button
+                disabled={loading}
+                onClick={() => setVisible((current) => current + PAGE_STEP)}
+                tone="secondary"
+              >
+                {loading ? 'Cargando…' : `Cargar ${Math.min(remaining, PAGE_STEP)} más`}
+              </Button>
+              <p className="mt-2 mb-0 text-[11px] text-ink-muted tabular-nums">
+                Mostrando {data.items.length} de {data.total}
+              </p>
             </div>
           ) : null}
         </Card>
@@ -255,7 +286,10 @@ function CreateRestaurantPanel({
     >
       <div>
         <Kicker tone="copper">Nueva alta</Kicker>
-        <h2 className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]" id="create-title">
+        <h2
+          className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]"
+          id="create-title"
+        >
           Abre la ficha del restaurante
         </h2>
         <p className="m-0 text-sm/normal text-ink-soft">
@@ -298,6 +332,14 @@ function CreateRestaurantPanel({
   );
 }
 
+/**
+ * One restaurant per row.
+ *
+ * Collapsed it shows only what identifies the local: name, state and owner. The
+ * slug, the date and the actions live behind the disclosure, which keeps a registry
+ * of fifty locals readable instead of a 2,000px scroll. Permanent deletion sits in
+ * its own menu, away from the day-to-day disable button.
+ */
 function RestaurantRow({
   folio,
   onDelete,
@@ -309,85 +351,118 @@ function RestaurantRow({
   onStatus: () => void;
   restaurant: RestaurantSummary;
 }) {
+  const [actionsOpen, setActionsOpen] = useState(false);
   const enabled = restaurant.status === 'ENABLED';
   const initial = restaurant.name.trim().charAt(0).toLocaleUpperCase('es');
+
   return (
-    <article
-      className={`relative grid gap-4 border-b border-line px-5 py-5 last:border-b-0 sm:px-7 lg:grid-cols-[minmax(16rem,1.6fr)_minmax(11rem,1fr)_9rem_auto] lg:items-center lg:gap-6 ${
-        enabled ? '' : 'bg-ink/2'
-      }`}
+    <details
+      className={`group relative border-b border-line last:border-b-0 ${enabled ? '' : 'bg-ink/2'}`}
       data-testid="restaurant-row"
     >
       <span
         aria-hidden="true"
-        className={`absolute inset-y-4 left-0 w-[3px] rounded-r ${enabled ? 'bg-olive' : 'bg-ink-muted'}`}
+        className={`absolute top-3 bottom-3 left-0 w-[3px] rounded-r ${enabled ? 'bg-olive' : 'bg-ink-muted'}`}
       />
-      <div className="flex min-w-0 items-center gap-3.5">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3 sm:px-7 [&::-webkit-details-marker]:hidden">
         <span
           aria-hidden="true"
-          className="grid size-11 shrink-0 place-items-center rounded-xl bg-olive-wash font-display text-xl font-bold text-olive max-sm:hidden"
+          className="grid size-10 shrink-0 place-items-center rounded-xl bg-olive-wash font-display text-lg font-bold text-olive max-sm:hidden"
         >
           {initial}
         </span>
-        <div className="min-w-0">
-          <span className="mb-1 block text-[9px] font-black tracking-[0.12em] text-copper uppercase">
-            Folio {String(folio).padStart(3, '0')}
-          </span>
-          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-2.5">
-            <h3 className="m-0 overflow-hidden text-[15px] font-extrabold text-ellipsis whitespace-nowrap">
-              {restaurant.name}
-            </h3>
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+            <strong className="text-[15px] font-extrabold">{restaurant.name}</strong>
             <StatusPill tone={enabled ? 'positive' : 'muted'}>
               {enabled ? 'Habilitado' : 'Deshabilitado'}
             </StatusPill>
+          </span>
+          <span className="mt-0.5 block truncate text-xs text-ink-muted">
+            {restaurant.owner.email}
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className="grid size-11 shrink-0 place-items-center text-lg text-ink-muted transition-transform duration-200 ease-soft group-open:rotate-180"
+        >
+          ⌄
+        </span>
+      </summary>
+
+      <div className="grid gap-4 border-t border-line px-5 pt-4 pb-5 sm:px-7">
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-1">
+            <dt className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">
+              Folio
+            </dt>
+            <dd className="m-0 text-[13px] font-semibold tabular-nums">
+              {String(folio).padStart(3, '0')}
+            </dd>
           </div>
+          <div className="grid gap-1">
+            <dt className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">
+              Alta
+            </dt>
+            <dd className="m-0 text-[13px] font-semibold tabular-nums">
+              {new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(
+                new Date(restaurant.createdAt),
+              )}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
           <a
-            className="mt-1.5 inline-flex min-h-11 items-center text-xs font-bold text-olive no-underline hover:underline"
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-olive no-underline hover:underline"
             data-testid="public-menu-link"
             href={`/${restaurant.slug}`}
             rel="noreferrer"
             target="_blank"
           >
-            Abrir carta <span aria-hidden="true">↗</span>{' '}
-            <small className="ml-1 font-mono text-[10px] font-semibold text-ink-muted">
+            Abrir carta <span aria-hidden="true">↗</span>
+            <small className="font-mono text-[10px] font-semibold text-ink-muted">
               /{restaurant.slug}
             </small>
           </a>
+          <Link
+            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-olive no-underline hover:underline"
+            href={`/backoffice/statistics?restaurante=${encodeURIComponent(restaurant.id)}`}
+          >
+            Ver estadísticas <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button className="max-sm:flex-1" onClick={onStatus} tone="secondary">
+            {enabled ? 'Deshabilitar' : 'Reactivar'}
+          </Button>
+          <InlineAction
+            aria-label={`Acciones de ${restaurant.name}`}
+            className="lg:hidden"
+            onClick={() => setActionsOpen(true)}
+          >
+            Acciones ⌄
+          </InlineAction>
+          <ActionSheet
+            label={`Acciones de ${restaurant.name}`}
+            onClose={() => setActionsOpen(false)}
+            open={actionsOpen}
+          >
+            <InlineAction
+              aria-label={`Eliminar ${restaurant.name}`}
+              danger
+              onClick={() => {
+                setActionsOpen(false);
+                onDelete();
+              }}
+            >
+              Eliminar definitivamente
+            </InlineAction>
+          </ActionSheet>
         </div>
       </div>
-
-      <div className="grid min-w-0 gap-1">
-        <span className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">
-          Propietario
-        </span>
-        <strong className="overflow-hidden text-[13px] font-semibold text-ellipsis whitespace-nowrap">
-          {restaurant.owner.email}
-        </strong>
-      </div>
-
-      <div className="grid min-w-0 gap-1">
-        <span className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">Alta</span>
-        <strong className="text-[13px] font-semibold tabular-nums">
-          {new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(
-            new Date(restaurant.createdAt),
-          )}
-        </strong>
-      </div>
-
-      <div className="flex items-center gap-2 lg:justify-end">
-        <Button className="max-sm:flex-1" onClick={onStatus} tone="secondary">
-          {enabled ? 'Deshabilitar' : 'Reactivar'}
-        </Button>
-        <button
-          aria-label={`Eliminar ${restaurant.name}`}
-          className="grid size-11 shrink-0 place-items-center rounded-lg text-2xl text-danger transition-colors hover:bg-danger-wash active:scale-95"
-          onClick={onDelete}
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-    </article>
+    </details>
   );
 }
 
@@ -478,11 +553,7 @@ function DeleteRestaurantDialog({
           <Button onClick={() => dialogRef.current?.close()} tone="secondary">
             Cancelar
           </Button>
-          <Button
-            disabled={!acknowledged || confirmation !== expected}
-            tone="danger"
-            type="submit"
-          >
+          <Button disabled={!acknowledged || confirmation !== expected} tone="danger" type="submit">
             Eliminar definitivamente
           </Button>
         </div>
