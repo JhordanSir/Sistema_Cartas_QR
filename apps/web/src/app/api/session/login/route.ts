@@ -1,8 +1,15 @@
-import { apiInternalUrl, isSameOrigin, proxyApiResponse, setSessionCookies } from '@/lib/api-server';
+import {
+  apiInternalUrl,
+  invalidOriginResponse,
+  isSameOrigin,
+  problemResponse,
+  proxyApiResponse,
+  setSessionCookies,
+} from '@/lib/api-server';
 
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
 
   const body = await request.text();
@@ -10,11 +17,11 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const parsed = JSON.parse(body) as { role?: string };
     if (parsed.role !== 'ADMIN' && parsed.role !== 'OWNER') {
-      return Response.json({ message: 'Invalid role' }, { status: 400 });
+      return problemResponse(400, 'Invalid role', { code: 'REQUEST_INVALID' });
     }
     requestedRole = parsed.role;
   } catch {
-    return Response.json({ message: 'Invalid request body' }, { status: 400 });
+    return problemResponse(400, 'Invalid request body', { code: 'REQUEST_INVALID' });
   }
 
   const upstream = await fetch(`${apiInternalUrl()}/api/auth/login`, {
@@ -29,10 +36,9 @@ export async function POST(request: Request): Promise<Response> {
 
   const tokens = await upstream.json();
   if (tokens.principal?.role !== requestedRole) {
-    return Response.json(
-      { message: 'Requested role does not match authenticated account' },
-      { status: 403 },
-    );
+    return problemResponse(403, 'Requested role does not match authenticated account', {
+      code: 'ROLE_MISMATCH',
+    });
   }
   await setSessionCookies(tokens);
   return Response.json({ principal: tokens.principal });

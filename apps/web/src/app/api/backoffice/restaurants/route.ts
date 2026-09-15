@@ -1,5 +1,6 @@
 import {
   authenticatedApiFetch,
+  invalidOriginResponse,
   isSameOrigin,
   proxyApiResponse,
 } from '@/lib/api-server';
@@ -14,7 +15,7 @@ export async function GET(request: Request): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const upstream = await authenticatedApiFetch('/api/backoffice/restaurants', {
     body: await request.text(),

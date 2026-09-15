@@ -1,6 +1,8 @@
 import {
   authenticatedApiFetch,
+  invalidOriginResponse,
   isSameOrigin,
+  problemResponse,
   proxyApiResponse,
 } from '@/lib/api-server';
 
@@ -23,12 +25,12 @@ export async function PATCH(
   context: { params: Promise<{ restaurantId: string }> },
 ): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const { restaurantId } = await context.params;
   const contentType = request.headers.get('content-type');
   if (!contentType?.startsWith('multipart/form-data;')) {
-    return Response.json({ message: 'Multipart form data required' }, { status: 415 });
+    return problemResponse(415, 'Multipart form data required', { code: 'REQUEST_INVALID' });
   }
   return proxyApiResponse(
     await authenticatedApiFetch(

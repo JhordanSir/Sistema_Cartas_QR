@@ -1,8 +1,37 @@
+/**
+ * @jest-environment node
+ */
 jest.mock('next/headers', () => ({
   cookies: jest.fn(),
 }));
 
-import { apiInternalUrl } from './api-server';
+import { apiInternalUrl, invalidOriginResponse, problemResponse } from './api-server';
+
+describe('problemResponse', () => {
+  it('sends the log message together with the code the client translates', async () => {
+    const response = problemResponse(413, 'Product image is too large', {
+      code: 'PRODUCT_IMAGE_INVALID',
+      params: { maxMb: 4 },
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      code: 'PRODUCT_IMAGE_INVALID',
+      message: 'Product image is too large',
+      params: { maxMb: 4 },
+    });
+  });
+
+  it('refuses a foreign origin with its own code', async () => {
+    const response = invalidOriginResponse();
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      code: 'INVALID_ORIGIN',
+      message: 'Invalid request origin',
+    });
+  });
+});
 
 describe('apiInternalUrl', () => {
   const originalApiInternalUrl = process.env.API_INTERNAL_URL;

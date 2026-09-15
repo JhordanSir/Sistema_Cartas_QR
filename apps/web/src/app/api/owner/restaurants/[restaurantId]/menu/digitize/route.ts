@@ -1,30 +1,33 @@
 import {
   authenticatedApiFetch,
+  invalidOriginResponse,
   isSameOrigin,
+  problemResponse,
   proxyApiResponse,
 } from '@/lib/api-server';
 
 const MAX_MULTIPART_BYTES = 13 * 1024 * 1024;
+const PHOTOS_TOO_LARGE = { code: 'MENU_PHOTOS_TOO_LARGE', params: { maxMb: 12 } } as const;
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ restaurantId: string }> },
 ): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const contentType = request.headers.get('content-type');
   if (!contentType?.startsWith('multipart/form-data;')) {
-    return Response.json({ message: 'Multipart form data required' }, { status: 415 });
+    return problemResponse(415, 'Multipart form data required', { code: 'REQUEST_INVALID' });
   }
   const declaredLength = Number(request.headers.get('content-length'));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_MULTIPART_BYTES) {
-    return Response.json({ message: 'Menu photos exceed the 12 MB limit' }, { status: 413 });
+    return problemResponse(413, 'Menu photos exceed the 12 MB limit', PHOTOS_TOO_LARGE);
   }
   const { restaurantId } = await context.params;
   const body = await request.arrayBuffer();
   if (body.byteLength > MAX_MULTIPART_BYTES) {
-    return Response.json({ message: 'Menu photos exceed the 12 MB limit' }, { status: 413 });
+    return problemResponse(413, 'Menu photos exceed the 12 MB limit', PHOTOS_TOO_LARGE);
   }
   return proxyApiResponse(
     await authenticatedApiFetch(

@@ -9,6 +9,9 @@ import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from 
 import { Button, InlineAction } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
 import { Card, ErrorBanner, Kicker, Notice, StatusPill } from '@/components/surfaces';
+import { readApiError } from '@/i18n/api-errors';
+import { useCopy } from '@/i18n/locale-provider';
+import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import type {
   PaginatedRestaurants,
   RestaurantStatus,
@@ -26,12 +29,9 @@ const EMPTY_LIST: PaginatedRestaurants = {
   total: 0,
 };
 
-interface ApiErrorBody {
-  message?: string | string[];
-}
-
 export function RestaurantBackoffice() {
   const router = useRouter();
+  const errorCopy = useCopy(apiErrorCopy);
   const [data, setData] = useState(EMPTY_LIST);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function RestaurantBackoffice() {
       method: 'POST',
     });
     if (!response.ok) {
-      setError(await readApiError(response, 'No pudimos crear el restaurante.'));
+      setError(await readApiError(response, errorCopy));
       return;
     }
     const created = (await response.json()) as RestaurantSummary;
@@ -479,6 +479,7 @@ function DeleteRestaurantDialog({
   const [confirmation, setConfirmation] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const errorCopy = useCopy(apiErrorCopy);
   const expected = restaurant ? `ELIMINAR ${restaurant.slug}` : '';
 
   useEffect(() => {
@@ -501,7 +502,7 @@ function DeleteRestaurantDialog({
       method: 'DELETE',
     });
     if (!response.ok) {
-      setError(await readApiError(response, 'No pudimos eliminar el restaurante.'));
+      setError(await readApiError(response, errorCopy));
       return;
     }
     dialogRef.current?.close();
@@ -560,10 +561,4 @@ function DeleteRestaurantDialog({
       </form>
     </dialog>
   );
-}
-
-async function readApiError(response: Response, fallback: string): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as ApiErrorBody;
-  if (Array.isArray(body.message)) return body.message.join(' ');
-  return body.message ?? fallback;
 }

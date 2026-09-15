@@ -1,11 +1,11 @@
-import { apiInternalUrl, isSameOrigin, proxyApiResponse } from '@/lib/api-server';
+import { apiInternalUrl, invalidOriginResponse, isSameOrigin, proxyApiResponse } from '@/lib/api-server';
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ slug: string }> },
 ): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const { slug } = await context.params;
   const visitorIp = readVisitorIp(request);

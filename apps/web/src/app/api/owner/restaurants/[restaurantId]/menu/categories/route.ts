@@ -1,5 +1,6 @@
 import {
   authenticatedApiFetch,
+  invalidOriginResponse,
   isSameOrigin,
   proxyApiResponse,
 } from '@/lib/api-server';
@@ -9,7 +10,7 @@ export async function POST(
   context: { params: Promise<{ restaurantId: string }> },
 ): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const { restaurantId } = await context.params;
   return proxyApiResponse(

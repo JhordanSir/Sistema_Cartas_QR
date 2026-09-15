@@ -1,3 +1,4 @@
+import type { ApiProblem } from '@sirio/shared';
 import { cookies } from 'next/headers';
 
 const ACCESS_COOKIE = 'sirio_access';
@@ -19,6 +20,18 @@ interface TokenResponse {
 
 export function apiInternalUrl(): string {
   return (process.env.API_INTERNAL_URL ?? 'http://api-internal:3001').replace(/\/$/, '');
+}
+
+/**
+ * A BFF error shaped like the API's: the English `message` for logs and the code the
+ * client translates, so a refusal from Next and one from Nest read the same.
+ */
+export function problemResponse(status: number, message: string, problem: ApiProblem): Response {
+  return Response.json({ message, ...problem }, { status });
+}
+
+export function invalidOriginResponse(): Response {
+  return problemResponse(403, 'Invalid request origin', { code: 'INVALID_ORIGIN' });
 }
 
 export function isSameOrigin(request: Request): boolean {
@@ -90,10 +103,7 @@ export async function authenticatedApiFetch(
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
   if (!accessToken) {
-    return new Response(JSON.stringify({ message: 'Authentication required' }), {
-      headers: { 'content-type': 'application/json' },
-      status: 401,
-    });
+    return problemResponse(401, 'Authentication required', { code: 'SESSION_EXPIRED' });
   }
 
   let response = await apiFetch(path, accessToken, init);
@@ -121,14 +131,10 @@ export async function authenticatedApiFetch(
   const tokens = (await refreshed.json()) as TokenResponse;
   if (tokens.principal.role !== requiredRole) {
     await clearSessionCookies();
-    return new Response(
-      JSON.stringify({
-        message: `${requiredRole === 'ADMIN' ? 'Administrator' : 'Owner'} access required`,
-      }),
-      {
-        headers: { 'content-type': 'application/json' },
-        status: 403,
-      },
+    return problemResponse(
+      403,
+      `${requiredRole === 'ADMIN' ? 'Administrator' : 'Owner'} access required`,
+      { code: 'ROLE_MISMATCH' },
     );
   }
   await setSessionCookies(tokens);

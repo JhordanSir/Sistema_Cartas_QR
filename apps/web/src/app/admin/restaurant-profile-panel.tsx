@@ -16,6 +16,9 @@ import { Button } from '@/components/button';
 import { Field, fieldControl } from '@/components/field';
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import { Card, ErrorBanner, Kicker, Notice, NumberedHeading, Skeleton } from '@/components/surfaces';
+import { readApiError } from '@/i18n/api-errors';
+import { useCopy } from '@/i18n/locale-provider';
+import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from './owner-navigation';
@@ -25,6 +28,7 @@ const ACCEPTED_LOGOS = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function RestaurantProfilePanel() {
   const router = useRouter();
+  const errorCopy = useCopy(apiErrorCopy);
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -97,7 +101,7 @@ export function RestaurantProfilePanel() {
       method: 'PATCH',
     });
     if (!response.ok) {
-      setError(await readApiError(response));
+      setError(await readApiError(response, errorCopy));
       setSaving(false);
       return;
     }
@@ -351,12 +355,4 @@ function ProfileForm({
       </Card>
     </form>
   );
-}
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as {
-    message?: string | string[];
-  };
-  if (Array.isArray(body.message)) return body.message.join(' ');
-  return body.message ?? 'No pudimos guardar el perfil. Vuelve a intentarlo.';
 }

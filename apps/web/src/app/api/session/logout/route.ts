@@ -3,12 +3,13 @@ import { cookies } from 'next/headers';
 import {
   apiInternalUrl,
   clearSessionCookies,
+  invalidOriginResponse,
   isSameOrigin,
 } from '@/lib/api-server';
 
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const refreshToken = (await cookies()).get('sirio_refresh')?.value;
   if (refreshToken) {

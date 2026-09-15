@@ -1,10 +1,13 @@
 import {
   authenticatedApiFetch,
+  invalidOriginResponse,
   isSameOrigin,
+  problemResponse,
   proxyApiResponse,
 } from '@/lib/api-server';
 
-const MAXIMUM_IMAGE_BYTES = 4 * 1024 * 1024;
+const MAXIMUM_IMAGE_MB = 4;
+const MAXIMUM_IMAGE_BYTES = MAXIMUM_IMAGE_MB * 1024 * 1024;
 
 type RouteContext = {
   params: Promise<{ productId: string; restaurantId: string }>;
@@ -19,15 +22,18 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 
 export async function PUT(request: Request, context: RouteContext): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const incoming = await request.formData();
   const image = incoming.get('image');
   if (!(image instanceof File)) {
-    return Response.json({ message: 'Product image is required' }, { status: 400 });
+    return problemResponse(400, 'Product image is required', { code: 'PRODUCT_IMAGE_REQUIRED' });
   }
   if (image.size > MAXIMUM_IMAGE_BYTES) {
-    return Response.json({ message: 'Product image is too large' }, { status: 413 });
+    return problemResponse(413, 'Product image is too large', {
+      code: 'PRODUCT_IMAGE_INVALID',
+      params: { maxMb: MAXIMUM_IMAGE_MB },
+    });
   }
   const body = new FormData();
   body.set('image', image);
@@ -43,7 +49,7 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
 
 export async function DELETE(request: Request, context: RouteContext): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
   const { productId, restaurantId } = await context.params;
   return proxyApiResponse(

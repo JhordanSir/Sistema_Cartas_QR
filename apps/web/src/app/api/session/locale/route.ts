@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 
 import { LOCALE_COOKIE, isLocale } from '@/i18n/locale';
-import { isSameOrigin } from '@/lib/api-server';
+import { invalidOriginResponse, isSameOrigin, problemResponse } from '@/lib/api-server';
 
 /**
  * Stores the interface language. No Max-Age: the choice lasts for the browser
@@ -10,17 +10,17 @@ import { isSameOrigin } from '@/lib/api-server';
  */
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOrigin(request)) {
-    return Response.json({ message: 'Invalid request origin' }, { status: 403 });
+    return invalidOriginResponse();
   }
 
   let locale: unknown;
   try {
     locale = ((await request.json()) as { locale?: unknown }).locale;
   } catch {
-    return Response.json({ message: 'Invalid request body' }, { status: 400 });
+    return problemResponse(400, 'Invalid request body', { code: 'REQUEST_INVALID' });
   }
   if (!isLocale(locale)) {
-    return Response.json({ message: 'Invalid locale' }, { status: 400 });
+    return problemResponse(400, 'Invalid locale', { code: 'REQUEST_INVALID' });
   }
 
   const cookieStore = await cookies();

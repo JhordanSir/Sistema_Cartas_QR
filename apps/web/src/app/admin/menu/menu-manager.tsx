@@ -6,6 +6,9 @@ import { ActionSheet } from '@/components/action-sheet';
 import { Button, InlineAction, TextAction } from '@/components/button';
 import { Field, fieldControl } from '@/components/field';
 import { ModalBackdrop, ModalFooter, modalPanel, modalPanelWide } from '@/components/modal';
+import { readApiError } from '@/i18n/api-errors';
+import { useCopy } from '@/i18n/locale-provider';
+import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import type {
   CategoryLayout,
   MenuCategory,
@@ -72,6 +75,7 @@ export function MenuManager({
   setMenu,
   setNotice,
 }: MenuManagerProps) {
+  const errorCopy = useCopy(apiErrorCopy);
   const [categoryEditor, setCategoryEditor] = useState<ManagedCategory | 'new' | null>(null);
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -89,7 +93,7 @@ export function MenuManager({
         init,
       );
       if (!response.ok) {
-        setError(await readApiError(response));
+        setError(await readApiError(response, errorCopy));
         return null;
       }
       const nextMenu = (await response.json()) as PublishedMenu;
@@ -740,10 +744,4 @@ function jsonRequest(method: 'PATCH' | 'POST' | 'PUT', body: unknown): RequestIn
 
 function countProducts(menu: PublishedMenu): number {
   return menu.categories.reduce((total, category) => total + category.products.length, 0);
-}
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
-  if (Array.isArray(body.message)) return body.message.join(' ');
-  return body.message ?? 'No pudimos completar la operación. Vuelve a intentarlo.';
 }

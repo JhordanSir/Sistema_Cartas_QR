@@ -1,7 +1,4 @@
-import {
-  authenticatedApiFetch,
-  proxyApiResponse,
-} from '@/lib/api-server';
+import { authenticatedApiFetch, problemResponse, proxyApiResponse } from '@/lib/api-server';
 
 const QR_FORMATS = new Set(['png', 'svg']);
 
@@ -11,7 +8,7 @@ export async function GET(
 ): Promise<Response> {
   const { format, restaurantId } = await context.params;
   if (!QR_FORMATS.has(format)) {
-    return Response.json({ message: 'Unsupported QR format' }, { status: 400 });
+    return problemResponse(400, 'Unsupported QR format', { code: 'REQUEST_INVALID' });
   }
   const download = new URL(request.url).searchParams.get('download') === 'true';
   return proxyApiResponse(

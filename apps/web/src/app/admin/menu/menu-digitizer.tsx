@@ -15,6 +15,9 @@ import {
   NumberedHeading,
   Skeleton,
 } from '@/components/surfaces';
+import { readApiError } from '@/i18n/api-errors';
+import { useCopy } from '@/i18n/locale-provider';
+import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from '../owner-navigation';
@@ -35,6 +38,7 @@ const PROCESSING_STAGES = [
 
 export function MenuDigitizer() {
   const router = useRouter();
+  const errorCopy = useCopy(apiErrorCopy);
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [menu, setMenu] = useState<PublishedMenu | null>(null);
@@ -159,7 +163,7 @@ export function MenuDigitizer() {
       method: 'POST',
     });
     if (!response.ok) {
-      setError(await readApiError(response));
+      setError(await readApiError(response, errorCopy));
       setDigitizing(false);
       return;
     }
@@ -177,7 +181,7 @@ export function MenuDigitizer() {
     try {
       const response = await fetch(`/api/owner/restaurants/${selected.id}/menu/publish`, { method: 'POST' });
       if (!response.ok) {
-        setError(await readApiError(response));
+        setError(await readApiError(response, errorCopy));
         return;
       }
       setMenu((await response.json()) as PublishedMenu);
@@ -199,7 +203,7 @@ export function MenuDigitizer() {
         method: 'POST',
       });
       if (!response.ok) {
-        setError(await readApiError(response));
+        setError(await readApiError(response, errorCopy));
         return;
       }
       setMenu((await response.json()) as PublishedMenu);
@@ -431,10 +435,4 @@ function ProcessingState({ stage }: { stage: number }) {
 
 function formatBytes(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-async function readApiError(response: Response): Promise<string> {
-  const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
-  if (Array.isArray(body.message)) return body.message.join(' ');
-  return body.message ?? 'No pudimos completar la operación. Vuelve a intentarlo.';
 }
