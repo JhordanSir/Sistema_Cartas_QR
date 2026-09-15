@@ -1,5 +1,10 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
+
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
 
 import { cn } from './cn';
 
@@ -16,9 +21,10 @@ export function BrandLockup({
   compact?: boolean;
   showTagline?: boolean;
 }) {
+  const copy = useCopy(shellCopy);
   return (
     <Link
-      aria-label="Sirio Automatiza, inicio"
+      aria-label={copy.brandHome}
       className={cn(
         'inline-flex min-h-11 shrink-0 items-center gap-2.5 text-sm font-bold tracking-tight text-ink no-underline',
         className,

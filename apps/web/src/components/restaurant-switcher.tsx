@@ -2,6 +2,9 @@
 
 import type { ChangeEvent } from 'react';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 import { fieldControl } from './field';
 
 interface SwitchableRestaurant {
@@ -22,10 +25,11 @@ export function RestaurantSwitcher({
   restaurants: SwitchableRestaurant[];
   selectedId: string | undefined;
 }) {
+  const copy = useCopy(shellCopy);
   if (restaurants.length < 2) return null;
   return (
     <label className="grid w-full gap-1.5 text-[11px] font-bold tracking-[0.08em] text-ink-muted uppercase lg:min-w-56">
-      <span>Restaurante</span>
+      <span>{copy.restaurant}</span>
       <select className={fieldControl} onChange={onChange} value={selectedId}>
         {restaurants.map((restaurant) => (
           <option key={restaurant.id} value={restaurant.id}>

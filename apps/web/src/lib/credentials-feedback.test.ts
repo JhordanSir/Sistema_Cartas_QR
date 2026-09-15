@@ -6,16 +6,14 @@ describe('credentials feedback', () => {
   });
 
   it.each(['', 'turestaurante.pe', 'hola@turestaurante', 'hola mundo@turestaurante.pe'])(
-    'explains how to write the email when it is %p',
+    'flags the email format when it is %p',
     (value) => {
-      expect(emailFormatError(value)).toBe(
-        'Escribe un correo válido, por ejemplo nombre@dominio.com.',
-      );
+      expect(emailFormatError(value)).toBe('emailFormat');
     },
   );
 
   it('asks for the password only when it is empty', () => {
-    expect(passwordRequiredError('')).toBe('Escribe tu contraseña.');
+    expect(passwordRequiredError('')).toBe('passwordRequired');
     expect(passwordRequiredError('cualquier-cosa')).toBeNull();
   });
 
@@ -27,9 +25,7 @@ describe('credentials feedback', () => {
   it.each(['contraseña-antigua', 'SOLOMAYUSCULA1', 'SinNumeroAqui', 'Corta1'])(
     'recommends a stronger password for %p',
     (value) => {
-      expect(passwordPolicyHint(value)).toBe(
-        'Recomendamos mayúscula, minúscula y número. Si es tu contraseña actual, vuelve a pulsar para entrar.',
-      );
+      expect(passwordPolicyHint(value)).toBe('passwordPolicy');
     },
   );
 });

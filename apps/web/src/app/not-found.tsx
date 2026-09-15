@@ -1,7 +1,10 @@
 import { ButtonLink } from '@/components/button';
+import { shellCopy } from '@/i18n/messages/shell';
+import { getCopy } from '@/i18n/server';
 import { shellFontClassName } from '@/lib/fonts';
 
-export default function NotFound() {
+export default async function NotFound() {
+  const copy = (await getCopy(shellCopy)).notFound;
   return (
     <main
       className={`grid min-h-dvh place-items-center px-5 py-10 ${shellFontClassName}`}
@@ -14,12 +17,10 @@ export default function NotFound() {
           404
         </span>
         <h1 className="mt-6 mb-4 max-w-[12ch] font-display text-4xl leading-none font-semibold tracking-[-0.045em] text-balance sm:text-5xl">
-          Esta carta no está disponible.
+          {copy.title}
         </h1>
-        <p className="mt-0 mb-7 text-ink-soft leading-relaxed text-pretty">
-          El restaurante puede estar temporalmente deshabilitado o la dirección ya no existe.
-        </p>
-        <ButtonLink href="/">Volver al inicio</ButtonLink>
+        <p className="mt-0 mb-7 text-ink-soft leading-relaxed text-pretty">{copy.body}</p>
+        <ButtonLink href="/">{copy.back}</ButtonLink>
       </section>
     </main>
   );

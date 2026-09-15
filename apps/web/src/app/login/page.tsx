@@ -1,17 +1,15 @@
 import { LoginShell } from '@/components/login-shell';
+import { loginCopy } from '@/i18n/messages/login';
+import { getCopy } from '@/i18n/server';
 
 import { SessionRedirect } from '../session-access';
 
 import { LoginForm } from './login-form';
 
 export default async function LoginPage() {
+  const copy = (await getCopy(loginCopy)).admin;
   return (
-    <LoginShell
-      kicker="Acceso de plataforma"
-      lede="Administra altas, disponibilidad y bajas definitivas de restaurantes."
-      title="Tu mesa de control."
-      titleId="login-title"
-    >
+    <LoginShell kicker={copy.kicker} lede={copy.lede} title={copy.title} titleId="login-title">
       <SessionRedirect destination="/backoffice" role="ADMIN" />
       <LoginForm />
     </LoginShell>

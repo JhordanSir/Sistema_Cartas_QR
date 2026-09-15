@@ -3,6 +3,9 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 type SessionRole = 'ADMIN' | 'OWNER';
 
 interface SessionGateProps {
@@ -18,6 +21,7 @@ interface SessionRedirectProps {
 
 export function SessionGate({ children, redirectTo, role }: SessionGateProps) {
   const router = useRouter();
+  const copy = useCopy(shellCopy);
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export function SessionGate({ children, redirectTo, role }: SessionGateProps) {
   if (authorized) return children;
   return (
     <main className="grid min-h-dvh place-items-center bg-canvas p-6 text-[13px] text-ink-muted">
-      <p role="status">Comprobando tu sesión…</p>
+      <p role="status">{copy.checkingSession}</p>
     </main>
   );
 }

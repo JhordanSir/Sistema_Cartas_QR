@@ -2,6 +2,9 @@
 
 import { type InputHTMLAttributes, type ReactNode, useId, useState } from 'react';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 import { fieldControl } from './field';
 
 /**
@@ -17,12 +20,13 @@ import { fieldControl } from './field';
 export function PasswordField({
   error,
   hint,
-  label = 'Contraseña',
+  label,
   ...rest
 }: { error?: ReactNode; hint?: ReactNode; label?: string } & Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'className' | 'type'
 >) {
+  const copy = useCopy(shellCopy).password;
   const id = useId();
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
@@ -32,7 +36,7 @@ export function PasswordField({
   return (
     <div className="grid gap-2">
       <label className="text-[13px] font-bold text-ink-soft" htmlFor={id}>
-        {label}
+        {label ?? copy.label}
       </label>
       <div className="relative">
         <input
@@ -50,7 +54,7 @@ export function PasswordField({
           onClick={() => setRevealed((current) => !current)}
           type="button"
         >
-          {revealed ? 'Ocultar' : 'Mostrar'}
+          {revealed ? copy.hide : copy.show}
         </button>
       </div>
       {error ? (

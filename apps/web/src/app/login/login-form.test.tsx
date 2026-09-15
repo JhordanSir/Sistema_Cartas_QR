@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { LoginForm } from './login-form';
 
 const replace = jest.fn();
@@ -141,6 +143,28 @@ describe('LoginForm', () => {
 
     await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/backoffice'));
+  });
+
+  it('habla inglés cuando la interfaz está en inglés', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+    render(
+      <LocaleProvider locale="en">
+        <LoginForm />
+      </LocaleProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Administrator email'), {
+      target: { value: 'admin@sirio.pe' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to the back office' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Enter your password.');
+
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'AdminPass-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to the back office' }));
+
+    expect(
+      await screen.findByText("We couldn't sign you in. Please try again."),
+    ).toBeInTheDocument();
   });
 
   it('evita envíos repetidos mientras la petición está en curso', async () => {

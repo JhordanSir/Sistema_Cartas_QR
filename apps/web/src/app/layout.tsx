@@ -1,12 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { LocaleProvider } from "@/i18n/locale-provider";
+import { shellCopy } from "@/i18n/messages/shell";
+import { getLocale } from "@/i18n/server";
+
 import "./globals.css";
 
-export const metadata: Metadata = {
-  title: "Sirio Automatiza | Cartas QR",
-  description: "Cartas digitales para restaurantes, siempre actualizadas.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { metadata } = shellCopy[await getLocale()];
+  return { description: metadata.description, title: metadata.title };
+}
 
 export const viewport: Viewport = {
   colorScheme: "light dark",
@@ -22,13 +26,18 @@ export const viewport: Viewport = {
 // palette. Kept inline and tiny on purpose; it must run before the body renders.
 const THEME_BOOTSTRAP = `try{var t=localStorage.getItem('sirio-theme');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch(e){}`;
 
-export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+// The language needs no such script: it is read from the cookie on the server, so the
+// HTML, <html lang> and the title already arrive in it.
+export default async function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html lang="es">
+    <html lang={locale}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP }} />
       </head>
-      <body>{children}</body>
+      <body>
+        <LocaleProvider locale={locale}>{children}</LocaleProvider>
+      </body>
     </html>
   );
 }

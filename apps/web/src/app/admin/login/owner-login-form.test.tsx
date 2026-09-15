@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { OwnerLoginForm } from './owner-login-form';
 
 const replace = jest.fn();
@@ -186,6 +188,33 @@ describe('OwnerLoginForm', () => {
 
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('habla inglés de principio a fin cuando la interfaz está en inglés', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 401 });
+    render(
+      <LocaleProvider locale="en">
+        <OwnerLoginForm />
+      </LocaleProvider>,
+    );
+
+    const email = screen.getByLabelText('Owner email');
+    const submit = screen.getByRole('button', { name: 'Go to my restaurant' });
+    fireEvent.change(email, { target: { value: 'hola@turestaurante' } });
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'legacy-password' } });
+    fireEvent.click(submit);
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Enter a valid email, for example name@domain.com.',
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('We recommend an uppercase letter');
+    expect(screen.getByRole('button', { name: 'Show' })).toBeInTheDocument();
+
+    fireEvent.change(email, { target: { value: 'hola@turestaurante.pe' } });
+    fireEvent.click(submit);
+    fireEvent.click(submit);
+
+    expect(await screen.findByText('The email or password is incorrect.')).toBeInTheDocument();
   });
 
   it('evita envíos repetidos mientras la petición está en curso', async () => {

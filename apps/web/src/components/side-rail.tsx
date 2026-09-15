@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 import { BrandLockup } from './brand-lockup';
 import { cn } from './cn';
+import { LanguageSwitcher } from './language-switcher';
 import { ThemeToggle } from './theme-toggle';
 
 /**
@@ -27,6 +31,7 @@ export function SideRail({
   label: string;
   onLogout: () => void;
 }) {
+  const copy = useCopy(shellCopy);
   return (
     <aside
       className={cn(
@@ -49,8 +54,11 @@ export function SideRail({
         {children}
       </nav>
 
+      {/* Theme, language, sign out: the same order on the phone bar and the desktop
+          rail, so the tab order always matches what is on screen. */}
       <div className="flex shrink-0 items-center gap-1 lg:mt-auto lg:flex-col lg:items-stretch lg:gap-1">
         <ThemeToggle />
+        <LanguageSwitcher className="lg:w-full" />
         <button
           className={cn(
             'flex min-h-11 shrink-0 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold text-ink-soft',
@@ -60,7 +68,7 @@ export function SideRail({
           type="button"
         >
           <span aria-hidden="true">↗</span>
-          Cerrar sesión
+          {copy.signOut}
         </button>
       </div>
     </aside>

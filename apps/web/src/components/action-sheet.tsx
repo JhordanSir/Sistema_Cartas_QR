@@ -2,6 +2,9 @@
 
 import type { ReactNode } from 'react';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 import { cn } from './cn';
 
 /**
@@ -22,6 +25,7 @@ export function ActionSheet({
   onClose: () => void;
   open: boolean;
 }) {
+  const copy = useCopy(shellCopy);
   return (
     <>
       {open ? (
@@ -57,7 +61,7 @@ export function ActionSheet({
             onClick={onClose}
             type="button"
           >
-            Cerrar
+            {copy.close}
           </button>
         ) : null}
       </div>

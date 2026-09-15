@@ -6,11 +6,16 @@ import { type FormEvent, useId, useState } from 'react';
 import { Button } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
 import { PasswordField } from '@/components/password-field';
+import { useCopy } from '@/i18n/locale-provider';
+import { loginCopy } from '@/i18n/messages/login';
 import { useCredentialsValidation } from '@/lib/use-credentials-validation';
+
+type LoginFailure = 'invalidCredentials' | 'serviceUnavailable';
 
 export function OwnerLoginForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const copy = useCopy(loginCopy);
+  const [failure, setFailure] = useState<LoginFailure | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const validation = useCredentialsValidation();
   const emailErrorId = useId();
@@ -23,18 +28,14 @@ export function OwnerLoginForm() {
     if (!validation.approveSubmission(email, password)) return;
 
     setSubmitting(true);
-    setError(null);
+    setFailure(null);
     const response = await fetch('/api/session/login', {
       body: JSON.stringify({ email, password, role: 'OWNER' }),
       headers: { 'content-type': 'application/json' },
       method: 'POST',
     });
     if (!response.ok) {
-      setError(
-        response.status === 401
-          ? 'El correo o la contraseña no son correctos.'
-          : 'No pudimos iniciar sesión. Inténtalo nuevamente.',
-      );
+      setFailure(response.status === 401 ? 'invalidCredentials' : 'serviceUnavailable');
       setSubmitting(false);
       return;
     }
@@ -47,7 +48,7 @@ export function OwnerLoginForm() {
   return (
     <form className="grid gap-5" noValidate onSubmit={handleSubmit}>
       <div className="grid gap-2">
-        <Field label="Correo del propietario">
+        <Field label={copy.owner.emailLabel}>
           <input
             aria-describedby={validation.emailError ? emailErrorId : undefined}
             aria-invalid={validation.emailError ? true : undefined}
@@ -63,21 +64,21 @@ export function OwnerLoginForm() {
           />
         </Field>
         {validation.emailError ? (
-          <FormError id={emailErrorId}>{validation.emailError}</FormError>
+          <FormError id={emailErrorId}>{copy.feedback[validation.emailError]}</FormError>
         ) : null}
       </div>
       <PasswordField
         autoComplete="current-password"
-        error={validation.passwordError}
-        hint={validation.passwordHint}
+        error={validation.passwordError ? copy.feedback[validation.passwordError] : null}
+        hint={validation.passwordHint ? copy.feedback[validation.passwordHint] : null}
         name="password"
         onBlur={validation.onPasswordBlur}
         onChange={(event) => validation.onPasswordChange(event.currentTarget.value)}
         required
       />
-      {error ? <FormError>{error}</FormError> : null}
+      {failure ? <FormError>{copy[failure]}</FormError> : null}
       <Button disabled={submitting} full type="submit">
-        {submitting ? 'Ingresando…' : 'Entrar a mi restaurante'}
+        {submitting ? copy.submitting : copy.owner.submit}
       </Button>
     </form>
   );

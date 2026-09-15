@@ -1,6 +1,11 @@
 import { type FocusEvent, useState } from 'react';
 
-import { emailFormatError, passwordPolicyHint, passwordRequiredError } from './credentials-feedback';
+import {
+  type CredentialsMessage,
+  emailFormatError,
+  passwordPolicyHint,
+  passwordRequiredError,
+} from './credentials-feedback';
 
 /**
  * Client-side validation shared by the admin and owner login forms.
@@ -16,9 +21,9 @@ import { emailFormatError, passwordPolicyHint, passwordRequiredError } from './c
  * the browser drops the click. Typing only ever removes a message once it is fixed.
  */
 export function useCredentialsValidation() {
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [passwordHint, setPasswordHint] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<CredentialsMessage | null>(null);
+  const [passwordError, setPasswordError] = useState<CredentialsMessage | null>(null);
+  const [passwordHint, setPasswordHint] = useState<CredentialsMessage | null>(null);
   const [acknowledgedPassword, setAcknowledgedPassword] = useState<string | null>(null);
 
   function onEmailBlur(event: FocusEvent<HTMLInputElement>) {

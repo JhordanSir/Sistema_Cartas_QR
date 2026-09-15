@@ -4,6 +4,7 @@ import { shellFontClassName } from '@/lib/fonts';
 
 import { BrandLockup } from './brand-lockup';
 import { cn } from './cn';
+import { LanguageSwitcher } from './language-switcher';
 import { Kicker } from './surfaces';
 
 /**
@@ -34,7 +35,10 @@ export function LoginShell({
         shellFontClassName,
       )}
     >
-      <BrandLockup showTagline={false} />
+      <div className="flex items-center justify-between gap-3">
+        <BrandLockup showTagline={false} />
+        <LanguageSwitcher />
+      </div>
       <section
         aria-labelledby={titleId}
         className={cn(

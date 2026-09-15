@@ -2,58 +2,24 @@ import Link from 'next/link';
 
 import { BrandLockup } from '@/components/brand-lockup';
 import { ButtonLink } from '@/components/button';
+import { LanguageSwitcher } from '@/components/language-switcher';
+import { formatCurrency } from '@/i18n/format';
+import type { Locale } from '@/i18n/locale';
+import { landingCopy } from '@/i18n/messages/landing';
+import { getLocale } from '@/i18n/server';
 import { shellFontClassName } from '@/lib/fonts';
 
-const CAPABILITIES = [
-  {
-    body: 'Sube una foto de tu carta y organiza categorías, precios, opciones e imágenes.',
-    title: 'Digitaliza tu menú',
-  },
-  {
-    body: 'Imprime un código permanente para que cada mesa llegue a la versión vigente de tu carta.',
-    title: 'Comparte un QR único',
-  },
-  {
-    body: 'Cambia disponibilidad al instante y revisa cuándo tus clientes consultan el menú.',
-    title: 'Actualiza y entiende',
-  },
-];
-
-const QUESTIONS = [
-  {
-    answer:
-      'No. El código se imprime una sola vez y apunta siempre a la misma dirección. Puedes cambiar platos, precios, fotos o el nombre visible sin volver a imprimir nada.',
-    question: '¿El QR cambia si actualizo mi carta?',
-  },
-  {
-    answer:
-      'No. Escanean con la cámara de su teléfono y la carta se abre en el navegador, sin descargas ni registros.',
-    question: '¿Mis clientes necesitan instalar algo?',
-  },
-  {
-    answer:
-      'Envías de una a cinco fotos de tus páginas y las convertimos en un borrador editable, con sus categorías, precios, variantes y adicionales. Después corriges lo que haga falta.',
-    question: '¿Cómo cargo mi carta la primera vez?',
-  },
-  {
-    answer:
-      'Tú, desde tu celular. Cada cambio queda en borrador y solo llega a tus clientes cuando confirmas la publicación, así nunca ven una carta a medio editar.',
-    question: '¿Quién actualiza la carta después?',
-  },
-  {
-    answer:
-      'Lo marcas como no disponible y desaparece de la carta al instante, conservando su descripción y su precio para cuando vuelva.',
-    question: '¿Puedo ocultar un plato que se acabó?',
-  },
-];
-
+// Dish names stay in Spanish in both languages: the preview stands for a real menu,
+// and a restaurant's own content is never translated.
 const PREVIEW_DISHES = [
   { name: 'Ceviche clásico', price: '38' },
   { name: 'Lomo saltado', price: '42' },
   { name: 'Causa de pulpo', price: '26' },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const locale = await getLocale();
+  const copy = landingCopy[locale];
   return (
     <main className={`min-h-dvh overflow-hidden bg-canvas text-ink ${shellFontClassName}`}>
       <div className="relative isolate mx-auto w-full max-w-[82.5rem] px-4 pt-5 sm:px-6 lg:px-16">
@@ -66,16 +32,21 @@ export default function HomePage() {
           className="pointer-events-none absolute top-24 bottom-28 left-[6%] -z-10 hidden w-px bg-gradient-to-b from-transparent via-olive/15 to-transparent lg:block"
         />
 
-        <header className="flex min-h-13 items-center justify-between gap-3">
+        {/* gap-2 in both rows is deliberate: brand, language and "Ingresar" only just
+            fit a 390px phone. */}
+        <header className="flex min-h-13 items-center justify-between gap-2">
           <BrandLockup />
-          {/* Un único acceso arriba: el dueño es quien lo necesita a la vista.
-              "Administración" vive en el pie, donde el admin sabe buscarlo. */}
-          <Link
-            className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ink px-4 text-xs font-extrabold whitespace-nowrap text-paper no-underline shadow-md transition-colors hover:bg-olive"
-            href="/admin/login"
-          >
-            Ingresar
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <LanguageSwitcher />
+            {/* Un único acceso arriba: el dueño es quien lo necesita a la vista.
+                "Administración" vive en el pie, donde el admin sabe buscarlo. */}
+            <Link
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-ink px-4 text-xs font-extrabold whitespace-nowrap text-paper no-underline shadow-md transition-colors hover:bg-olive"
+              href="/admin/login"
+            >
+              {copy.signIn}
+            </Link>
+          </div>
         </header>
 
         <section
@@ -85,21 +56,21 @@ export default function HomePage() {
           <div className="relative z-10">
             <p className="m-0 flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.16em] text-olive uppercase">
               <span aria-hidden="true" className="h-px w-5.5 bg-current" />
-              Carta digital para restaurantes
+              {copy.hero.kicker}
             </p>
             <h1
               className="mt-5 mb-6 max-w-[11ch] font-display text-5xl leading-[0.9] font-semibold tracking-[-0.06em] text-balance sm:text-6xl lg:text-7xl xl:text-[5.625rem]"
               id="hero-title"
             >
-              Tu carta trabaja <em className="text-copper not-italic">mientras atiendes.</em>
+              {copy.hero.titleStart}{' '}
+              <em className="text-copper not-italic">{copy.hero.titleEmphasis}</em>
             </h1>
             <p className="m-0 max-w-[55ch] text-[15px]/[1.72] text-ink-soft text-pretty sm:text-base lg:text-lg">
-              Convierte tu menú en una experiencia clara para cada mesa. Tus clientes escanean,
-              consultan la carta vigente y tú conservas el control desde un solo lugar.
+              {copy.hero.lede}
             </p>
             <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
               <ButtonLink className="min-h-12.5" href="/admin/login" tone="primary">
-                Ingresar a mi restaurante <span aria-hidden="true">→</span>
+                {copy.hero.primary} <span aria-hidden="true">→</span>
               </ButtonLink>
               <ButtonLink
                 className="min-h-12.5"
@@ -108,15 +79,13 @@ export default function HomePage() {
                 target="_blank"
                 tone="quiet"
               >
-                Hablar con Sirio
+                {copy.hero.secondary}
               </ButtonLink>
             </div>
-            <p className="mt-6 mb-0 text-[11px] font-bold text-ink-muted">
-              Un QR permanente · Sin apps ni descargas para tus clientes
-            </p>
+            <p className="mt-6 mb-0 text-[11px] font-bold text-ink-muted">{copy.hero.note}</p>
           </div>
 
-          <MenuPreviewArt />
+          <MenuPreviewArt copy={copy.preview} locale={locale} />
         </section>
 
         <section
@@ -126,17 +95,17 @@ export default function HomePage() {
           <div>
             <p className="m-0 flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.16em] text-olive uppercase">
               <span aria-hidden="true" className="h-px w-5.5 bg-current" />
-              Todo en su sitio
+              {copy.capabilities.kicker}
             </p>
             <h2
               className="mt-4 mb-0 max-w-[13ch] font-display text-3xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-4xl lg:text-5xl"
               id="capabilities-title"
             >
-              Una carta que sigue el ritmo de tu restaurante.
+              {copy.capabilities.title}
             </h2>
           </div>
           <div className="grid">
-            {CAPABILITIES.map((capability, index) => (
+            {copy.capabilities.items.map((capability, index) => (
               <article
                 className="grid grid-cols-[2.25rem_minmax(0,1fr)] gap-4 border-b border-line pb-6 last:border-b-0 last:pb-0 [&:not(:last-child)]:mb-6 sm:gap-5"
                 key={capability.title}
@@ -167,17 +136,17 @@ export default function HomePage() {
           <div>
             <p className="m-0 flex items-center gap-2.5 text-[10px] font-extrabold tracking-[0.16em] text-olive uppercase">
               <span aria-hidden="true" className="h-px w-5.5 bg-current" />
-              Antes de empezar
+              {copy.questions.kicker}
             </p>
             <h2
               className="mt-4 mb-0 max-w-[13ch] font-display text-3xl leading-[0.94] font-semibold tracking-[-0.055em] text-balance sm:text-4xl lg:text-5xl"
               id="questions-title"
             >
-              Lo que todos preguntan.
+              {copy.questions.title}
             </h2>
           </div>
           <div className="grid gap-2">
-            {QUESTIONS.map((entry) => (
+            {copy.questions.items.map((entry) => (
               <details
                 className="group rounded-xl border border-line bg-paper px-4 shadow-soft"
                 key={entry.question}
@@ -201,17 +170,17 @@ export default function HomePage() {
 
         <footer className="flex flex-col gap-3 border-t border-line py-6 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-[10px] font-bold tracking-[0.06em] text-ink-muted uppercase">
-            Sirio Automatiza · Cartas QR
+            {copy.footer.brand}
           </span>
           <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-4">
             <span className="text-[10px] font-bold tracking-[0.06em] text-ink-muted uppercase">
-              Actualiza una vez. Llega a todas las mesas.
+              {copy.footer.tagline}
             </span>
             <Link
               className="inline-flex min-h-11 items-center text-[10px] font-extrabold tracking-[0.06em] text-ink-soft uppercase no-underline hover:text-olive"
               href="/login"
             >
-              Administración
+              {copy.admin}
             </Link>
           </div>
         </footer>
@@ -225,7 +194,13 @@ export default function HomePage() {
  * next to the permanent code. It replaces a large Sirio logo that took half the
  * screen on a phone without explaining anything.
  */
-function MenuPreviewArt() {
+function MenuPreviewArt({
+  copy,
+  locale,
+}: {
+  copy: { menu: string; scan: string; section: string };
+  locale: Locale;
+}) {
   return (
     <div
       aria-hidden="true"
@@ -235,13 +210,13 @@ function MenuPreviewArt() {
       <div className="rounded-[1.75rem] border-[6px] border-ink bg-paper p-3 shadow-[0_1.25rem_2.5rem_rgb(41_39_31/0.18)] sm:p-4">
         <span className="mx-auto mb-3 block h-1 w-10 rounded-full bg-ink/15" />
         <span className="block text-[8px] font-extrabold tracking-[0.16em] text-olive uppercase">
-          Carta digital
+          {copy.menu}
         </span>
         <strong className="mt-1 block font-display text-lg leading-tight font-semibold tracking-[-0.03em] text-ink sm:text-xl">
           Cevichería Luna
         </strong>
         <span className="mt-3 block border-t border-line pt-2 text-[8px] font-black tracking-[0.14em] text-ink-muted uppercase">
-          Fondos
+          {copy.section}
         </span>
         {PREVIEW_DISHES.map((dish) => (
           <span
@@ -250,7 +225,7 @@ function MenuPreviewArt() {
           >
             <span className="text-[11px] font-semibold text-ink">{dish.name}</span>
             <span className="text-[11px] font-bold text-ink-soft tabular-nums">
-              S/ {dish.price}
+              {formatCurrency(dish.price, locale)}
             </span>
           </span>
         ))}
@@ -269,7 +244,7 @@ function MenuPreviewArt() {
           ))}
         </span>
         <span className="text-[7px] font-black tracking-[0.12em] text-ink-muted uppercase">
-          Escanea
+          {copy.scan}
         </span>
       </div>
     </div>

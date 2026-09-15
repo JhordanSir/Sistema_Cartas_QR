@@ -1,5 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { THEME_STORAGE_KEY, ThemeToggle } from './theme-toggle';
 
 describe('ThemeToggle', () => {
@@ -39,6 +41,19 @@ describe('ThemeToggle', () => {
     render(<ThemeToggle />);
 
     expect(screen.getByRole('button', { name: /Tema: oscuro/ })).toBeVisible();
+  });
+
+  it('nombra el tema y la acción en inglés cuando la interfaz está en inglés', () => {
+    window.localStorage.setItem(THEME_STORAGE_KEY, 'light');
+
+    render(
+      <LocaleProvider locale="en">
+        <ThemeToggle />
+      </LocaleProvider>,
+    );
+
+    const toggle = screen.getByRole('button', { name: 'Theme: light. Change theme' });
+    expect(toggle).toHaveAttribute('title', 'Theme: light');
   });
 
   it('ignora un valor corrupto en el almacenamiento', () => {

@@ -2,6 +2,9 @@
 
 import { useSyncExternalStore } from 'react';
 
+import { useCopy } from '@/i18n/locale-provider';
+import { shellCopy } from '@/i18n/messages/shell';
+
 import { cn } from './cn';
 
 type Theme = 'dark' | 'light' | 'system';
@@ -10,11 +13,7 @@ export const THEME_STORAGE_KEY = 'sirio-theme';
 
 const ORDER: Theme[] = ['system', 'light', 'dark'];
 
-const LABELS: Record<Theme, { icon: string; name: string }> = {
-  dark: { icon: '☾', name: 'oscuro' },
-  light: { icon: '☀', name: 'claro' },
-  system: { icon: '◐', name: 'automático' },
-};
+const ICONS: Record<Theme, string> = { dark: '☾', light: '☀', system: '◐' };
 
 let listeners: Array<() => void> = [];
 
@@ -57,6 +56,7 @@ function applyTheme(theme: Theme): void {
  * keeps the colours its owner chose.
  */
 export function ThemeToggle({ className }: { className?: string }) {
+  const copy = useCopy(shellCopy).theme;
   const theme = useSyncExternalStore(subscribe, readStoredTheme, readServerTheme);
 
   function cycle() {
@@ -70,21 +70,21 @@ export function ThemeToggle({ className }: { className?: string }) {
     for (const listener of listeners) listener();
   }
 
-  const current = LABELS[theme];
+  const name = copy.names[theme];
 
   return (
     <button
-      aria-label={`Tema: ${current.name}. Cambiar tema`}
+      aria-label={copy.change(name)}
       className={cn(
         'grid size-11 shrink-0 place-items-center rounded-lg text-base text-ink-soft',
         'transition-colors duration-150 hover:bg-paper hover:text-ink',
         className,
       )}
       onClick={cycle}
-      title={`Tema: ${current.name}`}
+      title={copy.current(name)}
       type="button"
     >
-      <span aria-hidden="true">{current.icon}</span>
+      <span aria-hidden="true">{ICONS[theme]}</span>
     </button>
   );
 }
