@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+import { problemException } from '../../common/problem-exception.js';
 import { AuthApplicationService } from '../application/auth.service.js';
 import { AUTH_APPLICATION } from '../auth.tokens.js';
 import type { AuthenticatedRequest } from './auth-request.js';
@@ -21,12 +22,16 @@ export class OwnerRestaurantGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     if (!request.auth) {
-      throw new UnauthorizedException('Authentication required');
+      throw problemException(UnauthorizedException, 'Authentication required', {
+        code: 'SESSION_EXPIRED',
+      });
     }
 
     const restaurantId = request.params.restaurantId;
     if (!restaurantId) {
-      throw new ForbiddenException('Restaurant scope is required');
+      throw problemException(ForbiddenException, 'Restaurant scope is required', {
+        code: 'ACCESS_DENIED',
+      });
     }
 
     const allowed = await this.auth.ownerCanAccessRestaurant(
@@ -34,7 +39,9 @@ export class OwnerRestaurantGuard implements CanActivate {
       restaurantId,
     );
     if (!allowed) {
-      throw new ForbiddenException('Restaurant access denied');
+      throw problemException(ForbiddenException, 'Restaurant access denied', {
+        code: 'ACCESS_DENIED',
+      });
     }
     return true;
   }

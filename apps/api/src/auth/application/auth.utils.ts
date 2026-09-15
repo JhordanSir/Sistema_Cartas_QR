@@ -13,12 +13,19 @@ export function assertPasswordPolicy(password: string): void {
     throw new AuthApplicationError(
       'PASSWORD_POLICY',
       `Password must contain between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+      {
+        problem: {
+          code: 'PASSWORD_LENGTH',
+          params: { max: MAX_PASSWORD_LENGTH, min: MIN_PASSWORD_LENGTH },
+        },
+      },
     );
   }
   if (!meetsPasswordPolicy(password)) {
     throw new AuthApplicationError(
       'PASSWORD_POLICY',
       'Password must contain an uppercase letter, a lowercase letter and a number',
+      { problem: { code: 'PASSWORD_COMPLEXITY' } },
     );
   }
 }

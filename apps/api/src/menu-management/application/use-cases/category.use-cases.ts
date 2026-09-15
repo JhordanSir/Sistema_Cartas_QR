@@ -93,6 +93,7 @@ export class ReorderCategories {
       throw new MenuManagementApplicationError(
         'INVALID_ORDER',
         'El orden debe incluir todas las categorías una sola vez.',
+        { problem: { code: 'MENU_ORDER_INCOMPLETE', params: { subject: 'categories' } } },
       );
     }
     return menu;

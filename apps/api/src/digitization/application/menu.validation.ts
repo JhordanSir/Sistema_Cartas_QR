@@ -11,6 +11,7 @@ import {
   type MenuStyle,
 } from '../domain/menu.types.js';
 
+const BYTES_PER_MB = 1024 * 1024;
 const MAX_CATEGORIES = 50;
 const MAX_PRODUCTS = 500;
 const MAX_PRODUCTS_PER_CATEGORY = 100;
@@ -26,6 +27,12 @@ export function validateMenuPhotos(photos: MenuPhoto[]): void {
     throw new DigitizationApplicationError(
       'INVALID_IMAGE',
       `Sube entre 1 y ${MENU_PHOTO_LIMITS.maximumPhotoCount} fotos de la carta.`,
+      {
+        problem: {
+          code: 'MENU_PHOTO_COUNT',
+          params: { max: MENU_PHOTO_LIMITS.maximumPhotoCount },
+        },
+      },
     );
   }
   const totalBytes = photos.reduce((total, photo) => total + photo.bytes.byteLength, 0);
@@ -33,6 +40,12 @@ export function validateMenuPhotos(photos: MenuPhoto[]): void {
     throw new DigitizationApplicationError(
       'INVALID_IMAGE',
       'Las fotos superan el límite total de 12 MB.',
+      {
+        problem: {
+          code: 'MENU_PHOTOS_TOO_LARGE',
+          params: { maxMb: MENU_PHOTO_LIMITS.maximumTotalBytes / BYTES_PER_MB },
+        },
+      },
     );
   }
   for (const photo of photos) {
@@ -47,6 +60,12 @@ export function validateMenuPhotos(photos: MenuPhoto[]): void {
       throw new DigitizationApplicationError(
         'INVALID_IMAGE',
         'Cada foto debe ser un archivo JPG, PNG o WebP válido de hasta 3 MB.',
+        {
+          problem: {
+            code: 'MENU_PHOTO_INVALID',
+            params: { maxMb: MENU_PHOTO_LIMITS.maximumBytesPerPhoto / BYTES_PER_MB },
+          },
+        },
       );
     }
   }

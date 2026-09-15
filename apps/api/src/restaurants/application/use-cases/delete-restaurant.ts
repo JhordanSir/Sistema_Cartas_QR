@@ -40,6 +40,12 @@ export class DeleteRestaurant {
       throw new RestaurantApplicationError(
         'INVALID_CONFIRMATION',
         `Type ${expectedConfirmation} and acknowledge the irreversible deletion`,
+        {
+          problem: {
+            code: 'DELETION_CONFIRMATION_MISMATCH',
+            params: { confirmation: expectedConfirmation },
+          },
+        },
       );
     }
 

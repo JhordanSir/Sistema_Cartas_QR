@@ -98,4 +98,33 @@ describe('menu extraction validation', () => {
       ]),
     ).toThrow('JPG, PNG o WebP válido');
   });
+
+  it('attaches the limit the client shows for each photo rejection', () => {
+    const png = (bytes: number): { bytes: Uint8Array; contentType: string } => ({
+      bytes: new Uint8Array(bytes),
+      contentType: 'image/png',
+    });
+
+    expect(problemOf(() => validateMenuPhotos([]))).toEqual({
+      code: 'MENU_PHOTO_COUNT',
+      params: { max: 5 },
+    });
+    expect(problemOf(() => validateMenuPhotos(Array.from({ length: 5 }, () => png(3 * 1024 * 1024))))).toEqual({
+      code: 'MENU_PHOTOS_TOO_LARGE',
+      params: { maxMb: 12 },
+    });
+    expect(problemOf(() => validateMenuPhotos([png(64)]))).toEqual({
+      code: 'MENU_PHOTO_INVALID',
+      params: { maxMb: 3 },
+    });
+  });
 });
+
+function problemOf(run: () => unknown): unknown {
+  try {
+    run();
+  } catch (error) {
+    return (error as { problem?: unknown }).problem;
+  }
+  throw new Error('Expected validation failure');
+}

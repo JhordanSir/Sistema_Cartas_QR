@@ -62,6 +62,51 @@ describe('menu management validation', () => {
     expect(() => normalizeOrderedIds([])).toThrow(MenuManagementApplicationError);
   });
 
+  it('attaches the problem the client translates, naming the field and the option kind', () => {
+    const product = { basePrice: 1, categoryId: CATEGORY_ID, name: 'Producto' };
+
+    expect(problemOf(() => normalizeProductValues({ ...product, basePrice: -1 }))).toEqual({
+      code: 'FIELD_PRICE_INVALID',
+      params: { field: 'basePrice' },
+    });
+    expect(problemOf(() => normalizeProductValues({ ...product, name: '   ' }))).toEqual({
+      code: 'FIELD_INVALID',
+      params: { field: 'productName' },
+    });
+    expect(
+      problemOf(() => normalizeProductValues({ ...product, variants: [{ name: 'Doble', price: 'x' }] })),
+    ).toEqual({ code: 'FIELD_PRICE_INVALID', params: { field: 'variantPrice' } });
+    expect(problemOf(() => normalizeProductValues({ ...product, variants: [null] }))).toEqual({
+      code: 'PRODUCT_OPTION_INVALID',
+      params: { kind: 'variant', position: 1 },
+    });
+    expect(
+      problemOf(() =>
+        normalizeProductValues({
+          ...product,
+          extras: [
+            { name: 'Queso', price: 2 },
+            { name: ' queso ', price: 3 },
+          ],
+        }),
+      ),
+    ).toEqual({ code: 'PRODUCT_OPTION_DUPLICATED', params: { kind: 'extra' } });
+    expect(problemOf(() => normalizeProductPatch({}))).toEqual({ code: 'PRODUCT_PATCH_EMPTY' });
+    expect(problemOf(() => normalizeOrderedIds([CATEGORY_ID, CATEGORY_ID]))).toEqual({
+      code: 'MENU_ORDER_DUPLICATED',
+    });
+    expect(problemOf(() => normalizeOrderedIds([]))).toEqual({
+      code: 'MENU_ORDER_INCOMPLETE',
+      params: { subject: 'items' },
+    });
+    expect(problemOf(() => normalizeCategoryLayout('MOSAICO'))).toEqual({
+      code: 'CATEGORY_LAYOUT_INVALID',
+    });
+    expect(
+      problemOf(() => validateProductImage({ bytes: new Uint8Array(4), contentType: 'image/png' })),
+    ).toEqual({ code: 'PRODUCT_IMAGE_INVALID', params: { maxMb: 4 } });
+  });
+
   it('validates the declared product image type against its signature', () => {
     const png = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3, 4]);
     expect(validateProductImage({ bytes: png, contentType: 'image/png' })).toBe('image/png');
@@ -91,3 +136,12 @@ describe('menu management validation', () => {
     });
   });
 });
+
+function problemOf(run: () => unknown): MenuManagementApplicationError['problem'] {
+  try {
+    run();
+  } catch (error) {
+    return (error as MenuManagementApplicationError).problem;
+  }
+  throw new Error('Expected validation failure');
+}

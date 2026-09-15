@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import { problemException } from '../../common/problem-exception.js';
 import type { AuthRole } from '../domain/auth-role.js';
 import { ROLES_KEY } from './auth.decorators.js';
 import type { AuthenticatedRequest } from './auth-request.js';
@@ -29,10 +30,14 @@ export class RolesGuard implements CanActivate {
       .switchToHttp()
       .getRequest<AuthenticatedRequest>().auth;
     if (!principal) {
-      throw new UnauthorizedException('Authentication required');
+      throw problemException(UnauthorizedException, 'Authentication required', {
+        code: 'SESSION_EXPIRED',
+      });
     }
     if (!requiredRoles.includes(principal.role)) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw problemException(ForbiddenException, 'Insufficient permissions', {
+        code: 'ACCESS_DENIED',
+      });
     }
 
     return true;

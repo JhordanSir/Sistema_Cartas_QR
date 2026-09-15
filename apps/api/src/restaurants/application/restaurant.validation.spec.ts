@@ -22,6 +22,7 @@ describe('restaurant validation', () => {
     expect(thrownBy(() => normalizeOwnerEmail(value))).toMatchObject({
       code: 'INVALID_INPUT',
       message: 'Owner email must be valid',
+      problem: { code: 'OWNER_EMAIL_INVALID' },
     });
   });
 
@@ -36,6 +37,7 @@ describe('restaurant validation', () => {
     expect(thrownBy(() => assertInitialPassword(value))).toMatchObject({
       code: 'INVALID_INPUT',
       message: 'Initial password must contain between 8 and 128 characters',
+      problem: { code: 'PASSWORD_LENGTH', params: { max: 128, min: 8 } },
     });
   });
 
@@ -47,6 +49,7 @@ describe('restaurant validation', () => {
     expect(thrownBy(() => assertInitialPassword(value))).toMatchObject({
       code: 'INVALID_INPUT',
       message: 'Initial password must contain an uppercase letter, a lowercase letter and a number',
+      problem: { code: 'PASSWORD_COMPLEXITY' },
     });
   });
 });

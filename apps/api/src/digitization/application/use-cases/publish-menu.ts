@@ -35,7 +35,9 @@ export class SetMenuTemplate {
   }): Promise<PublishedMenu> {
     assertOwner(input.principal);
     if (!MENU_TEMPLATE_IDS.includes(input.template as MenuTemplateId)) {
-      throw new DigitizationApplicationError('INVALID_INPUT', 'Selecciona una plantilla válida.');
+      throw new DigitizationApplicationError('INVALID_INPUT', 'Selecciona una plantilla válida.', {
+        problem: { code: 'MENU_TEMPLATE_INVALID' },
+      });
     }
     const menu = await this.repository.setTemplateForOwner(
       input.principal.accountId,

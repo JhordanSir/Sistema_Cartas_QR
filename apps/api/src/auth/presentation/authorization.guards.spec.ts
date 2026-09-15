@@ -1,4 +1,4 @@
-import type { ExecutionContext } from '@nestjs/common';
+import type { ExecutionContext, HttpException } from '@nestjs/common';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import type { Reflector } from '@nestjs/core';
 
@@ -190,3 +190,60 @@ describe('OwnerRestaurantGuard', () => {
     expect(auth.ownerCanAccessRestaurant).not.toHaveBeenCalled();
   });
 });
+
+describe('guard refusals', () => {
+  it('carry the code the web translates', async () => {
+    const onlyAdmins = {
+      getAllAndOverride: jest.fn().mockReturnValue([AuthRole.ADMIN]),
+    } as unknown as Reflector;
+    const privateRoute = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+    const auth = {
+      authenticateAccessToken: jest
+        .fn()
+        .mockRejectedValue(new AuthApplicationError('INVALID_TOKEN', 'invalid')),
+      ownerCanAccessRestaurant: jest.fn().mockResolvedValue(false),
+    } as unknown as AuthApplicationService;
+    const scoped = { params: { restaurantId: '44444444-4444-4444-8444-444444444444' } };
+
+    await expect(
+      codeOf(() => new AccessTokenGuard(privateRoute, auth).canActivate(createContext({ headers: {} }))),
+    ).resolves.toBe('SESSION_EXPIRED');
+    await expect(
+      codeOf(() =>
+        new AccessTokenGuard(privateRoute, auth).canActivate(
+          createContext({ headers: { authorization: 'Bearer invalid' } }),
+        ),
+      ),
+    ).resolves.toBe('SESSION_EXPIRED');
+    await expect(
+      codeOf(() => new RolesGuard(onlyAdmins).canActivate(createContext({}))),
+    ).resolves.toBe('SESSION_EXPIRED');
+    await expect(
+      codeOf(() => new RolesGuard(onlyAdmins).canActivate(createContext({ auth: OWNER }))),
+    ).resolves.toBe('ACCESS_DENIED');
+    await expect(
+      codeOf(() => new OwnerRestaurantGuard(auth).canActivate(createContext(scoped))),
+    ).resolves.toBe('SESSION_EXPIRED');
+    await expect(
+      codeOf(() =>
+        new OwnerRestaurantGuard(auth).canActivate(createContext({ auth: OWNER, params: {} })),
+      ),
+    ).resolves.toBe('ACCESS_DENIED');
+    await expect(
+      codeOf(() =>
+        new OwnerRestaurantGuard(auth).canActivate(createContext({ ...scoped, auth: OWNER })),
+      ),
+    ).resolves.toBe('ACCESS_DENIED');
+  });
+});
+
+async function codeOf(run: () => unknown): Promise<unknown> {
+  try {
+    await run();
+  } catch (error) {
+    return ((error as HttpException).getResponse() as { code?: unknown }).code;
+  }
+  throw new Error('Expected the guard to refuse');
+}

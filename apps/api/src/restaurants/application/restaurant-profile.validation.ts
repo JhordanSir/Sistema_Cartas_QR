@@ -1,14 +1,25 @@
+import type { ApiErrorParamMap, ApiProblem } from '@sirio/shared';
+
 import { RestaurantApplicationError } from '../domain/restaurant.errors.js';
 import type { RestaurantLogoUpload } from './ports/restaurant-services.js';
 import type { UpdateRestaurantProfileRecord } from './ports/restaurant-profile.repository.js';
 
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+type ProfileField = ApiErrorParamMap['PROFILE_FIELD_TOO_LONG']['field'];
+type SocialField = 'facebookUrl' | 'instagramUrl' | 'tiktokUrl';
+
+const MAX_LOGO_MB = 2;
+const MAX_LOGO_BYTES = MAX_LOGO_MB * 1024 * 1024;
 
 const PHONE_PATTERN = /^\+?[0-9 ()-]{7,32}$/;
-const SOCIAL_HOSTS: Record<string, readonly string[]> = {
+const SOCIAL_HOSTS: Record<SocialField, readonly string[]> = {
   facebookUrl: ['facebook.com', 'www.facebook.com', 'fb.com', 'www.fb.com'],
   instagramUrl: ['instagram.com', 'www.instagram.com'],
   tiktokUrl: ['tiktok.com', 'www.tiktok.com'],
+};
+const SOCIAL_NETWORKS: Record<SocialField, ApiErrorParamMap['SOCIAL_URL_MISMATCH']['network']> = {
+  facebookUrl: 'facebook',
+  instagramUrl: 'instagram',
+  tiktokUrl: 'tiktok',
 };
 
 export interface RestaurantProfileInput {
@@ -26,10 +37,12 @@ export function normalizeRestaurantProfile(
   const contactPhone = optionalText(input.contactPhone, 32, 'contactPhone');
   const whatsapp = optionalText(input.whatsapp, 32, 'whatsapp');
   if (contactPhone && !PHONE_PATTERN.test(contactPhone)) {
-    invalid('El teléfono contiene caracteres no permitidos.');
+    invalid('El teléfono contiene caracteres no permitidos.', { code: 'PROFILE_PHONE_INVALID' });
   }
   if (whatsapp && !PHONE_PATTERN.test(whatsapp)) {
-    invalid('El WhatsApp contiene caracteres no permitidos.');
+    invalid('El WhatsApp contiene caracteres no permitidos.', {
+      code: 'PROFILE_WHATSAPP_INVALID',
+    });
   }
 
   return {
@@ -44,11 +57,16 @@ export function normalizeRestaurantProfile(
 
 export function validateRestaurantLogo(logo: RestaurantLogoUpload): void {
   if (logo.bytes.byteLength === 0 || logo.bytes.byteLength > MAX_LOGO_BYTES) {
-    invalidLogo('El logo debe pesar como máximo 2 MB.');
+    invalidLogo('El logo debe pesar como máximo 2 MB.', {
+      code: 'LOGO_TOO_LARGE',
+      params: { maxMb: MAX_LOGO_MB },
+    });
   }
   const detected = detectLogoContentType(logo.bytes);
   if (!detected || detected !== logo.contentType) {
-    invalidLogo('El logo debe ser un archivo PNG, JPG o WebP válido.');
+    invalidLogo('El logo debe ser un archivo PNG, JPG o WebP válido.', {
+      code: 'LOGO_FORMAT_INVALID',
+    });
   }
 }
 
@@ -79,40 +97,47 @@ export function detectLogoContentType(
 function optionalText(
   value: string | undefined,
   maximumLength: number,
-  field: string,
+  field: ProfileField,
 ): string | null {
   const normalized = value?.trim() ?? '';
   if (normalized.length > maximumLength) {
-    invalid(`El campo ${field} supera el máximo permitido.`);
+    invalid(`El campo ${field} supera el máximo permitido.`, {
+      code: 'PROFILE_FIELD_TOO_LONG',
+      params: { field, max: maximumLength },
+    });
   }
   return normalized || null;
 }
 
-function optionalSocialUrl(
-  value: string | undefined,
-  field: keyof typeof SOCIAL_HOSTS,
-): string | null {
+function optionalSocialUrl(value: string | undefined, field: SocialField): string | null {
   const normalized = optionalText(value, 2048, field);
   if (!normalized) return null;
+  const network = SOCIAL_NETWORKS[field];
   let parsed: URL;
   try {
     parsed = new URL(normalized);
   } catch {
-    invalid('Las redes sociales deben usar una URL completa.');
+    invalid('Las redes sociales deben usar una URL completa.', {
+      code: 'SOCIAL_URL_INCOMPLETE',
+      params: { network },
+    });
   }
   if (
     parsed.protocol !== 'https:' ||
-    !(SOCIAL_HOSTS[field] ?? []).includes(parsed.hostname.toLowerCase())
+    !SOCIAL_HOSTS[field].includes(parsed.hostname.toLowerCase())
   ) {
-    invalid('La URL no corresponde a la red social indicada o no usa HTTPS.');
+    invalid('La URL no corresponde a la red social indicada o no usa HTTPS.', {
+      code: 'SOCIAL_URL_MISMATCH',
+      params: { network },
+    });
   }
   return parsed.toString();
 }
 
-function invalid(message: string): never {
-  throw new RestaurantApplicationError('INVALID_INPUT', message);
+function invalid(message: string, problem: ApiProblem): never {
+  throw new RestaurantApplicationError('INVALID_INPUT', message, { problem });
 }
 
-function invalidLogo(message: string): never {
-  throw new RestaurantApplicationError('INVALID_LOGO', message);
+function invalidLogo(message: string, problem: ApiProblem): never {
+  throw new RestaurantApplicationError('INVALID_LOGO', message, { problem });
 }

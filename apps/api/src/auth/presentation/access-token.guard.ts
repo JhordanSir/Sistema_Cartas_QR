@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
+import { problemException } from '../../common/problem-exception.js';
 import { AuthApplicationService } from '../application/auth.service.js';
 import { AUTH_APPLICATION } from '../auth.tokens.js';
 import { AuthApplicationError } from '../domain/auth.errors.js';
@@ -34,7 +35,9 @@ export class AccessTokenGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = this.extractBearerToken(request.headers.authorization);
     if (!token) {
-      throw new UnauthorizedException('Authentication required');
+      throw problemException(UnauthorizedException, 'Authentication required', {
+        code: 'SESSION_EXPIRED',
+      });
     }
 
     try {
@@ -42,7 +45,9 @@ export class AccessTokenGuard implements CanActivate {
       return true;
     } catch (error) {
       if (error instanceof AuthApplicationError) {
-        throw new UnauthorizedException('Invalid or expired access token');
+        throw problemException(UnauthorizedException, 'Invalid or expired access token', {
+          code: 'SESSION_EXPIRED',
+        });
       }
       throw error;
     }

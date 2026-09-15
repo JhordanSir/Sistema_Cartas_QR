@@ -1,3 +1,5 @@
+import type { ApiErrorParamMap, ApiProblem } from '@sirio/shared';
+
 import { AuthRole } from '../../auth/domain/auth-role.js';
 import type { AuthPrincipal } from '../../auth/domain/auth.types.js';
 import { CATEGORY_LAYOUTS, type CategoryLayout } from '../../digitization/domain/menu.types.js';
@@ -10,7 +12,37 @@ import {
   type ProductValues,
 } from '../domain/menu-management.types.js';
 
+type MenuField = ApiErrorParamMap['FIELD_INVALID']['field'];
+type OptionKind = ApiErrorParamMap['PRODUCT_OPTION_LIMIT']['kind'];
+type PriceField = ApiErrorParamMap['FIELD_PRICE_INVALID']['field'];
+
 const MAX_OPTIONS = 30;
+const BYTES_PER_MB = 1024 * 1024;
+
+// Labels for the API's own Spanish `message`, which stays as it was. Clients read
+// `problem` instead and name the field in the interface language.
+const FIELD_LABELS: Record<MenuField, string> = {
+  categoryId: 'categoría',
+  categoryName: 'nombre de categoría',
+  description: 'descripción',
+  extraName: 'adicional',
+  orderId: 'identificador de orden',
+  productName: 'nombre del producto',
+  variantName: 'variante',
+};
+
+const PRICE_LABELS: Record<PriceField, string> = {
+  basePrice: 'precio base',
+  extraPrice: 'precio de adicional',
+  variantPrice: 'precio de variante',
+};
+
+const OPTION_LABELS: Record<OptionKind, string> = { extra: 'adicional', variant: 'variante' };
+
+const OPTION_FIELDS: Record<OptionKind, { name: MenuField; price: PriceField }> = {
+  extra: { name: 'extraName', price: 'extraPrice' },
+  variant: { name: 'variantName', price: 'variantPrice' },
+};
 
 export function assertOwner(principal: AuthPrincipal): void {
   if (principal.role !== AuthRole.OWNER) {
@@ -19,7 +51,7 @@ export function assertOwner(principal: AuthPrincipal): void {
 }
 
 export function normalizeCategoryName(value: unknown): string {
-  return normalizeText(value, 1, 160, 'nombre de categoría');
+  return normalizeText(value, 1, 160, 'categoryName');
 }
 
 /**
@@ -29,10 +61,7 @@ export function normalizeCategoryName(value: unknown): string {
 export function normalizeCategoryLayout(value: unknown): CategoryLayout | undefined {
   if (value === undefined || value === null) return undefined;
   if (typeof value !== 'string' || !CATEGORY_LAYOUTS.includes(value as CategoryLayout)) {
-    throw new MenuManagementApplicationError(
-      'INVALID_INPUT',
-      'El estilo de la sección debe ser LIST o CARDS.',
-    );
+    invalid('El estilo de la sección debe ser LIST o CARDS.', { code: 'CATEGORY_LAYOUT_INVALID' });
   }
   return value as CategoryLayout;
 }
@@ -46,12 +75,12 @@ export function normalizeProductValues(input: {
   variants?: unknown;
 }): ProductValues {
   return {
-    basePrice: normalizePrice(input.basePrice, 'precio base'),
-    categoryId: normalizeUuid(input.categoryId, 'categoría'),
+    basePrice: normalizePrice(input.basePrice, 'basePrice'),
+    categoryId: normalizeUuid(input.categoryId, 'categoryId'),
     description: normalizeDescription(input.description),
-    extras: normalizeOptions(input.extras, 'adicional'),
-    name: normalizeText(input.name, 1, 200, 'nombre del producto'),
-    variants: normalizeOptions(input.variants, 'variante'),
+    extras: normalizeOptions(input.extras, 'extra'),
+    name: normalizeText(input.name, 1, 200, 'productName'),
+    variants: normalizeOptions(input.variants, 'variant'),
   };
 }
 
@@ -65,17 +94,21 @@ export function normalizeProductPatch(input: {
   variants?: unknown;
 }): ProductPatch {
   const patch: ProductPatch = {};
-  if (input.basePrice !== undefined) patch.basePrice = normalizePrice(input.basePrice, 'precio base');
-  if (input.categoryId !== undefined) patch.categoryId = normalizeUuid(input.categoryId, 'categoría');
+  if (input.basePrice !== undefined) patch.basePrice = normalizePrice(input.basePrice, 'basePrice');
+  if (input.categoryId !== undefined) patch.categoryId = normalizeUuid(input.categoryId, 'categoryId');
   if (input.description !== undefined) patch.description = normalizeDescription(input.description);
-  if (input.extras !== undefined) patch.extras = normalizeOptions(input.extras, 'adicional');
-  if (input.name !== undefined) patch.name = normalizeText(input.name, 1, 200, 'nombre del producto');
-  if (input.variants !== undefined) patch.variants = normalizeOptions(input.variants, 'variante');
+  if (input.extras !== undefined) patch.extras = normalizeOptions(input.extras, 'extra');
+  if (input.name !== undefined) patch.name = normalizeText(input.name, 1, 200, 'productName');
+  if (input.variants !== undefined) patch.variants = normalizeOptions(input.variants, 'variant');
   if (input.isAvailable !== undefined) {
-    if (typeof input.isAvailable !== 'boolean') invalid('La disponibilidad no es válida.');
+    if (typeof input.isAvailable !== 'boolean') {
+      invalid('La disponibilidad no es válida.', { code: 'PRODUCT_AVAILABILITY_INVALID' });
+    }
     patch.isAvailable = input.isAvailable;
   }
-  if (Object.keys(patch).length === 0) invalid('Envía al menos un cambio para el producto.');
+  if (Object.keys(patch).length === 0) {
+    invalid('Envía al menos un cambio para el producto.', { code: 'PRODUCT_PATCH_EMPTY' });
+  }
   return patch;
 }
 
@@ -84,13 +117,15 @@ export function normalizeOrderedIds(value: unknown): string[] {
     throw new MenuManagementApplicationError(
       'INVALID_ORDER',
       'El orden debe incluir todos los elementos una sola vez.',
+      { problem: { code: 'MENU_ORDER_INCOMPLETE', params: { subject: 'items' } } },
     );
   }
-  const ids = value.map((id) => normalizeUuid(id, 'identificador de orden'));
+  const ids = value.map((id) => normalizeUuid(id, 'orderId'));
   if (new Set(ids).size !== ids.length) {
     throw new MenuManagementApplicationError(
       'INVALID_ORDER',
       'El orden contiene elementos repetidos.',
+      { problem: { code: 'MENU_ORDER_DUPLICATED' } },
     );
   }
   return ids;
@@ -127,34 +162,44 @@ export function detectProductImageContentType(bytes: Uint8Array): StoredImageTyp
   return null;
 }
 
-function normalizeOptions(value: unknown, label: string): ProductOptionInput[] {
+function normalizeOptions(value: unknown, kind: OptionKind): ProductOptionInput[] {
   if (value === undefined) return [];
+  const label = OPTION_LABELS[kind];
   if (!Array.isArray(value) || value.length > MAX_OPTIONS) {
-    invalid(`El producto admite hasta ${MAX_OPTIONS} ${label}s.`);
+    invalid(`El producto admite hasta ${MAX_OPTIONS} ${label}s.`, {
+      code: 'PRODUCT_OPTION_LIMIT',
+      params: { kind, max: MAX_OPTIONS },
+    });
   }
   const options = value.map((option, index) => {
     if (typeof option !== 'object' || option === null || Array.isArray(option)) {
-      invalid(`El ${label} ${index + 1} no es válido.`);
+      invalid(`El ${label} ${index + 1} no es válido.`, {
+        code: 'PRODUCT_OPTION_INVALID',
+        params: { kind, position: index + 1 },
+      });
     }
     const record = option as Record<string, unknown>;
     return {
-      name: normalizeText(record.name, 1, 160, label),
-      price: normalizePrice(record.price, `precio de ${label}`),
+      name: normalizeText(record.name, 1, 160, OPTION_FIELDS[kind].name),
+      price: normalizePrice(record.price, OPTION_FIELDS[kind].price),
     };
   });
   const normalizedNames = options.map((option) => option.name.toLocaleLowerCase('es'));
   if (new Set(normalizedNames).size !== normalizedNames.length) {
-    invalid(`No repitas nombres de ${label}s en el mismo producto.`);
+    invalid(`No repitas nombres de ${label}s en el mismo producto.`, {
+      code: 'PRODUCT_OPTION_DUPLICATED',
+      params: { kind },
+    });
   }
   return options;
 }
 
 function normalizeDescription(value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
-  return normalizeText(value, 1, 2_000, 'descripción');
+  return normalizeText(value, 1, 2_000, 'description');
 }
 
-function normalizePrice(value: unknown, label: string): string {
+function normalizePrice(value: unknown, field: PriceField): string {
   const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
   if (
     typeof number !== 'number' ||
@@ -162,7 +207,10 @@ function normalizePrice(value: unknown, label: string): string {
     number < 0 ||
     number > 99_999_999.99
   ) {
-    invalid(`El campo ${label} no es un precio válido.`);
+    invalid(`El campo ${PRICE_LABELS[field]} no es un precio válido.`, {
+      code: 'FIELD_PRICE_INVALID',
+      params: { field },
+    });
   }
   return number.toFixed(2);
 }
@@ -171,33 +219,46 @@ function normalizeText(
   value: unknown,
   minimum: number,
   maximum: number,
-  label: string,
+  field: MenuField,
 ): string {
-  if (typeof value !== 'string') invalid(`El campo ${label} no es válido.`);
+  if (typeof value !== 'string') invalidField(field);
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length < minimum || normalized.length > maximum) {
-    invalid(`El campo ${label} no es válido.`);
+    invalidField(field);
   }
   return normalized;
 }
 
-function normalizeUuid(value: unknown, label: string): string {
+function normalizeUuid(value: unknown, field: MenuField): string {
   if (
     typeof value !== 'string' ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
   ) {
-    invalid(`El campo ${label} no es válido.`);
+    invalidField(field);
   }
   return value;
 }
 
-function invalid(message: string): never {
-  throw new MenuManagementApplicationError('INVALID_INPUT', message);
+function invalidField(field: MenuField): never {
+  invalid(`El campo ${FIELD_LABELS[field]} no es válido.`, {
+    code: 'FIELD_INVALID',
+    params: { field },
+  });
+}
+
+function invalid(message: string, problem: ApiProblem): never {
+  throw new MenuManagementApplicationError('INVALID_INPUT', message, { problem });
 }
 
 function invalidImage(): never {
   throw new MenuManagementApplicationError(
     'INVALID_IMAGE',
     'La imagen debe ser un archivo PNG, JPG o WebP válido de hasta 4 MB.',
+    {
+      problem: {
+        code: 'PRODUCT_IMAGE_INVALID',
+        params: { maxMb: PRODUCT_IMAGE_LIMITS.maximumBytes / BYTES_PER_MB },
+      },
+    },
   );
 }

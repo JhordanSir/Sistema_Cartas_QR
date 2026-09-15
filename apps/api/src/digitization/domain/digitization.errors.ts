@@ -1,3 +1,5 @@
+import type { ApiProblem } from '@sirio/shared';
+
 export type DigitizationErrorCode =
   | 'EMPTY_MENU'
   | 'FORBIDDEN'
@@ -10,13 +12,17 @@ export type DigitizationErrorCode =
   | 'RESTAURANT_NOT_FOUND';
 
 export class DigitizationApplicationError extends Error {
+  /** What the client should tell the person; without it the HTTP mapper picks one. */
+  readonly problem: ApiProblem | undefined;
+
   constructor(
     readonly code: DigitizationErrorCode,
     message: string,
-    options?: ErrorOptions,
+    options?: ErrorOptions & { problem?: ApiProblem },
   ) {
     super(message, options);
     this.name = 'DigitizationApplicationError';
+    this.problem = options?.problem;
   }
 }
 

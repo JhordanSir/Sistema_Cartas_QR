@@ -66,7 +66,10 @@ describe('DeleteRestaurant', () => {
         id: RESTAURANT_ID,
         principal: ADMIN,
       }),
-    ).rejects.toMatchObject({ code: 'INVALID_CONFIRMATION' });
+    ).rejects.toMatchObject({
+      code: 'INVALID_CONFIRMATION',
+      problem: { code: 'DELETION_CONFIRMATION_MISMATCH' },
+    });
     expect(repo.scheduleDeletion).not.toHaveBeenCalled();
   });
 

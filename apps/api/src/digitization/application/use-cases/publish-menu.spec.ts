@@ -60,6 +60,9 @@ describe('publicación explícita de carta', () => {
       principal: OWNER,
       restaurantId: menu.restaurantId,
       template: 'NEON',
-    })).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+    })).rejects.toMatchObject({
+      code: 'INVALID_INPUT',
+      problem: { code: 'MENU_TEMPLATE_INVALID' },
+    });
   });
 });

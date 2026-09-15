@@ -19,6 +19,7 @@ export function normalizeRestaurantName(value: string): string {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Restaurant name must contain between 2 and 160 characters',
+      { problem: { code: 'RESTAURANT_NAME_LENGTH', params: { max: 160, min: 2 } } },
     );
   }
   return name;
@@ -30,6 +31,7 @@ export function normalizeOwnerEmail(value: string): string {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Owner email must be valid',
+      { problem: { code: 'OWNER_EMAIL_INVALID' } },
     );
   }
   return email;
@@ -40,12 +42,14 @@ export function assertInitialPassword(value: string): void {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Initial password must contain between 8 and 128 characters',
+      { problem: { code: 'PASSWORD_LENGTH', params: { max: 128, min: 8 } } },
     );
   }
   if (!meetsPasswordPolicy(value)) {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Initial password must contain an uppercase letter, a lowercase letter and a number',
+      { problem: { code: 'PASSWORD_COMPLEXITY' } },
     );
   }
 }
