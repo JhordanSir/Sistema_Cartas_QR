@@ -62,6 +62,10 @@ const publishedMenu = {
   publication: { hasPublishedMenu: true, hasUnpublishedChanges: false, publishedAt: '2026-08-26T18:00:00.000Z' },
 };
 
+// Each test walks the whole screen (load, digitize, publish, edit). With every suite
+// running in parallel it regularly needs more than Jest's default 5 s.
+jest.setTimeout(15_000);
+
 describe('MenuDigitizer', () => {
   beforeEach(() => {
     Object.defineProperty(URL, 'createObjectURL', {

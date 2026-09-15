@@ -1,8 +1,27 @@
 import { landingCopy } from './messages/landing';
 import { loginCopy } from './messages/login';
+import { ownerHelpCopy } from './messages/owner-help';
+import { ownerMenuCopy } from './messages/owner-menu';
+import { ownerPanelCopy } from './messages/owner-panel';
+import { ownerProfileCopy } from './messages/owner-profile';
+import { ownerQrCopy } from './messages/owner-qr';
 import { shellCopy } from './messages/shell';
+import { statisticsCopy } from './messages/statistics';
 
-const TABLES = { landing: landingCopy, login: loginCopy, shell: shellCopy };
+const TABLES = {
+  landing: landingCopy,
+  login: loginCopy,
+  ownerHelp: ownerHelpCopy,
+  ownerMenu: ownerMenuCopy,
+  ownerPanel: ownerPanelCopy,
+  ownerProfile: ownerProfileCopy,
+  ownerQr: ownerQrCopy,
+  shell: shellCopy,
+  statistics: statisticsCopy,
+};
+
+// Names that legitimately read the same in both languages.
+const SAME_IN_BOTH = new Set(['Casual', 'Original', 'Premium', 'QR']);
 
 /** Flattens a message table into [path, text] pairs; message functions are called. */
 function entries(value: unknown, path = ''): Array<[string, unknown]> {
@@ -41,7 +60,8 @@ describe.each(Object.entries(TABLES))('%s messages', (_name, table) => {
     const spanish = new Map(entries(table.es));
     // Brand names are the only text allowed to read the same in both languages.
     const untranslated = entries(table.en).filter(
-      ([path, text]) => spanish.get(path) === text && !/^Sirio/.test(String(text)),
+      ([path, text]) =>
+        spanish.get(path) === text && !/^Sirio/.test(String(text)) && !SAME_IN_BOTH.has(String(text)),
     );
     expect(untranslated).toEqual([]);
   });

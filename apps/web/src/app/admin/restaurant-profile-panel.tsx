@@ -19,15 +19,20 @@ import { Card, ErrorBanner, Kicker, Notice, NumberedHeading, Skeleton } from '@/
 import { readApiError } from '@/i18n/api-errors';
 import { useCopy } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
+import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
+import { ownerProfileCopy } from '@/i18n/messages/owner-profile';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from './owner-navigation';
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const ACCEPTED_LOGOS = ['image/jpeg', 'image/png', 'image/webp'];
+const PROFILE_FIELDS = 5;
 
 export function RestaurantProfilePanel() {
   const router = useRouter();
+  const copy = useCopy(ownerProfileCopy);
+  const panelCopy = useCopy(ownerPanelCopy);
   const errorCopy = useCopy(apiErrorCopy);
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -52,7 +57,7 @@ export function RestaurantProfilePanel() {
       return;
     }
     if (!response.ok) {
-      setError('No pudimos cargar el perfil. Vuelve a intentarlo.');
+      setError(copy.loadError);
       setLoading(false);
       return;
     }
@@ -60,7 +65,7 @@ export function RestaurantProfilePanel() {
     setRestaurants(profiles);
     setSelectedId((current) => current || profiles[0]?.id || '');
     setLoading(false);
-  }, [router]);
+  }, [copy, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);
@@ -80,7 +85,7 @@ export function RestaurantProfilePanel() {
     if (!ACCEPTED_LOGOS.includes(file.type) || file.size > MAX_LOGO_BYTES) {
       event.target.value = '';
       setLogo(null);
-      setError('El logo debe ser PNG, JPG o WebP y pesar como máximo 2 MB.');
+      setError(copy.logo.invalid);
       return;
     }
     if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -112,7 +117,7 @@ export function RestaurantProfilePanel() {
     setLogo(null);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
-    setNotice('Perfil guardado. La identidad de tu restaurante está al día.');
+    setNotice(copy.saved);
     setSaving(false);
   }
 
@@ -128,18 +133,16 @@ export function RestaurantProfilePanel() {
             />
           }
         >
-          <Kicker>Panel del restaurante</Kicker>
-          <PageTitle>Tu perfil</PageTitle>
-          <SupportingCopy>
-            Haz que las personas reconozcan tu restaurante y sepan cómo encontrarte.
-          </SupportingCopy>
+          <Kicker>{copy.kicker}</Kicker>
+          <PageTitle>{copy.title}</PageTitle>
+          <SupportingCopy>{copy.lede}</SupportingCopy>
         </WorkspaceHeader>
 
         {notice ? <Notice onDismiss={() => setNotice(null)}>{notice}</Notice> : null}
         {error ? <ErrorBanner>{error}</ErrorBanner> : null}
         {loading ? (
           <div
-            aria-label="Cargando perfil"
+            aria-label={copy.loading}
             className="grid gap-6 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
             role="status"
           >
@@ -156,11 +159,9 @@ export function RestaurantProfilePanel() {
               S/
             </span>
             <h2 className="mt-5 mb-0 font-display text-2xl tracking-tight">
-              No encontramos un restaurante asociado
+              {panelCopy.noRestaurant}
             </h2>
-            <p className="mt-1.5 mb-0 text-[13px]/relaxed text-ink-soft">
-              Contacta al administrador para revisar tu cuenta.
-            </p>
+            <p className="mt-1.5 mb-0 text-[13px]/relaxed text-ink-soft">{copy.emptyBody}</p>
           </Card>
         ) : null}
         {!loading && selected ? (
@@ -194,6 +195,7 @@ function ProfileForm({
   profile: RestaurantProfile;
   saving: boolean;
 }) {
+  const copy = useCopy(ownerProfileCopy);
   const persistedLogo = profile.logoPath
     ? `/api/owner/restaurants/${profile.id}/logo?v=${encodeURIComponent(profile.updatedAt)}`
     : null;
@@ -216,11 +218,11 @@ function ProfileForm({
         className="grid justify-items-center p-7 text-center lg:sticky lg:top-8"
       >
         <Kicker className="justify-self-start" tone="teal">
-          Así te verán
+          {copy.preview}
         </Kicker>
         <div className="relative mt-7 mb-5 grid size-32 place-items-center overflow-hidden rounded-[2rem] bg-olive-wash font-display text-5xl font-bold text-olive shadow-[inset_0_0_0_1px_rgb(29_41_33/0.1)] sm:size-40 sm:rounded-[2.25rem] sm:text-6xl">
           {logoUrl ? (
-            <Image alt={`Logo de ${profile.name}`} fill sizes="160px" src={logoUrl} unoptimized />
+            <Image alt={copy.logo.alt(profile.name)} fill sizes="160px" src={logoUrl} unoptimized />
           ) : (
             <span aria-hidden="true">{profile.name.charAt(0).toLocaleUpperCase('es')}</span>
           )}
@@ -234,47 +236,45 @@ function ProfileForm({
           rel="noreferrer"
           target="_blank"
         >
-          <span aria-hidden="true">↗</span> Abrir carta pública
+          <span aria-hidden="true">↗</span> {copy.openPublicMenu}
         </a>
         <div
-          aria-label={`${completed} de 5 datos completados`}
+          aria-label={copy.progress.label(completed, PROFILE_FIELDS)}
           className="my-6 w-full border-y border-line py-5"
         >
           <div className="h-1.5 overflow-hidden rounded-full bg-control">
             <span
               className="block h-full rounded-full bg-copper transition-[width] duration-200 ease-soft"
-              style={{ width: `${completed * 20}%` }}
+              style={{ width: `${(completed / PROFILE_FIELDS) * 100}%` }}
             />
           </div>
           <p className="mt-2.5 mb-0 text-[11px] text-ink-muted">
-            <strong className="text-ink tabular-nums">{completed}/5</strong> datos que ayudan a tus
-            clientes
+            <strong className="text-ink tabular-nums">
+              {completed}/{PROFILE_FIELDS}
+            </strong>{' '}
+            {copy.progress.hint}
           </p>
         </div>
         <label className="relative inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-control px-4 text-[13px] font-bold text-ink hover:bg-control-hover">
           <span>
-            {logo ? 'Cambiar selección' : profile.logoPath ? 'Reemplazar logo' : 'Subir logo'}
+            {logo ? copy.logo.change : profile.logoPath ? copy.logo.replace : copy.logo.upload}
           </span>
           <input
             accept="image/png,image/jpeg,image/webp"
-            aria-label="Logo del restaurante"
+            aria-label={copy.logo.input}
             className="absolute size-px opacity-0"
             name="logo"
             onChange={onLogoChange}
             type="file"
           />
         </label>
-        <small className="mt-2 text-[10px] text-ink-muted">PNG, JPG o WebP · máximo 2 MB</small>
+        <small className="mt-2 text-[10px] text-ink-muted">{copy.logo.hint}</small>
       </Card>
 
       <Card className="overflow-hidden">
-        <NumberedHeading
-          body="Agrega los datos que tus clientes necesitan para ubicarte o escribirte."
-          number="01"
-          title="Cómo te encuentran"
-        />
+        <NumberedHeading body={copy.contact.body} number="01" title={copy.contact.title} />
         <div className="grid gap-4 px-5 pt-2 pb-6 sm:grid-cols-2 sm:px-8">
-          <Field label="Teléfono">
+          <Field label={copy.phone}>
             <input
               className={fieldControl}
               defaultValue={profile.contactPhone ?? ''}
@@ -294,22 +294,22 @@ function ProfileForm({
               placeholder="+51 999 999 999"
             />
           </Field>
-          <Field className="sm:col-span-2" label="Dirección">
+          <Field className="sm:col-span-2" label={copy.address.label}>
             <input
               className={fieldControl}
               defaultValue={profile.address ?? ''}
               maxLength={500}
               name="address"
-              placeholder="Av. Principal 123, Miraflores"
+              placeholder={copy.address.placeholder}
             />
           </Field>
         </div>
 
         <NumberedHeading
-          body="Usa enlaces completos que comiencen con https://."
+          body={copy.social.body}
           divider
           number="02"
-          title="Dónde te siguen"
+          title={copy.social.title}
         />
         <div className="grid gap-4 px-5 pt-2 pb-6 sm:grid-cols-2 sm:px-8">
           <Field className="sm:col-span-2" label="Instagram">
@@ -318,7 +318,7 @@ function ProfileForm({
               defaultValue={profile.instagramUrl ?? ''}
               maxLength={2048}
               name="instagramUrl"
-              placeholder="https://instagram.com/tu_restaurante"
+              placeholder={copy.social.instagramPlaceholder}
               type="url"
             />
           </Field>
@@ -328,7 +328,7 @@ function ProfileForm({
               defaultValue={profile.facebookUrl ?? ''}
               maxLength={2048}
               name="facebookUrl"
-              placeholder="https://facebook.com/tu-restaurante"
+              placeholder={copy.social.facebookPlaceholder}
               type="url"
             />
           </Field>
@@ -338,7 +338,7 @@ function ProfileForm({
               defaultValue={profile.tiktokUrl ?? ''}
               maxLength={2048}
               name="tiktokUrl"
-              placeholder="https://tiktok.com/@tu_restaurante"
+              placeholder={copy.social.tiktokPlaceholder}
               type="url"
             />
           </Field>
@@ -346,10 +346,10 @@ function ProfileForm({
 
         <footer className="flex flex-col gap-4 bg-control/55 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <p className="m-0 max-w-[48ch] text-[11px]/relaxed text-ink-muted">
-            El nombre y la dirección pública los administra la plataforma.
+            {copy.managedByPlatform}
           </p>
           <Button className="max-sm:w-full" disabled={saving} type="submit">
-            {saving ? 'Guardando…' : 'Guardar perfil'}
+            {saving ? copy.saving : copy.save}
           </Button>
         </footer>
       </Card>

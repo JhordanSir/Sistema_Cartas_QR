@@ -18,6 +18,8 @@ import {
 import { readApiError } from '@/i18n/api-errors';
 import { useCopy } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
+import { ownerMenuCopy } from '@/i18n/messages/owner-menu';
+import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
 import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from '../owner-navigation';
@@ -29,16 +31,13 @@ const MAX_PHOTOS = 5;
 const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 12 * 1024 * 1024;
 const ACCEPTED_PHOTOS = ['image/jpeg', 'image/png', 'image/webp'];
-const PROCESSING_STAGES = [
-  'Leyendo las páginas de tu carta…',
-  'Reconociendo categorías, platos y precios…',
-  'Interpretando variantes y adicionales…',
-  'Preparando el borrador para tu revisión…',
-];
 
 export function MenuDigitizer() {
   const router = useRouter();
+  const copy = useCopy(ownerMenuCopy).digitizer;
+  const panelCopy = useCopy(ownerPanelCopy);
   const errorCopy = useCopy(apiErrorCopy);
+  const stageCount = copy.processing.stages.length;
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [menu, setMenu] = useState<PublishedMenu | null>(null);
@@ -59,16 +58,18 @@ export function MenuDigitizer() {
     [restaurants, selectedId],
   );
 
-  const loadMenu = useCallback(async (restaurantId: string) => {
+  /** Resolves false when the draft could not be loaded; a lost session redirects instead. */
+  const loadMenu = useCallback(async (restaurantId: string): Promise<boolean> => {
     const response = await fetch(`/api/owner/restaurants/${restaurantId}/menu`, {
       cache: 'no-store',
     });
     if (response.status === 401 || response.status === 403) {
       router.replace('/admin/login');
-      return;
+      return true;
     }
-    if (!response.ok) throw new Error('No pudimos cargar el borrador de la carta.');
+    if (!response.ok) return false;
     setMenu((await response.json()) as PublishedMenu);
+    return true;
   }, [router]);
 
   const loadRestaurants = useCallback(async () => {
@@ -80,7 +81,7 @@ export function MenuDigitizer() {
       return;
     }
     if (!response.ok) {
-      setError('No pudimos cargar tus restaurantes. Vuelve a intentarlo.');
+      setError(copy.loadRestaurantsError);
       setLoading(false);
       return;
     }
@@ -88,15 +89,9 @@ export function MenuDigitizer() {
     const firstId = profiles[0]?.id ?? '';
     setRestaurants(profiles);
     setSelectedId((current) => current || firstId);
-    if (firstId) {
-      try {
-        await loadMenu(firstId);
-      } catch (loadError) {
-        setError(loadError instanceof Error ? loadError.message : 'No pudimos cargar la carta.');
-      }
-    }
+    if (firstId && !(await loadMenu(firstId))) setError(copy.loadDraftError);
     setLoading(false);
-  }, [loadMenu, router]);
+  }, [copy, loadMenu, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);
@@ -110,11 +105,11 @@ export function MenuDigitizer() {
   useEffect(() => {
     if (!digitizing) return;
     const interval = window.setInterval(
-      () => setProcessingStage((current) => Math.min(current + 1, PROCESSING_STAGES.length - 1)),
+      () => setProcessingStage((current) => Math.min(current + 1, stageCount - 1)),
       5_000,
     );
     return () => window.clearInterval(interval);
-  }, [digitizing]);
+  }, [digitizing, stageCount]);
 
   async function switchRestaurant(event: ChangeEvent<HTMLSelectElement>) {
     const restaurantId = event.target.value;
@@ -123,11 +118,7 @@ export function MenuDigitizer() {
     setError(null);
     setNotice(null);
     setLoading(true);
-    try {
-      await loadMenu(restaurantId);
-    } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'No pudimos cargar la carta.');
-    }
+    if (!(await loadMenu(restaurantId))) setError(copy.loadDraftError);
     setLoading(false);
   }
 
@@ -144,7 +135,7 @@ export function MenuDigitizer() {
     ) {
       event.target.value = '';
       setFiles([]);
-      setError('Elige entre 1 y 5 fotos JPG, PNG o WebP; máximo 3 MB cada una y 12 MB en total.');
+      setError(copy.photos.invalid);
       return;
     }
     setFiles(selectedFiles);
@@ -169,7 +160,7 @@ export function MenuDigitizer() {
     }
     setMenu((await response.json()) as PublishedMenu);
     setFiles([]);
-    setNotice('Carta digitalizada. Revísala y publícala cuando esté lista.');
+    setNotice(copy.digitized);
     setDigitizing(false);
   }
 
@@ -185,7 +176,7 @@ export function MenuDigitizer() {
         return;
       }
       setMenu((await response.json()) as PublishedMenu);
-      setNotice('La carta pública se actualizó. El QR sigue siendo el mismo.');
+      setNotice(copy.published);
     } finally {
       setPublishing(false);
     }
@@ -207,7 +198,7 @@ export function MenuDigitizer() {
         return;
       }
       setMenu((await response.json()) as PublishedMenu);
-      setNotice('Plantilla aplicada al borrador. Publícala cuando estés conforme.');
+      setNotice(copy.templateApplied);
     } finally {
       setTemplateSaving(false);
     }
@@ -225,18 +216,16 @@ export function MenuDigitizer() {
             />
           }
         >
-          <Kicker>Carta del restaurante</Kicker>
-          <PageTitle>Prepara la próxima versión de tu carta.</PageTitle>
-          <SupportingCopy>
-            Cada ajuste queda en borrador. Tú decides cuándo actualizar lo que ven tus clientes.
-          </SupportingCopy>
+          <Kicker>{copy.kicker}</Kicker>
+          <PageTitle>{copy.title}</PageTitle>
+          <SupportingCopy>{copy.lede}</SupportingCopy>
         </WorkspaceHeader>
 
         {notice ? <Notice onDismiss={() => setNotice(null)}>{notice}</Notice> : null}
         {error ? <ErrorBanner>{error}</ErrorBanner> : null}
         {loading ? (
           <div
-            aria-label="Cargando carta"
+            aria-label={copy.loading}
             className="grid gap-6 xl:grid-cols-[minmax(18.75rem,0.82fr)_minmax(26rem,1.35fr)]"
             role="status"
           >
@@ -246,9 +235,7 @@ export function MenuDigitizer() {
         ) : null}
         {!loading && !selected ? (
           <Card className="grid min-h-64 place-items-center p-10 text-center">
-            <h2 className="m-0 font-display text-2xl tracking-tight">
-              No encontramos un restaurante asociado
-            </h2>
+            <h2 className="m-0 font-display text-2xl tracking-tight">{panelCopy.noRestaurant}</h2>
           </Card>
         ) : null}
         {!loading && selected ? (
@@ -265,11 +252,7 @@ export function MenuDigitizer() {
             ) : null}
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(18.75rem,0.82fr)_minmax(26rem,1.35fr)]">
               <Card accent="copper" className="overflow-hidden">
-                <NumberedHeading
-                  body="Usa buena luz y texto enfocado. Incluye cada página completa."
-                  number="01"
-                  title="Sube las fotos de tu carta"
-                />
+                <NumberedHeading body={copy.photos.body} number="01" title={copy.photos.title} />
                 <label className="relative mx-5 mt-2 mb-5 grid min-h-52 cursor-pointer content-center justify-items-center gap-2 rounded-xl border-[1.5px] border-dashed border-line-strong bg-olive-wash/35 p-7 text-center transition-colors hover:border-olive hover:bg-olive-wash/65 sm:mx-8">
                   <span
                     aria-hidden="true"
@@ -278,14 +261,12 @@ export function MenuDigitizer() {
                     ↥
                   </span>
                   <strong className="text-sm">
-                    {files.length ? 'Cambiar fotografías' : 'Seleccionar fotografías'}
+                    {files.length ? copy.photos.change : copy.photos.select}
                   </strong>
-                  <small className="text-[11px]/relaxed text-ink-muted">
-                    1–5 archivos · JPG, PNG o WebP · 3 MB por foto
-                  </small>
+                  <small className="text-[11px]/relaxed text-ink-muted">{copy.photos.hint}</small>
                   <input
                     accept="image/jpeg,image/png,image/webp"
-                    aria-label="Fotos de la carta"
+                    aria-label={copy.photos.input}
                     className="absolute size-px opacity-0"
                     disabled={digitizing}
                     multiple
@@ -295,7 +276,7 @@ export function MenuDigitizer() {
                 </label>
                 {previews.length > 0 ? (
                   <div
-                    aria-label="Fotografías seleccionadas"
+                    aria-label={copy.photos.selected}
                     className="grid grid-cols-2 gap-2.5 px-5 pb-5 sm:grid-cols-3 sm:px-8"
                   >
                     {previews.map(({ file, url }, index) => (
@@ -303,13 +284,13 @@ export function MenuDigitizer() {
                         {/* A local object URL is intentionally rendered with a native image. */}
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          alt={`Página ${index + 1}: ${file.name}`}
+                          alt={copy.pageAlt(index + 1, file.name)}
                           className="block aspect-4/5 w-full rounded-lg bg-control object-cover"
                           src={url}
                         />
                         <figcaption className="mt-1.5 flex justify-between gap-1.5 text-[9px] text-ink-muted">
                           <span className="overflow-hidden font-bold text-ellipsis whitespace-nowrap text-ink-soft">
-                            Página {index + 1}
+                            {copy.page(index + 1)}
                           </span>
                           {formatBytes(file.size)}
                         </figcaption>
@@ -323,23 +304,19 @@ export function MenuDigitizer() {
                     full
                     onClick={() => void digitize()}
                   >
-                    {digitizing ? 'Digitalizando…' : 'Digitalizar en borrador'}
+                    {digitizing ? copy.digitizing : copy.digitize}
                   </Button>
                 </div>
                 <p className="mx-5 mt-3 mb-7 text-center text-[11px]/relaxed text-ink-muted sm:mx-8">
-                  Las fotos se envían a Gemini para interpretarlas y no se almacenan en Sirio.
+                  {copy.privacy}
                 </p>
               </Card>
 
               <Card accent="olive" className="min-h-[38rem] overflow-hidden">
                 <NumberedHeading
-                  body={
-                    menu?.categories.length
-                      ? 'Revisa el resultado antes de actualizar la carta pública.'
-                      : 'Aquí aparecerá tu carta después de digitalizarla.'
-                  }
+                  body={menu?.categories.length ? copy.draft.reviewBody : copy.draft.emptyBody}
                   number="02"
-                  title="Tu borrador de carta"
+                  title={copy.draft.title}
                 />
                 <div
                   className={`flex items-start gap-2.5 border-b border-line px-5 py-3 sm:px-8 ${
@@ -356,10 +333,10 @@ export function MenuDigitizer() {
                   </span>
                   <p className="m-0 text-[11px]/normal font-semibold">
                     {menu?.publication.hasUnpublishedChanges
-                      ? 'Hay cambios en borrador. La carta pública conserva su versión anterior.'
+                      ? copy.draft.status.changes
                       : menu?.publication.hasPublishedMenu
-                        ? 'Esta es la misma versión que está publicada ahora.'
-                        : 'Aún no hay una carta publicada. Tu QR mostrará Próximamente.'}
+                        ? copy.draft.status.live
+                        : copy.draft.status.none}
                   </p>
                 </div>
                 {digitizing ? <ProcessingState stage={processingStage} /> : null}
@@ -373,8 +350,8 @@ export function MenuDigitizer() {
                         target="_blank"
                       >
                         {menu.publication.hasPublishedMenu
-                          ? 'Ver carta publicada ↗'
-                          : 'Ver enlace del QR ↗'}
+                          ? copy.draft.viewPublished
+                          : copy.draft.viewQrLink}
                       </Link>
                     </div>
                     <MenuManager
@@ -396,6 +373,7 @@ export function MenuDigitizer() {
 }
 
 function ProcessingState({ stage }: { stage: number }) {
+  const copy = useCopy(ownerMenuCopy).digitizer.processing;
   return (
     <div
       aria-live="polite"
@@ -414,21 +392,17 @@ function ProcessingState({ stage }: { stage: number }) {
           />
         ))}
       </span>
-      <h3 className="mt-7 mb-2 font-display text-2xl tracking-[-0.025em]">
-        Gemini está interpretando tu carta
-      </h3>
-      <p className="m-0 text-[13px] text-ink-soft">{PROCESSING_STAGES[stage]}</p>
+      <h3 className="mt-7 mb-2 font-display text-2xl tracking-[-0.025em]">{copy.title}</h3>
+      <p className="m-0 text-[13px] text-ink-soft">{copy.stages[stage]}</p>
       <div className="my-6 flex w-full max-w-70 gap-1.5">
-        {PROCESSING_STAGES.map((_, index) => (
+        {copy.stages.map((_, index) => (
           <span
             className={`h-1.5 flex-1 rounded-full ${index <= stage ? 'bg-copper' : 'bg-control'}`}
             key={index}
           />
         ))}
       </div>
-      <small className="text-[10px] text-ink-muted">
-        No cierres esta ventana. Podrás revisar el borrador al terminar.
-      </small>
+      <small className="text-[10px] text-ink-muted">{copy.keepOpen}</small>
     </div>
   );
 }

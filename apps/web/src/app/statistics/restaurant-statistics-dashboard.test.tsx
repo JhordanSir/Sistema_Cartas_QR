@@ -1,5 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { RestaurantStatisticsDashboard } from './restaurant-statistics-dashboard';
 
 const replace = jest.fn();
@@ -95,6 +97,29 @@ describe('RestaurantStatisticsDashboard', () => {
     expect(screen.getByRole('heading', { name: 'Ritmo por hora', level: 2 })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'Ritmo por día', level: 2 })).toBeVisible();
     expect(screen.getByText('Hora de Perú · UTC−5')).toBeVisible();
+    // El día pico se nombra completo; la abreviatura queda para el eje.
+    expect(screen.getByText('El mayor movimiento llega los lunes a las 13:00.')).toBeVisible();
+    expect(screen.getByText('Lun')).toBeVisible();
+  });
+
+  it('en inglés traduce el informe y conserva el reloj de 24 horas', async () => {
+    render(
+      <LocaleProvider locale="en">
+        <RestaurantStatisticsDashboard scope="owner" />
+      </LocaleProvider>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Statistics', level: 1 })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mesa Norte', level: 2 })).toBeVisible());
+    expect(screen.getByText('Your menu at a glance')).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hourly rhythm', level: 2 })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Daily rhythm', level: 2 })).toBeVisible();
+    expect(screen.getByText('Peru time · UTC−5')).toBeVisible();
+    expect(screen.getByText('Activity peaks on Mondays at 13:00.')).toBeVisible();
+    expect(screen.getByText('Mon')).toBeVisible();
+    expect(screen.getByText('Last 30 days')).toBeVisible();
+    // The restaurant is the owner's content: it never changes with the language.
+    expect(screen.getByText('/mesa-norte')).toBeVisible();
   });
 
   it('adapta la introducción para el administrador de la plataforma', async () => {

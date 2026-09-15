@@ -6,6 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import { Card, ErrorBanner, Kicker, Skeleton } from '@/components/surfaces';
+import { formatNumber } from '@/i18n/format';
+import { useCopy, useLocale } from '@/i18n/locale-provider';
+import { statisticsCopy } from '@/i18n/messages/statistics';
 import type {
   PaginatedRestaurants,
   RestaurantProfile,
@@ -23,11 +26,10 @@ interface RestaurantOption {
   slug: string;
 }
 
-const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-
 export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScope }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const copy = useCopy(statisticsCopy);
   // El backoffice enlaza a un local concreto desde su fila del registro.
   const requestedId = scope === 'backoffice' ? searchParams.get('restaurante') : null;
   const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]);
@@ -55,7 +57,7 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return;
     }
     if (!response.ok) {
-      setError('No pudimos cargar los restaurantes. Vuelve a intentarlo.');
+      setError(copy.loadRestaurantsError);
       setLoadingRestaurants(false);
       return;
     }
@@ -70,7 +72,7 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return requested?.id ?? options[0]?.id ?? '';
     });
     setLoadingRestaurants(false);
-  }, [requestedId, router, scope]);
+  }, [copy, requestedId, router, scope]);
 
   const loadStatistics = useCallback(async () => {
     if (!selectedId) return;
@@ -85,13 +87,13 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return;
     }
     if (!response.ok) {
-      setError('No pudimos cargar las estadísticas. Vuelve a intentarlo.');
+      setError(copy.loadStatisticsError);
       setLoadingStatistics(false);
       return;
     }
     setStatistics((await response.json()) as RestaurantViewStatistics);
     setLoadingStatistics(false);
-  }, [router, scope, selectedId]);
+  }, [copy, router, scope, selectedId]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);
@@ -123,21 +125,15 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
             />
           }
         >
-          <Kicker>
-            {scope === 'owner' ? 'Lecturas de tu carta' : 'Panorama de la plataforma'}
-          </Kicker>
-          <PageTitle>Estadísticas</PageTitle>
-          <SupportingCopy>
-            {scope === 'owner'
-              ? 'Cada visita cuenta una vez por persona y día, siempre en hora de Perú.'
-              : 'Consulta el movimiento de cada carta y detecta los locales que necesitan atención.'}
-          </SupportingCopy>
+          <Kicker>{copy.intro[scope].kicker}</Kicker>
+          <PageTitle>{copy.title}</PageTitle>
+          <SupportingCopy>{copy.intro[scope].lede}</SupportingCopy>
         </WorkspaceHeader>
 
         {error ? <ErrorBanner>{error}</ErrorBanner> : null}
         {loadingRestaurants || loadingStatistics ? (
           <div
-            aria-label="Cargando estadísticas"
+            aria-label={copy.loading}
             className="grid gap-3.5 sm:grid-cols-3"
             role="status"
           >
@@ -154,12 +150,8 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
             >
               ◔
             </span>
-            <h2 className="mt-5 mb-0 font-display text-2xl tracking-tight">
-              No hay restaurantes para analizar
-            </h2>
-            <p className="mt-1.5 mb-0 text-[13px]/relaxed text-ink-soft">
-              Crea o asigna un restaurante para empezar a recibir datos de sus cartas.
-            </p>
+            <h2 className="mt-5 mb-0 font-display text-2xl tracking-tight">{copy.empty.title}</h2>
+            <p className="mt-1.5 mb-0 text-[13px]/relaxed text-ink-soft">{copy.empty.body}</p>
           </Card>
         ) : null}
         {!loadingRestaurants && selected && statistics ? (
@@ -177,9 +169,17 @@ function StatisticsReport({
   restaurant: RestaurantOption;
   statistics: RestaurantViewStatistics;
 }) {
+  const locale = useLocale();
+  const copy = useCopy(statisticsCopy);
   const busiestHour = strongest(statistics.hourly, (item) => item.totalViews);
   const busiestDay = strongest(statistics.weekdays, (item) => item.totalViews);
   const isEmpty = statistics.uniqueViews.allTime === 0;
+  const barLabel = (label: string, entry: { averageViews: number; totalViews: number }) =>
+    copy.barLabel(
+      label,
+      formatNumber(entry.totalViews, locale),
+      formatNumber(entry.averageViews, locale),
+    );
 
   return (
     <div className="grid gap-6">
@@ -197,49 +197,45 @@ function StatisticsReport({
           </h2>
           <p className="m-0 max-w-[60ch] text-sm/relaxed text-ink-soft text-pretty">
             {isEmpty
-              ? 'Aún no hay lecturas de este QR. Cuando alguien abra la carta, el pulso aparecerá aquí.'
-              : `El mayor movimiento llega ${weekdayPhrase(busiestDay?.dayOfWeek)} a las ${formatHour(busiestHour?.hour)}.`}
+              ? copy.noReadings
+              : copy.peak(
+                  copy.weekdayPhrases[busiestDay?.dayOfWeek ?? 0] ?? '',
+                  formatHour(busiestHour?.hour),
+                )}
           </p>
         </div>
         <span className="shrink-0 self-start rounded-full bg-olive-wash px-2.5 py-1.5 text-[11px] font-bold whitespace-nowrap text-olive md:self-end">
-          Hora de Perú · UTC−5
+          {copy.timeZone}
         </span>
       </section>
 
-      <section aria-label="Vistas únicas" className="grid gap-3.5 sm:grid-cols-3">
-        <Metric label="Últimos 7 días" value={statistics.uniqueViews.last7Days} />
-        <Metric featured label="Últimos 30 días" value={statistics.uniqueViews.last30Days} />
-        <Metric label="Desde el inicio" value={statistics.uniqueViews.allTime} />
+      <section aria-label={copy.uniqueViews} className="grid gap-3.5 sm:grid-cols-3">
+        <Metric label={copy.periods.last7Days} value={statistics.uniqueViews.last7Days} />
+        <Metric featured label={copy.periods.last30Days} value={statistics.uniqueViews.last30Days} />
+        <Metric label={copy.periods.allTime} value={statistics.uniqueViews.allTime} />
       </section>
 
       <section
-        aria-label="Ritmos de visita"
+        aria-label={copy.rhythms}
         className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(18.75rem,0.65fr)]"
       >
         <RhythmChart
           entries={statistics.hourly}
-          label={(entry) =>
-            `${formatHour(entry.hour)}: ${entry.totalViews} vistas, promedio ${entry.averageViews}`
-          }
+          label={(entry) => barLabel(formatHour(entry.hour), entry)}
           number="01"
           tick={(entry) => formatHour(entry.hour).slice(0, 2)}
-          title="Ritmo por hora"
+          title={copy.hourly}
           wide
         />
         <RhythmChart
           entries={statistics.weekdays}
-          label={(entry) =>
-            `${WEEKDAY_LABELS[entry.dayOfWeek]}: ${entry.totalViews} vistas, promedio ${entry.averageViews}`
-          }
+          label={(entry) => barLabel(copy.weekdays[entry.dayOfWeek] ?? '', entry)}
           number="02"
-          tick={(entry) => WEEKDAY_LABELS[entry.dayOfWeek] ?? ''}
-          title="Ritmo por día"
+          tick={(entry) => copy.weekdays[entry.dayOfWeek] ?? ''}
+          title={copy.daily}
         />
       </section>
-      <p className="m-0 text-xs/relaxed text-ink-muted text-pretty">
-        Una misma persona solo cuenta una vez al día. Los promedios incluyen los días sin lecturas
-        desde la primera visita registrada.
-      </p>
+      <p className="m-0 text-xs/relaxed text-ink-muted text-pretty">{copy.footnote}</p>
     </div>
   );
 }
@@ -253,6 +249,8 @@ function Metric({
   label: string;
   value: number;
 }) {
+  const locale = useLocale();
+  const copy = useCopy(statisticsCopy);
   return (
     <article
       className={`relative grid min-h-38 content-between overflow-hidden rounded-xl p-5 shadow-soft ${
@@ -277,14 +275,14 @@ function Metric({
           featured ? 'text-paper' : 'text-ink'
         }`}
       >
-        {new Intl.NumberFormat('es-PE').format(value)}
+        {formatNumber(value, locale)}
       </strong>
       <small
         className={`text-[10px] font-bold tracking-[0.09em] uppercase ${
           featured ? 'text-white/70' : 'text-ink-muted'
         }`}
       >
-        vistas únicas
+        {copy.metricUnit}
       </small>
     </article>
   );
@@ -305,6 +303,7 @@ function RhythmChart<T extends { averageViews: number; totalViews: number }>({
   title: string;
   wide?: boolean;
 }) {
+  const copy = useCopy(statisticsCopy);
   const maximum = Math.max(...entries.map((entry) => entry.totalViews), 1);
   const titleId = `${title.toLowerCase().replaceAll(' ', '-')}-title`;
   return (
@@ -321,9 +320,7 @@ function RhythmChart<T extends { averageViews: number; totalViews: number }>({
             {title}
           </h2>
         </div>
-        <p className="m-0 text-[11px]/snug text-ink-muted sm:text-right">
-          Promedio diario del historial
-        </p>
+        <p className="m-0 text-[11px]/snug text-ink-muted sm:text-right">{copy.chartNote}</p>
       </header>
       {/*
         The 24-hour series cannot fit a 390px screen. It scrolls inside its own
@@ -369,13 +366,9 @@ function strongest<T>(items: T[], value: (item: T) => number): T | undefined {
   );
 }
 
+/** Always 24-hour, in both languages. */
 function formatHour(hour: number | undefined): string {
   return `${String(hour ?? 0).padStart(2, '0')}:00`;
-}
-
-function weekdayPhrase(dayOfWeek: number | undefined): string {
-  const label = WEEKDAY_LABELS[dayOfWeek ?? 0] ?? 'el día';
-  return label === 'Dom' ? 'el domingo' : `los ${label.toLowerCase()}`;
 }
 
 function toOwnerOption(restaurant: RestaurantProfile): RestaurantOption {

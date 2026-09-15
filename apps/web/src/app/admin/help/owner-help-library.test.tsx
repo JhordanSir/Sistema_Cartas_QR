@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { OwnerHelpLibrary } from './owner-help-library';
 import { ownerTutorials } from './tutorials';
 
@@ -15,6 +17,8 @@ jest.mock('next/image', () => ({
   ),
 }));
 
+const spanishTutorials = ownerTutorials.es;
+
 describe('OwnerHelpLibrary', () => {
   it('presenta las cinco guías escritas y marca Ayuda en la navegación', () => {
     const { container } = render(<OwnerHelpLibrary />);
@@ -24,10 +28,10 @@ describe('OwnerHelpLibrary', () => {
     ).toBeVisible();
     expect(screen.getByRole('link', { name: 'Ayuda' })).toHaveAttribute('aria-current', 'page');
 
-    for (const tutorial of ownerTutorials) {
+    for (const tutorial of spanishTutorials) {
       expect(screen.getByText(tutorial.title)).toBeVisible();
     }
-    expect(container.querySelectorAll('details')).toHaveLength(ownerTutorials.length);
+    expect(container.querySelectorAll('details')).toHaveLength(spanishTutorials.length);
   });
 
   it('ya no incrusta los videos de la interfaz anterior', () => {
@@ -41,7 +45,7 @@ describe('OwnerHelpLibrary', () => {
     render(<OwnerHelpLibrary />);
 
     // La primera guía viene desplegada, así que sus pasos sí deben verse.
-    const first = ownerTutorials[0];
+    const first = spanishTutorials[0];
     expect(first?.steps.length).toBeGreaterThan(0);
     for (const step of first?.steps ?? []) {
       expect(screen.getByText(step)).toBeVisible();
@@ -49,7 +53,7 @@ describe('OwnerHelpLibrary', () => {
 
     // Las demás están plegadas: su contenido existe en el documento, listo para
     // que el navegador lo muestre al abrir el detalle, sin depender de JavaScript.
-    for (const tutorial of ownerTutorials.slice(1)) {
+    for (const tutorial of spanishTutorials.slice(1)) {
       for (const step of tutorial.steps) {
         expect(screen.getByText(step)).toBeInTheDocument();
       }
@@ -67,5 +71,23 @@ describe('OwnerHelpLibrary', () => {
     for (const panel of panels.slice(1)) {
       expect(panel).not.toHaveAttribute('open');
     }
+  });
+
+  it('en inglés muestra las guías y los enlaces en inglés', () => {
+    render(
+      <LocaleProvider locale="en">
+        <OwnerHelpLibrary />
+      </LocaleProvider>,
+    );
+
+    expect(
+      screen.getByRole('heading', { name: 'Learn to run your menu from your phone.' }),
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute('aria-current', 'page');
+    for (const tutorial of ownerTutorials.en) {
+      expect(screen.getByText(tutorial.title)).toBeVisible();
+    }
+    expect(screen.getByRole('link', { name: /Go to QR/ })).toHaveAttribute('href', '/admin/qr');
+    expect(screen.queryByText('Ingresa a tu panel')).not.toBeInTheDocument();
   });
 });

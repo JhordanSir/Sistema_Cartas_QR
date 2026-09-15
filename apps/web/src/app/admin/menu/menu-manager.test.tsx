@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
+import type { Locale } from '@/i18n/locale';
+import { LocaleProvider } from '@/i18n/locale-provider';
 import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
 import { MenuManager } from './menu-manager';
@@ -55,21 +57,49 @@ const menu: PublishedMenu = {
   updatedAt: '2026-09-05T12:00:00.000Z',
 };
 
-function renderManager() {
+function renderManager(locale: Locale = 'es') {
   const setMenu = jest.fn();
   const setError = jest.fn();
   const setNotice = jest.fn();
   render(
-    <MenuManager
-      menu={menu}
-      restaurant={restaurant}
-      setError={setError}
-      setMenu={setMenu}
-      setNotice={setNotice}
-    />,
+    <LocaleProvider locale={locale}>
+      <MenuManager
+        menu={menu}
+        restaurant={restaurant}
+        setError={setError}
+        setMenu={setMenu}
+        setNotice={setNotice}
+      />
+    </LocaleProvider>,
   );
   return { setError, setMenu, setNotice };
 }
+
+describe('MenuManager · idioma', () => {
+  it('en español concuerda el singular y muestra el precio en soles', () => {
+    renderManager();
+
+    expect(screen.getByText('2 secciones · 1 producto')).toBeVisible();
+    expect(screen.getByText('0 variantes · 0 adicionales')).toBeVisible();
+    expect(screen.getByText(/^S\/\s26\.00$/)).toBeVisible();
+  });
+
+  it('en inglés traduce la interfaz sin tocar los nombres del dueño', () => {
+    renderManager('en');
+
+    expect(screen.getByText('2 sections · 1 product')).toBeVisible();
+    expect(screen.getByText('0 variants · 0 add-ons')).toBeVisible();
+    expect(screen.getByText(/^PEN\s26\.00$/)).toBeVisible();
+    expect(screen.getByText('Causa de pulpo')).toBeVisible();
+    expect(screen.getByText('Pulpo al olivo.')).toBeVisible();
+    expect(screen.getByRole('button', { name: /Add product to Entradas/ })).toBeVisible();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit section Fondos' }));
+    expect(screen.getByRole('heading', { name: 'Edit section' })).toBeVisible();
+    expect(screen.getByRole('radio', { name: /Photo cards/ })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Save section' })).toBeVisible();
+  });
+});
 
 describe('MenuManager · estilo de sección', () => {
   beforeEach(() => {

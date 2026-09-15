@@ -4,6 +4,8 @@ import Link from 'next/link';
 
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
 import { Kicker } from '@/components/surfaces';
+import { useCopy, useLocale } from '@/i18n/locale-provider';
+import { ownerHelpCopy } from '@/i18n/messages/owner-help';
 
 import { OwnerNavigation } from '../owner-navigation';
 
@@ -18,6 +20,9 @@ import { ownerTutorials } from './tutorials';
  * announce the expanded state for free. The first step is open by default.
  */
 export function OwnerHelpLibrary() {
+  const copy = useCopy(ownerHelpCopy);
+  const tutorials = ownerTutorials[useLocale()];
+
   return (
     <AppShell navigation={<OwnerNavigation active="help" />}>
       <Workspace className="max-w-[62rem]">
@@ -25,21 +30,17 @@ export function OwnerHelpLibrary() {
           actions={
             <p className="m-0 inline-flex min-h-9 items-center gap-2 self-start rounded-full bg-teal-wash px-3 text-[10px] font-extrabold tracking-[0.06em] text-teal uppercase">
               <span aria-hidden="true">●</span>
-              5 pasos · lectura de 1 minuto
+              {copy.badge}
             </p>
           }
         >
-          <Kicker tone="teal">Guías rápidas</Kicker>
-          <PageTitle className="max-w-[16ch]">
-            Aprende a manejar tu carta desde el celular.
-          </PageTitle>
-          <SupportingCopy>
-            Cinco guías breves para completar, publicar y compartir tu carta sin salir del panel.
-          </SupportingCopy>
+          <Kicker tone="teal">{copy.kicker}</Kicker>
+          <PageTitle className="max-w-[16ch]">{copy.title}</PageTitle>
+          <SupportingCopy>{copy.lede}</SupportingCopy>
         </WorkspaceHeader>
 
         <ol className="grid list-none gap-3 p-0">
-          {ownerTutorials.map((tutorial, index) => (
+          {tutorials.map((tutorial, index) => (
             <li key={tutorial.id}>
               <details
                 className="group overflow-hidden rounded-2xl border border-line bg-paper shadow-soft"
@@ -95,7 +96,7 @@ export function OwnerHelpLibrary() {
         </ol>
 
         <p className="mt-6 rounded-2xl border border-line bg-paper p-5 text-[13px]/relaxed text-ink-soft shadow-soft">
-          ¿Algo no encaja con lo que ves en pantalla? Escríbenos por WhatsApp al{' '}
+          {copy.support.before}{' '}
           <a
             className="font-extrabold text-olive"
             href="https://wa.me/51973502261"
@@ -104,7 +105,7 @@ export function OwnerHelpLibrary() {
           >
             +51 973 502 261
           </a>{' '}
-          y lo resolvemos contigo.
+          {copy.support.after}
         </p>
       </Workspace>
     </AppShell>

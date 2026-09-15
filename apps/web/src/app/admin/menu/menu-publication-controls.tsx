@@ -4,18 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/button';
 import { Kicker, StatusPill } from '@/components/surfaces';
+import { formatCurrency } from '@/i18n/format';
+import { useCopy, useLocale } from '@/i18n/locale-provider';
+import { ownerMenuCopy } from '@/i18n/messages/owner-menu';
 import { menuFontClassName } from '@/lib/menu-fonts';
 import type { PublishedMenu, RestaurantProfile } from '@/lib/restaurant-types';
 
-const TEMPLATES: Array<{
-  description: string;
-  id: PublishedMenu['template'];
-  label: string;
-}> = [
-  { description: 'Estilo interpretado desde tu carta.', id: 'ORIGINAL', label: 'Original' },
-  { description: 'Clásico, como una carta de mesa.', id: 'TRADITIONAL', label: 'Tradicional' },
-  { description: 'Fresco y muy legible en celular.', id: 'CASUAL', label: 'Casual' },
-  { description: 'Oscuro, cálido y más sobrio.', id: 'PREMIUM', label: 'Premium' },
+const TEMPLATES: ReadonlyArray<PublishedMenu['template']> = [
+  'ORIGINAL',
+  'TRADITIONAL',
+  'CASUAL',
+  'PREMIUM',
 ];
 
 interface MenuPublicationControlsProps {
@@ -35,6 +34,8 @@ export function MenuPublicationControls({
   restaurant,
   templateSaving,
 }: MenuPublicationControlsProps) {
+  const locale = useLocale();
+  const copy = useCopy(ownerMenuCopy).publication;
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const previewDialog = useRef<HTMLDialogElement>(null);
@@ -43,6 +44,11 @@ export function MenuPublicationControls({
   const hasDraft = menu.categories.some((category) =>
     category.products.some((product) => product.isAvailable !== false),
   );
+  const state = menu.publication.hasUnpublishedChanges
+    ? 'changes'
+    : menu.publication.hasPublishedMenu
+      ? 'live'
+      : 'first';
 
   useDialog(previewDialog, previewOpen, setPreviewOpen);
   useDialog(confirmationDialog, confirmationOpen, setConfirmationOpen);
@@ -66,57 +72,49 @@ export function MenuPublicationControls({
             ✦
           </span>
           <div className="min-w-0 flex-1">
-            <Kicker tone="teal">Orden de publicación</Kicker>
+            <Kicker tone="teal">{copy.kicker}</Kicker>
             <h2
               className="mt-1 mb-0 font-display text-2xl tracking-[-0.025em]"
               id="publication-title"
             >
-              {menu.publication.hasUnpublishedChanges
-                ? 'Tienes cambios por publicar'
-                : menu.publication.hasPublishedMenu
-                  ? 'La carta pública está al día'
-                  : 'Prepara la primera carta'}
+              {copy.heading[state]}
             </h2>
           </div>
           <div className="shrink-0">
-            <StatusPill tone={menu.publication.hasUnpublishedChanges ? 'draft' : menu.publication.hasPublishedMenu ? 'positive' : 'muted'}>
-              {menu.publication.hasUnpublishedChanges
-                ? 'Borrador'
-                : menu.publication.hasPublishedMenu
-                  ? 'En vivo'
-                  : 'Sin publicar'}
+            <StatusPill tone={state === 'changes' ? 'draft' : state === 'live' ? 'positive' : 'muted'}>
+              {state === 'changes'
+                ? copy.pill.draft
+                : state === 'live'
+                  ? copy.pill.live
+                  : copy.pill.unpublished}
             </StatusPill>
           </div>
         </div>
         <p className="mt-2 mb-0 max-w-[64ch] text-[13px]/relaxed text-ink-soft sm:ml-12.5">
-          {menu.publication.hasUnpublishedChanges
-            ? 'La versión que ven tus clientes no cambia hasta que confirmes la publicación.'
-            : menu.publication.hasPublishedMenu
-              ? 'Tu QR sigue mostrando esta versión. Puedes editar con tranquilidad.'
-              : 'Tu QR mostrará “Próximamente” hasta que publiques al menos un producto disponible.'}
+          {copy.status[state]}
         </p>
 
-        <div aria-label="Plantilla del borrador" className="mt-4 grid gap-2 border-t border-line pt-4">
+        <div aria-label={copy.templateLabel} className="mt-4 grid gap-2 border-t border-line pt-4">
           <span className="text-[10px] font-black tracking-[0.1em] text-ink-muted uppercase">
-            Plantilla del borrador
+            {copy.templateLabel}
           </span>
           <div className="flex flex-wrap gap-2" role="radiogroup">
             {TEMPLATES.map((template) => (
               <button
-                aria-checked={menu.template === template.id}
+                aria-checked={menu.template === template}
                 className={`min-h-11 rounded-lg border px-3 text-[11px] font-bold transition-colors duration-150 ease-soft active:scale-[0.97] disabled:cursor-wait ${
-                  menu.template === template.id
+                  menu.template === template
                     ? 'border-teal bg-teal-wash text-teal'
                     : 'border-line-strong bg-paper text-ink-soft hover:border-teal hover:text-teal'
                 }`}
-                disabled={templateSaving || menu.template === template.id}
-                key={template.id}
-                onClick={() => void onTemplate(template.id)}
+                disabled={templateSaving || menu.template === template}
+                key={template}
+                onClick={() => void onTemplate(template)}
                 role="radio"
-                title={template.description}
+                title={copy.templates[template].description}
                 type="button"
               >
-                {template.label}
+                {copy.templates[template].label}
               </button>
             ))}
           </div>
@@ -124,17 +122,17 @@ export function MenuPublicationControls({
 
         <div className="mt-5 grid gap-2 sm:flex sm:justify-end">
           <Button onClick={() => setPreviewOpen(true)} tone="secondary">
-            Previsualizar borrador
+            {copy.preview}
           </Button>
           <Button
             disabled={!canPublish || !hasDraft || publishing}
             onClick={() => setConfirmationOpen(true)}
           >
             {publishing
-              ? 'Publicando…'
+              ? copy.publishing
               : menu.publication.hasPublishedMenu
-                ? 'Publicar cambios'
-                : 'Publicar carta'}
+                ? copy.publishChanges
+                : copy.publishFirst}
           </Button>
         </div>
       </section>
@@ -146,11 +144,11 @@ export function MenuPublicationControls({
       >
         <div className="flex items-center justify-between gap-5 border-b border-line px-5 py-4 sm:px-6">
           <div className="grid gap-1">
-            <Kicker tone="teal">Solo tú ves esto</Kicker>
-            <strong className="font-display text-xl">Previsualización del borrador</strong>
+            <Kicker tone="teal">{copy.previewDialog.kicker}</Kicker>
+            <strong className="font-display text-xl">{copy.previewDialog.title}</strong>
           </div>
           <button
-            aria-label="Cerrar previsualización"
+            aria-label={copy.previewDialog.close}
             className="grid size-11 shrink-0 place-items-center rounded-full bg-control text-2xl/none text-ink"
             onClick={() => setPreviewOpen(false)}
             type="button"
@@ -166,15 +164,13 @@ export function MenuPublicationControls({
           } as React.CSSProperties}
         >
           <span className="text-[10px] font-extrabold tracking-[0.1em] uppercase opacity-65">
-            Carta digital · borrador
+            {copy.previewDialog.eyebrow}
           </span>
           <h2 className="-mt-2.5 mb-1 max-w-[16ch] text-4xl leading-[0.98] sm:text-5xl">
             {restaurant.name}
           </h2>
-          {menu.categories.flatMap((category) =>
-            category.products.filter((product) => product.isAvailable !== false),
-          ).length === 0 ? (
-            <p className="m-0 opacity-75">Agrega un producto disponible para revisar tu carta.</p>
+          {!hasDraft ? (
+            <p className="m-0 opacity-75">{copy.previewDialog.empty}</p>
           ) : (
             menu.categories.map((category) => {
               const products = category.products.filter(
@@ -200,7 +196,9 @@ export function MenuPublicationControls({
                           <p className="mt-1 mb-0 text-xs/snug opacity-75">{product.description}</p>
                         ) : null}
                       </div>
-                      <b className="text-[15px] whitespace-nowrap">S/ {product.basePrice}</b>
+                      <b className="text-[15px] whitespace-nowrap">
+                        {formatCurrency(product.basePrice, locale)}
+                      </b>
                     </article>
                   ))}
                 </section>
@@ -216,20 +214,17 @@ export function MenuPublicationControls({
         ref={confirmationDialog}
       >
         <form className="grid gap-4 p-6 sm:p-8" method="dialog">
-          <Kicker>Confirmar publicación</Kicker>
+          <Kicker>{copy.confirm.kicker}</Kicker>
           <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
-            Actualiza la carta que ve tu QR.
+            {copy.confirm.title}
           </h2>
-          <p className="m-0 text-[13px]/relaxed text-ink-soft">
-            La versión anterior dejará de mostrarse y este borrador será la nueva carta pública. El
-            enlace del QR no cambia.
-          </p>
+          <p className="m-0 text-[13px]/relaxed text-ink-soft">{copy.confirm.body}</p>
           <div className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button tone="secondary" type="submit">
-              Volver a revisar
+              {copy.confirm.back}
             </Button>
             <Button disabled={publishing} onClick={() => void confirmPublication()}>
-              {publishing ? 'Publicando…' : 'Sí, publicar carta'}
+              {publishing ? copy.publishing : copy.confirm.accept}
             </Button>
           </div>
         </form>

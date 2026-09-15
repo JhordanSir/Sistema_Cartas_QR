@@ -7,8 +7,10 @@ import { Button, InlineAction, TextAction } from '@/components/button';
 import { Field, fieldControl } from '@/components/field';
 import { ModalBackdrop, ModalFooter, modalPanel, modalPanelWide } from '@/components/modal';
 import { readApiError } from '@/i18n/api-errors';
-import { useCopy } from '@/i18n/locale-provider';
+import { formatCurrency } from '@/i18n/format';
+import { useCopy, useLocale } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
+import { ownerMenuCopy } from '@/i18n/messages/owner-menu';
 import type {
   CategoryLayout,
   MenuCategory,
@@ -30,22 +32,7 @@ interface ManagedCategory extends MenuCategory {
   id: string;
 }
 
-const LAYOUT_OPTIONS: Array<{
-  description: string;
-  id: CategoryLayout;
-  label: string;
-}> = [
-  {
-    description: 'Filas densas. Se recorre rápido, aunque falten fotos.',
-    id: 'LIST',
-    label: 'Lista compacta',
-  },
-  {
-    description: 'Cada plato en su tarjeta, con la foto como protagonista.',
-    id: 'CARDS',
-    label: 'Tarjetas con foto',
-  },
-];
+const LAYOUTS: ReadonlyArray<CategoryLayout> = ['LIST', 'CARDS'];
 
 interface ManagedProduct extends MenuProduct {
   id: string;
@@ -75,6 +62,8 @@ export function MenuManager({
   setMenu,
   setNotice,
 }: MenuManagerProps) {
+  const locale = useLocale();
+  const copy = useCopy(ownerMenuCopy).manager;
   const errorCopy = useCopy(apiErrorCopy);
   const [categoryEditor, setCategoryEditor] = useState<ManagedCategory | 'new' | null>(null);
   const [productDraft, setProductDraft] = useState<ProductDraft | null>(null);
@@ -119,16 +108,14 @@ export function MenuManager({
     );
     if (nextMenu) {
       setCategoryEditor(null);
-      setNotice(editing ? 'Sección actualizada en el borrador.' : 'Sección creada en el borrador.');
+      setNotice(editing ? copy.notices.sectionUpdated : copy.notices.sectionCreated);
     }
   }
 
   async function deleteCategory(category: ManagedCategory) {
-    if (!window.confirm(`¿Eliminar “${category.name}” y todos sus productos permanentemente?`)) {
-      return;
-    }
+    if (!window.confirm(copy.confirmDeleteSection(category.name))) return;
     const nextMenu = await mutate(`/categories/${category.id}`, { method: 'DELETE' });
-    if (nextMenu) setNotice('Sección y productos eliminados del borrador.');
+    if (nextMenu) setNotice(copy.notices.sectionDeleted);
   }
 
   async function moveCategory(index: number, direction: -1 | 1) {
@@ -137,7 +124,7 @@ export function MenuManager({
     if (target < 0 || target >= ordered.length) return;
     [ordered[index], ordered[target]] = [ordered[target]!, ordered[index]!];
     const nextMenu = await mutate('/categories-order', jsonRequest('PUT', { orderedIds: ordered }));
-    if (nextMenu) setNotice('Orden de secciones actualizado en el borrador.');
+    if (nextMenu) setNotice(copy.notices.sectionsReordered);
   }
 
   function openProduct(categoryId: string, product: ManagedProduct | null = null) {
@@ -177,7 +164,7 @@ export function MenuManager({
       .flatMap((category) => category.products)
       .find((product) => product.id && !previousIds.has(product.id))?.id;
     if (!productId) {
-      setError('El producto se guardó, pero no pudimos identificarlo para procesar la imagen.');
+      setError(copy.notices.imageUnidentified);
       return;
     }
     if (productDraft.image) {
@@ -189,7 +176,7 @@ export function MenuManager({
     }
     if (nextMenu) {
       setProductDraft(null);
-      setNotice(productDraft.product ? 'Producto actualizado en el borrador.' : 'Producto creado en el borrador.');
+      setNotice(productDraft.product ? copy.notices.productUpdated : copy.notices.productCreated);
     }
   }
 
@@ -200,16 +187,14 @@ export function MenuManager({
       jsonRequest('PATCH', { isAvailable: nextAvailable }),
     );
     if (nextMenu) {
-      setNotice(nextAvailable
-        ? 'Producto marcado como disponible en el borrador.'
-        : 'Producto marcado como no disponible en el borrador.');
+      setNotice(nextAvailable ? copy.notices.productAvailable : copy.notices.productUnavailable);
     }
   }
 
   async function deleteProduct(product: ManagedProduct) {
-    if (!window.confirm(`¿Eliminar “${product.name}” permanentemente?`)) return;
+    if (!window.confirm(copy.confirmDeleteProduct(product.name))) return;
     const nextMenu = await mutate(`/products/${product.id}`, { method: 'DELETE' });
-    if (nextMenu) setNotice('Producto eliminado del borrador.');
+    if (nextMenu) setNotice(copy.notices.productDeleted);
   }
 
   async function moveProduct(category: ManagedCategory, index: number, direction: -1 | 1) {
@@ -222,16 +207,14 @@ export function MenuManager({
       `/categories/${category.id}/products-order`,
       jsonRequest('PUT', { orderedIds: ordered }),
     );
-    if (nextMenu) setNotice('Orden de productos actualizado en el borrador.');
+    if (nextMenu) setNotice(copy.notices.productsReordered);
   }
 
   return (
     <>
       <div className="flex items-center justify-between gap-4 border-y border-line px-5 py-2 text-[11px] font-bold text-ink-muted sm:px-8">
-        <span>
-          {categories.length} secciones · {countProducts(menu)} productos
-        </span>
-        <TextAction onClick={() => setCategoryEditor('new')}>+ Nueva sección</TextAction>
+        <span>{copy.summary(categories.length, countProducts(menu))}</span>
+        <TextAction onClick={() => setCategoryEditor('new')}>{copy.newSection}</TextAction>
       </div>
 
       <div className="grid">
@@ -240,7 +223,7 @@ export function MenuManager({
             <span aria-hidden="true" className="text-3xl text-copper">
               ✦
             </span>
-            <p className="m-0">Crea la primera sección para empezar tu carta.</p>
+            <p className="m-0">{copy.empty}</p>
           </div>
         ) : null}
 
@@ -262,7 +245,7 @@ export function MenuManager({
                   </h3>
                 </div>
                 <div
-                  aria-label={`Acciones de ${category.name}`}
+                  aria-label={copy.actionsFor(category.name)}
                   className="flex flex-wrap items-center gap-1.5"
                 >
                   <OrderButtons
@@ -273,24 +256,24 @@ export function MenuManager({
                     move={(direction) => void moveCategory(categoryIndex, direction)}
                   />
                   <InlineAction
-                    aria-label={`Editar sección ${category.name}`}
+                    aria-label={copy.editSectionFor(category.name)}
                     onClick={() => setCategoryEditor(category)}
                   >
-                    Editar
+                    {copy.edit}
                   </InlineAction>
                   <InlineAction
-                    aria-label={`Eliminar sección ${category.name}`}
+                    aria-label={copy.deleteSectionFor(category.name)}
                     danger
                     onClick={() => void deleteCategory(category)}
                   >
-                    Eliminar
+                    {copy.delete}
                   </InlineAction>
                 </div>
               </header>
 
               {products.length === 0 ? (
                 <div className="border-t border-line py-4 text-xs text-ink-muted">
-                  Esta sección aún no tiene productos.
+                  {copy.sectionEmpty}
                 </div>
               ) : (
                 products.map((product, productIndex) => (
@@ -322,7 +305,7 @@ export function MenuManager({
                         <strong data-testid="product-name">{product.name}</strong>
                         {product.isAvailable === false ? (
                           <em className="rounded-full bg-danger-wash px-1.5 py-0.5 text-[8px] font-black tracking-[0.08em] text-danger uppercase not-italic">
-                            No disponible
+                            {copy.unavailable}
                           </em>
                         ) : null}
                       </div>
@@ -330,18 +313,18 @@ export function MenuManager({
                         <p className="my-1 text-xs/snug text-ink-soft">{product.description}</p>
                       ) : null}
                       <small className="text-[10px] text-ink-muted">
-                        {product.variants.length} variantes · {product.extras.length} adicionales
+                        {copy.optionsSummary(product.variants.length, product.extras.length)}
                       </small>
                       <div className="mt-2">
                         <InlineAction
-                          aria-label={`Acciones de ${product.name}`}
+                          aria-label={copy.actionsFor(product.name)}
                           className="lg:hidden"
                           onClick={() => setOpenActions(product.id)}
                         >
-                          Acciones ⌄
+                          {copy.actions}
                         </InlineAction>
                         <ActionSheet
-                          label={`Acciones de ${product.name}`}
+                          label={copy.actionsFor(product.name)}
                           onClose={() => setOpenActions(null)}
                           open={openActions === product.id}
                         >
@@ -356,19 +339,19 @@ export function MenuManager({
                             }}
                           />
                           <InlineAction
-                            aria-label={`Editar ${product.name}`}
+                            aria-label={copy.editFor(product.name)}
                             onClick={() => {
                               setOpenActions(null);
                               openProduct(category.id, product);
                             }}
                           >
-                            Editar
+                            {copy.edit}
                           </InlineAction>
                           <InlineAction
                             aria-label={
                               product.isAvailable === false
-                                ? `Hacer disponible ${product.name}`
-                                : `Marcar no disponible ${product.name}`
+                                ? copy.makeAvailableFor(product.name)
+                                : copy.markUnavailableFor(product.name)
                             }
                             onClick={() => {
                               setOpenActions(null);
@@ -376,25 +359,25 @@ export function MenuManager({
                             }}
                           >
                             {product.isAvailable === false
-                              ? 'Hacer disponible'
-                              : 'Marcar no disponible'}
+                              ? copy.makeAvailable
+                              : copy.markUnavailable}
                           </InlineAction>
                           <InlineAction
-                            aria-label={`Eliminar ${product.name}`}
+                            aria-label={copy.deleteFor(product.name)}
                             danger
                             onClick={() => {
                               setOpenActions(null);
                               void deleteProduct(product);
                             }}
                           >
-                            Eliminar
+                            {copy.delete}
                           </InlineAction>
                         </ActionSheet>
                       </div>
                     </div>
 
                     <span className="text-[13px] font-extrabold whitespace-nowrap text-ink tabular-nums">
-                      S/ {product.basePrice}
+                      {formatCurrency(product.basePrice, locale)}
                     </span>
                   </article>
                 ))
@@ -408,7 +391,7 @@ export function MenuManager({
                 <span className="mr-2 inline-grid size-5.5 place-items-center rounded-full bg-olive-wash">
                   +
                 </span>
-                Añadir producto a {category.name}
+                {copy.addProductTo(category.name)}
               </button>
             </section>
           );
@@ -418,17 +401,19 @@ export function MenuManager({
       {categoryEditor ? (
         <ModalBackdrop>
           <form
-            aria-label={categoryEditor === 'new' ? 'Nueva sección' : `Editar ${categoryEditor.name}`}
+            aria-label={
+              categoryEditor === 'new' ? copy.section.titleNew : copy.editFor(categoryEditor.name)
+            }
             className={modalPanel}
             onSubmit={saveCategory}
           >
             <span className="text-[11px] font-extrabold tracking-[0.14em] text-olive uppercase">
-              Estructura de la carta
+              {copy.section.kicker}
             </span>
             <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
-              {categoryEditor === 'new' ? 'Nueva sección' : 'Editar sección'}
+              {categoryEditor === 'new' ? copy.section.titleNew : copy.section.titleEdit}
             </h2>
-            <Field label="Nombre">
+            <Field label={copy.section.name}>
               <input
                 autoFocus
                 className={fieldControl}
@@ -440,30 +425,30 @@ export function MenuManager({
             </Field>
             <fieldset className="grid gap-2">
               <legend className="text-[13px] font-bold text-ink-soft">
-                Cómo se ve en la carta
+                {copy.section.layoutLegend}
               </legend>
               <div className="grid gap-2 sm:grid-cols-2">
-                {LAYOUT_OPTIONS.map((option) => (
+                {LAYOUTS.map((layout) => (
                   <label
                     className="grid cursor-pointer gap-1 rounded-xl border border-line-strong p-3 transition-colors has-checked:border-olive has-checked:bg-olive-wash"
-                    key={option.id}
+                    key={layout}
                   >
                     <span className="flex items-center gap-2 text-[13px] font-bold text-ink">
                       <input
                         className="size-4 accent-olive"
                         defaultChecked={
                           categoryEditor === 'new'
-                            ? option.id === 'LIST'
-                            : categoryEditor.layout === option.id
+                            ? layout === 'LIST'
+                            : categoryEditor.layout === layout
                         }
                         name="layout"
                         type="radio"
-                        value={option.id}
+                        value={layout}
                       />
-                      {option.label}
+                      {copy.layouts[layout].label}
                     </span>
                     <span className="pl-6 text-[11px]/relaxed text-ink-muted">
-                      {option.description}
+                      {copy.layouts[layout].description}
                     </span>
                   </label>
                 ))}
@@ -472,7 +457,7 @@ export function MenuManager({
             <EditorFooter
               busy={busy !== null}
               close={() => setCategoryEditor(null)}
-              label="Guardar sección"
+              label={copy.section.save}
             />
           </form>
         </ModalBackdrop>
@@ -481,18 +466,20 @@ export function MenuManager({
       {productDraft ? (
         <ModalBackdrop>
           <form
-            aria-label={productDraft.product ? `Editar ${productDraft.product.name}` : 'Nuevo producto'}
+            aria-label={
+              productDraft.product ? copy.editFor(productDraft.product.name) : copy.product.titleNew
+            }
             className={`${modalPanel} ${modalPanelWide}`}
             onSubmit={saveProduct}
           >
             <span className="text-[11px] font-extrabold tracking-[0.14em] text-olive uppercase">
-              Ficha de producto
+              {copy.product.kicker}
             </span>
             <h2 className="-mt-2 mb-0 font-display text-2xl tracking-[-0.03em] sm:text-3xl">
-              {productDraft.product ? 'Editar producto' : 'Nuevo producto'}
+              {productDraft.product ? copy.product.titleEdit : copy.product.titleNew}
             </h2>
             <div className="grid gap-3.5 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,0.56fr)]">
-              <Field label="Nombre">
+              <Field label={copy.product.name}>
                 <input
                   className={fieldControl}
                   maxLength={200}
@@ -501,7 +488,7 @@ export function MenuManager({
                   value={productDraft.name}
                 />
               </Field>
-              <Field label="Sección">
+              <Field label={copy.product.section}>
                 <select
                   className={fieldControl}
                   onChange={(event) =>
@@ -516,7 +503,7 @@ export function MenuManager({
                   ))}
                 </select>
               </Field>
-              <Field className="sm:col-span-2" label="Descripción">
+              <Field className="sm:col-span-2" label={copy.product.description}>
                 <textarea
                   className={`${fieldControl} resize-y`}
                   maxLength={2000}
@@ -527,7 +514,7 @@ export function MenuManager({
                   value={productDraft.description}
                 />
               </Field>
-              <Field label="Precio base (S/)">
+              <Field label={copy.product.basePrice}>
                 <input
                   className={fieldControl}
                   min="0"
@@ -542,12 +529,12 @@ export function MenuManager({
               </Field>
               <Field
                 className="sm:col-span-2"
-                hint="JPG, PNG o WebP · máximo 4 MB"
-                label="Imagen opcional"
+                hint={copy.product.imageHint}
+                label={copy.product.image}
               >
                 <input
                   accept="image/jpeg,image/png,image/webp"
-                  aria-label="Imagen del producto"
+                  aria-label={copy.product.imageInput}
                   className={`${fieldControl} py-2.5 file:mr-3 file:rounded-md file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-olive`}
                   onChange={(event) =>
                     updateDraft(setProductDraft, {
@@ -568,26 +555,16 @@ export function MenuManager({
                     }
                     type="checkbox"
                   />
-                  Quitar imagen actual
+                  {copy.product.removeImage}
                 </label>
               ) : null}
             </div>
-            <OptionEditor
-              kind="variants"
-              label="Variantes"
-              options={productDraft.variants}
-              setDraft={setProductDraft}
-            />
-            <OptionEditor
-              kind="extras"
-              label="Adicionales"
-              options={productDraft.extras}
-              setDraft={setProductDraft}
-            />
+            <OptionEditor kind="variants" options={productDraft.variants} setDraft={setProductDraft} />
+            <OptionEditor kind="extras" options={productDraft.extras} setDraft={setProductDraft} />
             <EditorFooter
               busy={busy !== null}
               close={() => setProductDraft(null)}
-              label={productDraft.product ? 'Guardar producto' : 'Crear producto'}
+              label={productDraft.product ? copy.product.save : copy.product.create}
             />
           </form>
         </ModalBackdrop>
@@ -598,15 +575,16 @@ export function MenuManager({
 
 function OptionEditor({
   kind,
-  label,
   options,
   setDraft,
 }: {
   kind: 'extras' | 'variants';
-  label: string;
   options: OptionDraft[];
   setDraft: React.Dispatch<React.SetStateAction<ProductDraft | null>>;
 }) {
+  const manager = useCopy(ownerMenuCopy).manager;
+  const copy = manager[kind];
+
   function change(index: number, patch: Partial<OptionDraft>) {
     setDraft((current) => current ? {
       ...current,
@@ -616,34 +594,34 @@ function OptionEditor({
   }
   return (
     <fieldset className="grid gap-2 rounded-xl border border-line p-3.5">
-      <legend className="px-1.5 font-display text-base font-bold text-copper">{label}</legend>
+      <legend className="px-1.5 font-display text-base font-bold text-copper">{copy.legend}</legend>
       {options.map((option, index) => (
         <div
           className="grid grid-cols-[minmax(0,1fr)_5.5rem_2.75rem] gap-2"
           key={`${kind}-${index}`}
         >
           <input
-            aria-label={`${label} ${index + 1} nombre`}
+            aria-label={copy.name(index + 1)}
             className={`${fieldControl} min-h-11 border-line-strong bg-paper`}
             maxLength={120}
             onChange={(event) => change(index, { name: event.target.value })}
-            placeholder="Nombre"
+            placeholder={manager.optionNamePlaceholder}
             required
             value={option.name}
           />
           <input
-            aria-label={`${label} ${index + 1} precio`}
+            aria-label={copy.price(index + 1)}
             className={`${fieldControl} min-h-11 border-line-strong bg-paper`}
             min="0"
             onChange={(event) => change(index, { price: event.target.value })}
-            placeholder="S/ 0.00"
+            placeholder={manager.optionPricePlaceholder}
             required
             step="0.01"
             type="number"
             value={option.price}
           />
           <button
-            aria-label={`Quitar ${label.toLowerCase()} ${index + 1}`}
+            aria-label={copy.remove(index + 1)}
             className="min-h-11 rounded-lg bg-danger-wash text-lg text-danger"
             onClick={() =>
               setDraft((current) => current ? {
@@ -665,7 +643,7 @@ function OptionEditor({
           } : null)
         }
       >
-        + Añadir {label.toLowerCase()}
+        {copy.add}
       </TextAction>
     </fieldset>
   );
@@ -684,21 +662,22 @@ function OrderButtons({
   last: boolean;
   move: (direction: -1 | 1) => void;
 }) {
+  const copy = useCopy(ownerMenuCopy).manager;
   return (
     <span className="inline-flex gap-1">
       <InlineAction
-        aria-label={`Subir ${label}`}
+        aria-label={copy.moveUpFor(label)}
         disabled={disabled || first}
         onClick={() => move(-1)}
-        title="Subir"
+        title={copy.moveUp}
       >
         ↑
       </InlineAction>
       <InlineAction
-        aria-label={`Bajar ${label}`}
+        aria-label={copy.moveDownFor(label)}
         disabled={disabled || last}
         onClick={() => move(1)}
-        title="Bajar"
+        title={copy.moveDown}
       >
         ↓
       </InlineAction>
@@ -707,13 +686,14 @@ function OrderButtons({
 }
 
 function EditorFooter({ busy, close, label }: { busy: boolean; close: () => void; label: string }) {
+  const copy = useCopy(ownerMenuCopy).manager;
   return (
     <ModalFooter>
       <Button disabled={busy} onClick={close} tone="secondary">
-        Cancelar
+        {copy.cancel}
       </Button>
       <Button disabled={busy} type="submit">
-        {busy ? 'Guardando…' : label}
+        {busy ? copy.saving : label}
       </Button>
     </ModalFooter>
   );

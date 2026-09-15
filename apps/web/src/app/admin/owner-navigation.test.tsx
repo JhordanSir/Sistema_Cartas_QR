@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
+import { LocaleProvider } from '@/i18n/locale-provider';
+
 import { OwnerNavigation } from './owner-navigation';
 
 const replace = jest.fn();
@@ -32,6 +34,22 @@ describe('OwnerNavigation', () => {
     expect(screen.getByRole('link', { name: 'QR' })).toHaveAttribute('href', '/admin/qr');
     expect(screen.getByRole('link', { name: 'Ayuda' })).toHaveAttribute('href', '/admin/help');
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
+  });
+
+  it('names every destination in English when that is the interface language', () => {
+    render(
+      <LocaleProvider locale="en">
+        <OwnerNavigation active="qr" />
+      </LocaleProvider>,
+    );
+
+    expect(screen.getByRole('navigation', { name: 'Restaurant panel' })).toBeVisible();
+    expect(screen.getByRole('link', { name: 'QR' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Profile' })).toHaveAttribute('href', '/admin');
+    expect(screen.getByRole('link', { name: 'Menu' })).toHaveAttribute('href', '/admin/menu');
+    expect(screen.getByRole('link', { name: 'Statistics' })).toHaveAttribute('href', '/admin/statistics');
+    expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute('href', '/admin/help');
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible();
   });
 
   it('ends the session before returning to owner access', async () => {
