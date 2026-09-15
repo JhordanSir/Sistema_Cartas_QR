@@ -61,23 +61,7 @@ export function Kicker({
   );
 }
 
-export function Notice({ children, onDismiss }: { children: ReactNode; onDismiss?: () => void }) {
-  return (
-    <div className="mb-4 flex min-h-12 items-center justify-between gap-3 rounded-lg bg-olive-wash px-4 py-2.5 text-sm font-semibold text-olive-hover">
-      <span>{children}</span>
-      {onDismiss ? (
-        <button
-          aria-label="Cerrar aviso"
-          className="grid size-11 place-items-center text-2xl/none"
-          onClick={onDismiss}
-          type="button"
-        >
-          ×
-        </button>
-      ) : null}
-    </div>
-  );
-}
+export { Notice } from './notice';
 
 export function ErrorBanner({ children }: { children: ReactNode }) {
   return (

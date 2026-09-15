@@ -7,6 +7,7 @@ interface ShellCopy {
   brandHome: string;
   checkingSession: string;
   close: string;
+  dismissNotice: string;
   language: string;
   metadata: { description: string; title: string };
   notFound: { back: string; body: string; title: string };
@@ -25,6 +26,7 @@ export const shellCopy: Record<Locale, ShellCopy> = {
     brandHome: 'Sirio Automatiza, home',
     checkingSession: 'Checking your session…',
     close: 'Close',
+    dismissNotice: 'Dismiss notice',
     language: 'Language',
     metadata: {
       description: 'Digital menus for restaurants, always up to date.',
@@ -48,6 +50,7 @@ export const shellCopy: Record<Locale, ShellCopy> = {
     brandHome: 'Sirio Automatiza, inicio',
     checkingSession: 'Comprobando tu sesión…',
     close: 'Cerrar',
+    dismissNotice: 'Cerrar aviso',
     language: 'Idioma',
     metadata: {
       description: 'Cartas digitales para restaurantes, siempre actualizadas.',
