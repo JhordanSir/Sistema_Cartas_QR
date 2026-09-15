@@ -1,4 +1,9 @@
 export {
+  isValidEmailFormat,
+  meetsPasswordPolicy
+} from "./credentials-policy.js";
+
+export {
   RESERVED_SLUGS,
   isReservedSlug,
   normalizeSlug,
