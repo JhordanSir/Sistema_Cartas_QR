@@ -12,7 +12,7 @@ const VALID_ENVIRONMENT = {
   DATABASE_URL: VALID_DATABASE_URL,
   GEMINI_API_KEY: 'test-gemini-api-key',
   INITIAL_ADMIN_EMAIL: 'admin@example.com',
-  INITIAL_ADMIN_PASSWORD: 'strong-password',
+  INITIAL_ADMIN_PASSWORD: 'StrongPass-1',
   JWT_ACCESS_SECRET: 'access-secret-with-at-least-32-characters',
   JWT_REFRESH_SECRET: 'refresh-secret-with-at-least-32-characters',
   PUBLIC_APP_URL: 'http://localhost:3000',
@@ -110,6 +110,10 @@ describe('validateEnvironment', () => {
     [
       { ...VALID_ENVIRONMENT, INITIAL_ADMIN_PASSWORD: 'short' },
       'INITIAL_ADMIN_PASSWORD must contain between 8 and 128 characters',
+    ],
+    [
+      { ...VALID_ENVIRONMENT, INITIAL_ADMIN_PASSWORD: 'strong-password' },
+      'INITIAL_ADMIN_PASSWORD must contain an uppercase letter, a lowercase letter and a number',
     ],
     [
       { ...VALID_ENVIRONMENT, STORAGE_PATH: '' },

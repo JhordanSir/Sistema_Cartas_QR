@@ -209,7 +209,7 @@ describe('AuthApplicationService', () => {
 
     await service.changeOwnPassword({
       currentPassword: 'current-password',
-      newPassword: 'new-password',
+      newPassword: 'NewPass-1',
       principal: OWNER_PRINCIPAL,
     });
 
@@ -232,7 +232,7 @@ describe('AuthApplicationService', () => {
 
     await service.changeOwnPassword({
       currentPassword: 'bootstrap-password',
-      newPassword: 'rotated-password',
+      newPassword: 'RotatedPass-1',
       principal: ADMIN_PRINCIPAL,
     });
 
@@ -251,7 +251,7 @@ describe('AuthApplicationService', () => {
     await expect(
       service.changeOwnPassword({
         currentPassword: 'wrong-password',
-        newPassword: 'new-password',
+        newPassword: 'NewPass-1',
         principal: OWNER_PRINCIPAL,
       }),
     ).rejects.toMatchObject({ code: 'CURRENT_PASSWORD_INVALID' });
@@ -268,11 +268,31 @@ describe('AuthApplicationService', () => {
     ).rejects.toMatchObject({ code: 'PASSWORD_POLICY' });
   });
 
+  it.each([
+    ['no uppercase letter', 'newpass-1'],
+    ['no lowercase letter', 'NEWPASS-1'],
+    ['no digit', 'NewPass-x'],
+  ])('rejects a new password with %s', async (_label, newPassword) => {
+    repository.findAccountById.mockResolvedValue(OWNER_ACCOUNT);
+
+    await expect(
+      service.changeOwnPassword({
+        currentPassword: 'current-password',
+        newPassword,
+        principal: OWNER_PRINCIPAL,
+      }),
+    ).rejects.toMatchObject({
+      code: 'PASSWORD_POLICY',
+      message: 'Password must contain an uppercase letter, a lowercase letter and a number',
+    });
+    expect(repository.replacePasswordAndRevokeSessions).not.toHaveBeenCalled();
+  });
+
   it('allows only an administrator to reset an owner password', async () => {
     repository.findAccountById.mockResolvedValue(OWNER_ACCOUNT);
 
     await service.resetOwnerPassword({
-      newPassword: 'reset-password',
+      newPassword: 'ResetPass-1',
       ownerId: OWNER_ID,
       principal: ADMIN_PRINCIPAL,
     });
@@ -285,7 +305,7 @@ describe('AuthApplicationService', () => {
 
     await expect(
       service.resetOwnerPassword({
-        newPassword: 'reset-password',
+        newPassword: 'ResetPass-1',
         ownerId: OWNER_ID,
         principal: OWNER_PRINCIPAL,
       }),

@@ -1,5 +1,7 @@
 import { basename, dirname, resolve } from 'node:path';
 
+import { meetsPasswordPolicy } from '@sirio/shared';
+
 const NODE_ENVIRONMENTS = ['development', 'test', 'production'] as const;
 const DEFAULT_API_PORT = 3001;
 const DEFAULT_CORS_ORIGINS = 'http://localhost:3000';
@@ -278,6 +280,13 @@ function parsePassword(value: unknown): string {
   ) {
     throw new Error(
       `INITIAL_ADMIN_PASSWORD must contain between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+    );
+  }
+  // Checked here as well as in InitialAdminBootstrap so a weak value fails at boot
+  // with its own name, instead of later inside the seed as a generic policy error.
+  if (!meetsPasswordPolicy(value)) {
+    throw new Error(
+      'INITIAL_ADMIN_PASSWORD must contain an uppercase letter, a lowercase letter and a number',
     );
   }
   return value;

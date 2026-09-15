@@ -105,6 +105,8 @@ El contrato completo está en [`.env.example`](.env.example). Las dos URLs de ba
 
 Los secretos JWT de access y refresh deben ser distintos y tener al menos 32 caracteres. `JWT_ISSUER` y `JWT_AUDIENCE` se validan al verificar cada token. El administrador inicial se crea una sola vez desde `INITIAL_ADMIN_EMAIL` e `INITIAL_ADMIN_PASSWORD`.
 
+Toda contraseña que se fija —`INITIAL_ADMIN_PASSWORD`, la inicial de un restaurante, un cambio o un reseteo— debe tener entre 8 y 128 caracteres con al menos una mayúscula, una minúscula y un número. La API valida `INITIAL_ADMIN_PASSWORD` al arrancar y no inicia si no cumple. Un login nunca vuelve a aplicar la regla: las contraseñas emitidas antes siguen funcionando, y los formularios de acceso solo recomiendan una más fuerte sin impedir la entrada.
+
 ## Autenticación
 
 El login requiere indicar explícitamente el rol para evitar ambigüedades entre cuentas de dueño y administrador:

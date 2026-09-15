@@ -1,8 +1,8 @@
+import { isValidEmailFormat, meetsPasswordPolicy } from '@sirio/shared';
+
 import { AuthRole } from '../../auth/domain/auth-role.js';
 import type { AuthPrincipal } from '../../auth/domain/auth.types.js';
 import { RestaurantApplicationError } from '../domain/restaurant.errors.js';
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function assertAdministrator(principal: AuthPrincipal): void {
   if (principal.role !== AuthRole.ADMIN) {
@@ -26,7 +26,7 @@ export function normalizeRestaurantName(value: string): string {
 
 export function normalizeOwnerEmail(value: string): string {
   const email = value.trim().toLowerCase();
-  if (email.length > 320 || !EMAIL_PATTERN.test(email)) {
+  if (email.length > 320 || !isValidEmailFormat(email)) {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Owner email must be valid',
@@ -40,6 +40,12 @@ export function assertInitialPassword(value: string): void {
     throw new RestaurantApplicationError(
       'INVALID_INPUT',
       'Initial password must contain between 8 and 128 characters',
+    );
+  }
+  if (!meetsPasswordPolicy(value)) {
+    throw new RestaurantApplicationError(
+      'INVALID_INPUT',
+      'Initial password must contain an uppercase letter, a lowercase letter and a number',
     );
   }
 }

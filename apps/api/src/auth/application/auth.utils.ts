@@ -1,3 +1,5 @@
+import { meetsPasswordPolicy } from '@sirio/shared';
+
 import { AuthApplicationError } from '../domain/auth.errors.js';
 
 export const MIN_PASSWORD_LENGTH = 8;
@@ -11,6 +13,12 @@ export function assertPasswordPolicy(password: string): void {
     throw new AuthApplicationError(
       'PASSWORD_POLICY',
       `Password must contain between ${MIN_PASSWORD_LENGTH} and ${MAX_PASSWORD_LENGTH} characters`,
+    );
+  }
+  if (!meetsPasswordPolicy(password)) {
+    throw new AuthApplicationError(
+      'PASSWORD_POLICY',
+      'Password must contain an uppercase letter, a lowercase letter and a number',
     );
   }
 }

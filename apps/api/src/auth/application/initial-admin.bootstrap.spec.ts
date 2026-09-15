@@ -36,7 +36,7 @@ describe('InitialAdminBootstrap', () => {
     const bootstrap = new InitialAdminBootstrap(repository, passwordHasher);
 
     await expect(
-      bootstrap.execute(' ADMIN@Example.com ', 'strong-password'),
+      bootstrap.execute(' ADMIN@Example.com ', 'StrongPass-1'),
     ).resolves.toMatchObject({ created: true, email: 'admin@example.com' });
     expect(repository.ensureAdmin).toHaveBeenCalledWith(
       'admin@example.com',
@@ -60,9 +60,24 @@ describe('InitialAdminBootstrap', () => {
     const bootstrap = new InitialAdminBootstrap(repository, passwordHasher);
 
     await expect(
-      bootstrap.execute('admin@example.com', 'strong-password'),
+      bootstrap.execute('admin@example.com', 'StrongPass-1'),
     ).resolves.toMatchObject({ created: false });
     expect(passwordHasher.hash).not.toHaveBeenCalled();
+    expect(repository.ensureAdmin).not.toHaveBeenCalled();
+  });
+
+  it('refuses an initial password without an uppercase letter, a lowercase letter and a number', async () => {
+    const repository = createRepository();
+    const passwordHasher: jest.Mocked<PasswordHasher> = {
+      hash: jest.fn(),
+      verify: jest.fn(),
+    };
+    const bootstrap = new InitialAdminBootstrap(repository, passwordHasher);
+
+    await expect(
+      bootstrap.execute('admin@example.com', 'strong-password'),
+    ).rejects.toMatchObject({ code: 'PASSWORD_POLICY' });
+    expect(repository.findAccountByEmail).not.toHaveBeenCalled();
     expect(repository.ensureAdmin).not.toHaveBeenCalled();
   });
 });

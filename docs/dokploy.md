@@ -44,6 +44,8 @@ API_PORT=3001
 
 `DATABASE_URL_DOCKER` usa `postgres-internal` como hostname. Es un alias privado de `data_network` y evita confundir PostgreSQL con servicios homónimos que Dokploy pueda conectar a una red compartida. La variable local `DATABASE_URL` no se pasa al contenedor y puede seguir apuntando a `localhost`. Si la contraseña contiene caracteres reservados de una URL, codifícalos al construir `DATABASE_URL_DOCKER`.
 
+`INITIAL_ADMIN_PASSWORD` debe tener entre 8 y 128 caracteres e incluir al menos una mayúscula, una minúscula y un número. La API la valida al leer el entorno, justo después de las migraciones y antes de comprobar si el administrador ya existe, así que un valor que no la cumpla detiene el arranque de `api` aunque la cuenta ya esté creada; el error nombra la variable. La misma regla rige las contraseñas nuevas: alta de restaurante, cambio y reseteo.
+
 Genera secretos JWT independientes y suficientemente largos. Tras el primer acceso cambia la contraseña del administrador mediante `POST /api/auth/admin/password`; el seed es idempotente y no reemplaza una cuenta existente. Sustituye luego `INITIAL_ADMIN_PASSWORD` en Dokploy por otro valor aleatorio que no reutilices. No guardes valores reales en `.env.example` ni en Git.
 
 ### URL permanente de los QR
