@@ -7,7 +7,7 @@ import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from 
 import { ButtonLink } from '@/components/button';
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import { Card, ErrorBanner, Kicker, Skeleton } from '@/components/surfaces';
-import { useCopy } from '@/i18n/locale-provider';
+import { useCopy, useCopyRef } from '@/i18n/locale-provider';
 import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
 import { ownerQrCopy } from '@/i18n/messages/owner-qr';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
@@ -21,6 +21,7 @@ interface QrIdentity {
 export function QrManager() {
   const router = useRouter();
   const copy = useCopy(ownerQrCopy);
+  const latestCopy = useCopyRef(ownerQrCopy);
   const panelCopy = useCopy(ownerPanelCopy);
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
@@ -48,7 +49,7 @@ export function QrManager() {
       return;
     }
     if (!response.ok) {
-      setError(copy.loadError);
+      setError(latestCopy.current.loadError);
       setLoading(false);
       return;
     }
@@ -56,7 +57,7 @@ export function QrManager() {
     setRestaurants(profiles);
     setSelectedId((current) => current || profiles[0]?.id || '');
     setLoading(false);
-  }, [copy, router]);
+  }, [latestCopy, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);
@@ -78,12 +79,12 @@ export function QrManager() {
         }
       })
       .catch(() => {
-        if (active) setError(copy.linkError);
+        if (active) setError(latestCopy.current.linkError);
       });
     return () => {
       active = false;
     };
-  }, [copy, selectedRestaurantId]);
+  }, [latestCopy, selectedRestaurantId]);
 
   function switchRestaurant(event: ChangeEvent<HTMLSelectElement>) {
     setSelectedId(event.target.value);

@@ -7,7 +7,7 @@ import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from 
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import { Card, ErrorBanner, Kicker, Skeleton } from '@/components/surfaces';
 import { formatNumber } from '@/i18n/format';
-import { useCopy, useLocale } from '@/i18n/locale-provider';
+import { useCopy, useCopyRef, useLocale } from '@/i18n/locale-provider';
 import { statisticsCopy } from '@/i18n/messages/statistics';
 import type {
   PaginatedRestaurants,
@@ -30,6 +30,7 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
   const router = useRouter();
   const searchParams = useSearchParams();
   const copy = useCopy(statisticsCopy);
+  const latestCopy = useCopyRef(statisticsCopy);
   // El backoffice enlaza a un local concreto desde su fila del registro.
   const requestedId = scope === 'backoffice' ? searchParams.get('restaurante') : null;
   const [restaurants, setRestaurants] = useState<RestaurantOption[]>([]);
@@ -57,7 +58,7 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return;
     }
     if (!response.ok) {
-      setError(copy.loadRestaurantsError);
+      setError(latestCopy.current.loadRestaurantsError);
       setLoadingRestaurants(false);
       return;
     }
@@ -72,7 +73,7 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return requested?.id ?? options[0]?.id ?? '';
     });
     setLoadingRestaurants(false);
-  }, [copy, requestedId, router, scope]);
+  }, [latestCopy, requestedId, router, scope]);
 
   const loadStatistics = useCallback(async () => {
     if (!selectedId) return;
@@ -87,13 +88,13 @@ export function RestaurantStatisticsDashboard({ scope }: { scope: StatisticsScop
       return;
     }
     if (!response.ok) {
-      setError(copy.loadStatisticsError);
+      setError(latestCopy.current.loadStatisticsError);
       setLoadingStatistics(false);
       return;
     }
     setStatistics((await response.json()) as RestaurantViewStatistics);
     setLoadingStatistics(false);
-  }, [copy, router, scope, selectedId]);
+  }, [latestCopy, router, scope, selectedId]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);

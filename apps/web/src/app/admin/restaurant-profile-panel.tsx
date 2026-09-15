@@ -17,7 +17,7 @@ import { Field, fieldControl } from '@/components/field';
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import { Card, ErrorBanner, Kicker, Notice, NumberedHeading, Skeleton } from '@/components/surfaces';
 import { readApiError } from '@/i18n/api-errors';
-import { useCopy } from '@/i18n/locale-provider';
+import { useCopy, useCopyRef } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
 import { ownerProfileCopy } from '@/i18n/messages/owner-profile';
@@ -32,6 +32,7 @@ const PROFILE_FIELDS = 5;
 export function RestaurantProfilePanel() {
   const router = useRouter();
   const copy = useCopy(ownerProfileCopy);
+  const latestCopy = useCopyRef(ownerProfileCopy);
   const panelCopy = useCopy(ownerPanelCopy);
   const errorCopy = useCopy(apiErrorCopy);
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
@@ -57,7 +58,7 @@ export function RestaurantProfilePanel() {
       return;
     }
     if (!response.ok) {
-      setError(copy.loadError);
+      setError(latestCopy.current.loadError);
       setLoading(false);
       return;
     }
@@ -65,7 +66,7 @@ export function RestaurantProfilePanel() {
     setRestaurants(profiles);
     setSelectedId((current) => current || profiles[0]?.id || '');
     setLoading(false);
-  }, [copy, router]);
+  }, [latestCopy, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 
 import { LocaleProvider } from '@/i18n/locale-provider';
 
@@ -6,11 +6,13 @@ import { RestaurantStatisticsDashboard } from './restaurant-statistics-dashboard
 
 const replace = jest.fn();
 const refresh = jest.fn();
+// Stable like the real router, so a re-render alone never looks like a new dependency.
+const router = { refresh, replace };
 
 let searchParams = new URLSearchParams();
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh, replace }),
+  useRouter: () => router,
   useSearchParams: () => searchParams,
 }));
 
@@ -120,6 +122,27 @@ describe('RestaurantStatisticsDashboard', () => {
     expect(screen.getByText('Last 30 days')).toBeVisible();
     // The restaurant is the owner's content: it never changes with the language.
     expect(screen.getByText('/mesa-norte')).toBeVisible();
+  });
+
+  it('cambiar de idioma traduce el informe sin volver a pedir los datos', async () => {
+    const { rerender } = render(
+      <LocaleProvider locale="es">
+        <RestaurantStatisticsDashboard scope="owner" />
+      </LocaleProvider>,
+    );
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mesa Norte', level: 2 })).toBeVisible());
+    const requests = (global.fetch as jest.Mock).mock.calls.length;
+
+    rerender(
+      <LocaleProvider locale="en">
+        <RestaurantStatisticsDashboard scope="owner" />
+      </LocaleProvider>,
+    );
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+
+    expect(screen.getByRole('heading', { name: 'Hourly rhythm', level: 2 })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Mesa Norte', level: 2 })).toBeVisible();
+    expect(global.fetch).toHaveBeenCalledTimes(requests);
   });
 
   it('adapta la introducción para el administrador de la plataforma', async () => {

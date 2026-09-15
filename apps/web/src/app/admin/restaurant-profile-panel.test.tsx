@@ -1,12 +1,16 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+
+import { LocaleProvider } from '@/i18n/locale-provider';
 
 import { RestaurantProfilePanel } from './restaurant-profile-panel';
 
 const replace = jest.fn();
 const refresh = jest.fn();
+// Stable like the real router, so a re-render alone never looks like a new dependency.
+const router = { refresh, replace };
 
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ replace, refresh }),
+  useRouter: () => router,
 }));
 
 jest.mock('next/image', () => ({
@@ -64,5 +68,29 @@ describe('RestaurantProfilePanel', () => {
     expect(
       screen.getByText('El logo debe ser PNG, JPG o WebP y pesar como máximo 2 MB.'),
     ).toBeVisible();
+  });
+
+  it('cambiar de idioma traduce el formulario sin recargarlo ni perder lo escrito', async () => {
+    const { rerender } = render(
+      <LocaleProvider locale="es">
+        <RestaurantProfilePanel />
+      </LocaleProvider>,
+    );
+    fireEvent.change(await screen.findByLabelText('Teléfono'), {
+      target: { value: '(01) 555-0199' },
+    });
+    const requests = (global.fetch as jest.Mock).mock.calls.length;
+
+    rerender(
+      <LocaleProvider locale="en">
+        <RestaurantProfilePanel />
+      </LocaleProvider>,
+    );
+    // Lets a reload scheduled by the switch run, if there were one.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+
+    expect(screen.getByRole('heading', { name: 'Your profile' })).toBeVisible();
+    expect(screen.getByLabelText('Phone')).toHaveValue('(01) 555-0199');
+    expect(global.fetch).toHaveBeenCalledTimes(requests);
   });
 });

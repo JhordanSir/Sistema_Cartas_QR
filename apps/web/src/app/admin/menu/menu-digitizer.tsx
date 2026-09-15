@@ -16,7 +16,7 @@ import {
   Skeleton,
 } from '@/components/surfaces';
 import { readApiError } from '@/i18n/api-errors';
-import { useCopy } from '@/i18n/locale-provider';
+import { useCopy, useCopyRef } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import { ownerMenuCopy } from '@/i18n/messages/owner-menu';
 import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
@@ -35,6 +35,7 @@ const ACCEPTED_PHOTOS = ['image/jpeg', 'image/png', 'image/webp'];
 export function MenuDigitizer() {
   const router = useRouter();
   const copy = useCopy(ownerMenuCopy).digitizer;
+  const latestCopy = useCopyRef(ownerMenuCopy);
   const panelCopy = useCopy(ownerPanelCopy);
   const errorCopy = useCopy(apiErrorCopy);
   const stageCount = copy.processing.stages.length;
@@ -81,7 +82,7 @@ export function MenuDigitizer() {
       return;
     }
     if (!response.ok) {
-      setError(copy.loadRestaurantsError);
+      setError(latestCopy.current.digitizer.loadRestaurantsError);
       setLoading(false);
       return;
     }
@@ -89,9 +90,11 @@ export function MenuDigitizer() {
     const firstId = profiles[0]?.id ?? '';
     setRestaurants(profiles);
     setSelectedId((current) => current || firstId);
-    if (firstId && !(await loadMenu(firstId))) setError(copy.loadDraftError);
+    if (firstId && !(await loadMenu(firstId))) {
+      setError(latestCopy.current.digitizer.loadDraftError);
+    }
     setLoading(false);
-  }, [copy, loadMenu, router]);
+  }, [latestCopy, loadMenu, router]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 0);

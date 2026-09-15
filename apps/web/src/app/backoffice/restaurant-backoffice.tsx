@@ -12,7 +12,7 @@ import { Field, FormError, fieldControl } from '@/components/field';
 import { Card, ErrorBanner, Kicker, Notice, StatusPill } from '@/components/surfaces';
 import { readApiError } from '@/i18n/api-errors';
 import { formatDate } from '@/i18n/format';
-import { useCopy, useLocale } from '@/i18n/locale-provider';
+import { useCopy, useCopyRef, useLocale } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
 import { backofficeCopy } from '@/i18n/messages/backoffice';
 import type {
@@ -37,6 +37,7 @@ const EMPTY_LIST: PaginatedRestaurants = {
 export function RestaurantBackoffice() {
   const router = useRouter();
   const copy = useCopy(backofficeCopy);
+  const latestCopy = useCopyRef(backofficeCopy);
   const errorCopy = useCopy(apiErrorCopy);
   const [data, setData] = useState(EMPTY_LIST);
   const [loading, setLoading] = useState(true);
@@ -63,13 +64,13 @@ export function RestaurantBackoffice() {
       return;
     }
     if (!response.ok) {
-      setError(copy.notices.loadError);
+      setError(latestCopy.current.notices.loadError);
       setLoading(false);
       return;
     }
     setData((await response.json()) as PaginatedRestaurants);
     setLoading(false);
-  }, [copy, query, router, status, visible]);
+  }, [latestCopy, query, router, status, visible]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 180);
