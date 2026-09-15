@@ -1,3 +1,7 @@
+export { isApiErrorCode } from "./api-errors.js";
+
+export type { ApiErrorCode, ApiErrorParamMap, ApiProblem } from "./api-errors.js";
+
 export {
   isValidEmailFormat,
   meetsPasswordPolicy
