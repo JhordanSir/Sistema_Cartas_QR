@@ -1,83 +1,63 @@
 import { Type } from 'class-transformer';
 import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  ArrayUnique,
   IsArray,
   IsBoolean,
-  IsIn,
   IsOptional,
   IsString,
-  IsUUID,
-  Length,
-  Matches,
-  MaxLength,
   ValidateNested,
 } from 'class-validator';
 
-import {
-  CATEGORY_LAYOUTS,
-  type CategoryLayout,
-} from '../../digitization/domain/menu.types.js';
+import type { CategoryLayout } from '../../digitization/domain/menu.types.js';
 
-const PRICE_PATTERN = /^\d{1,8}(?:\.\d{1,2})?$/;
+// These DTOs only check type and shape. Lengths, price format, UUIDs, layouts, option
+// limits and ordering rules live in menu-management.validation.ts, which answers with a
+// code that names the field; repeating them here would reject first with a generic
+// class-validator error.
 
 export class CategoryNameDto {
   @IsString()
-  @Length(1, 160)
   name!: string;
 
   @IsOptional()
-  @IsIn(CATEGORY_LAYOUTS)
+  @IsString()
   layout?: CategoryLayout;
 }
 
 export class ReorderMenuItemsDto {
   @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(500)
-  @ArrayUnique()
-  @IsUUID('4', { each: true })
   orderedIds!: string[];
 }
 
 export class ProductOptionDto {
   @IsString()
-  @Length(1, 160)
   name!: string;
 
   @IsString()
-  @Matches(PRICE_PATTERN)
   price!: string;
 }
 
 export class CreateProductDto {
-  @IsUUID('4')
+  @IsString()
   categoryId!: string;
 
   @IsString()
-  @Length(1, 200)
   name!: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2_000)
   description?: string | null;
 
   @IsString()
-  @Matches(PRICE_PATTERN)
   basePrice!: string;
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(30)
   @ValidateNested({ each: true })
   @Type(() => ProductOptionDto)
   variants?: ProductOptionDto[];
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(30)
   @ValidateNested({ each: true })
   @Type(() => ProductOptionDto)
   extras?: ProductOptionDto[];
@@ -85,22 +65,19 @@ export class CreateProductDto {
 
 export class UpdateProductDto {
   @IsOptional()
-  @IsUUID('4')
+  @IsString()
   categoryId?: string;
 
   @IsOptional()
   @IsString()
-  @Length(1, 200)
   name?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2_000)
   description?: string | null;
 
   @IsOptional()
   @IsString()
-  @Matches(PRICE_PATTERN)
   basePrice?: string;
 
   @IsOptional()
@@ -109,14 +86,12 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(30)
   @ValidateNested({ each: true })
   @Type(() => ProductOptionDto)
   variants?: ProductOptionDto[];
 
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(30)
   @ValidateNested({ each: true })
   @Type(() => ProductOptionDto)
   extras?: ProductOptionDto[];

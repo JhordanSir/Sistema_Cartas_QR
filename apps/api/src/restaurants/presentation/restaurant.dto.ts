@@ -1,12 +1,10 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsEmail,
   IsEnum,
   IsInt,
   IsOptional,
   IsString,
-  Length,
   Max,
   MaxLength,
   Min,
@@ -14,17 +12,19 @@ import {
 
 import { RestaurantStatus } from '../domain/restaurant-status.js';
 
+/**
+ * The DTOs that feed domain validation only check type and shape. Lengths, formats and
+ * password rules live in the domain, which answers with a code that names the field;
+ * repeating them here would reject first with a generic class-validator error.
+ */
 export class CreateRestaurantDto {
   @IsString()
-  @Length(2, 160)
   name!: string;
 
-  @IsEmail()
-  @MaxLength(320)
+  @IsString()
   email!: string;
 
   @IsString()
-  @Length(8, 128)
   initialPassword!: string;
 }
 
@@ -57,7 +57,6 @@ export class SetRestaurantStatusDto {
 
 export class DeleteRestaurantDto {
   @IsString()
-  @MaxLength(200)
   confirmationText!: string;
 
   @IsBoolean()
@@ -67,32 +66,26 @@ export class DeleteRestaurantDto {
 export class UpdateRestaurantProfileDto {
   @IsOptional()
   @IsString()
-  @MaxLength(32)
   contactPhone?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(32)
   whatsapp?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(500)
   address?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2048)
   instagramUrl?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2048)
   facebookUrl?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(2048)
   tiktokUrl?: string;
 }
 

@@ -69,6 +69,13 @@ describe('menu management validation', () => {
       code: 'FIELD_PRICE_INVALID',
       params: { field: 'basePrice' },
     });
+    // The price shape the DTO used to check now lives here.
+    for (const basePrice of ['12.345', '1e3', ' 12.00', '-5', '123456789', '']) {
+      expect(problemOf(() => normalizeProductValues({ ...product, basePrice }))).toEqual({
+        code: 'FIELD_PRICE_INVALID',
+        params: { field: 'basePrice' },
+      });
+    }
     expect(problemOf(() => normalizeProductValues({ ...product, name: '   ' }))).toEqual({
       code: 'FIELD_INVALID',
       params: { field: 'productName' },

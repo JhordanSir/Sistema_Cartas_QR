@@ -133,6 +133,29 @@ test.describe.serial('errores de la API traducidos por código', () => {
     restaurant = null;
   });
 
+  test('la API nombra con un código el dato del alta que no es válido', async ({ request }) => {
+    const headers = { authorization: `Bearer ${await adminToken(request)}` };
+    const valid = {
+      email: `alta-invalida-${Date.now()}@example.test`,
+      initialPassword: 'AltaValida-7!',
+      name: 'Alta de prueba',
+    };
+    const codeFor = async (data: typeof valid): Promise<string | undefined> => {
+      const response = await request.post(`${directApiUrl}/backoffice/restaurants`, { data, headers });
+      expect(response.status()).toBe(400);
+      return ((await response.json()) as { code?: string }).code;
+    };
+
+    // Antes los rechazaba class-validator con un error sin código, y la web solo podía
+    // decir «Revisa los datos».
+    await expect(codeFor({ ...valid, name: 'A' })).resolves.toBe('RESTAURANT_NAME_LENGTH');
+    await expect(codeFor({ ...valid, email: 'ana@correo' })).resolves.toBe('OWNER_EMAIL_INVALID');
+    await expect(codeFor({ ...valid, initialPassword: 'Corta1' })).resolves.toBe('PASSWORD_LENGTH');
+    await expect(codeFor({ ...valid, initialPassword: 'sinmayusculas1' })).resolves.toBe(
+      'PASSWORD_COMPLEXITY',
+    );
+  });
+
   for (const { label, locale } of LANGUAGES) {
     test(
       `publicar una carta que se quedó sin productos disponibles lo explica en ${label}`,

@@ -32,21 +32,18 @@ export class RefreshTokenDto {
   refreshToken!: string;
 }
 
+// A new password is checked by assertPasswordPolicy, which names the broken rule
+// (PASSWORD_LENGTH or PASSWORD_COMPLEXITY). The current one is compared against its
+// hash, so a wrong length simply reads as CURRENT_PASSWORD_INVALID.
 export class ChangePasswordDto {
   @IsString()
-  @MaxLength(MAX_PASSWORD_LENGTH)
-  @MinLength(MIN_PASSWORD_LENGTH)
   currentPassword!: string;
 
   @IsString()
-  @MaxLength(MAX_PASSWORD_LENGTH)
-  @MinLength(MIN_PASSWORD_LENGTH)
   newPassword!: string;
 }
 
 export class ResetPasswordDto {
   @IsString()
-  @MaxLength(MAX_PASSWORD_LENGTH)
-  @MinLength(MIN_PASSWORD_LENGTH)
   newPassword!: string;
 }

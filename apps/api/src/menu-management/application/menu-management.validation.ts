@@ -18,6 +18,9 @@ type OptionKind = ApiErrorParamMap['PRODUCT_OPTION_LIMIT']['kind'];
 type PriceField = ApiErrorParamMap['FIELD_PRICE_INVALID']['field'];
 
 const MAX_OPTIONS = 30;
+// Up to 8 integer digits and 2 decimals, no sign or exponent: the shape the DTO used to
+// enforce before this validation became the only one.
+const PRICE_PATTERN = /^\d{1,8}(?:\.\d{1,2})?$/;
 
 // Labels for the API's own Spanish `message`, which stays as it was. Clients read
 // `problem` instead and name the field in the interface language.
@@ -200,7 +203,7 @@ function normalizeDescription(value: unknown): string | null {
 }
 
 function normalizePrice(value: unknown, field: PriceField): string {
-  const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  const number = typeof value === 'string' && PRICE_PATTERN.test(value) ? Number(value) : value;
   if (
     typeof number !== 'number' ||
     !Number.isFinite(number) ||
