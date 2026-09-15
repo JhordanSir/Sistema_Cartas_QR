@@ -19,3 +19,10 @@ export {
 } from "./slug.js";
 
 export type { SlugExists } from "./slug.js";
+
+export {
+  ACCEPTED_IMAGE_TYPES,
+  BYTES_PER_MEGABYTE,
+  UPLOAD_LIMITS,
+  toMegabytes
+} from "./upload-limits.js";

@@ -1,5 +1,6 @@
 'use client';
 
+import { ACCEPTED_IMAGE_TYPES, UPLOAD_LIMITS } from '@sirio/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,10 +28,12 @@ import { OwnerNavigation } from '../owner-navigation';
 import { MenuManager } from './menu-manager';
 import { MenuPublicationControls } from './menu-publication-controls';
 
-const MAX_PHOTOS = 5;
-const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
-const MAX_TOTAL_BYTES = 12 * 1024 * 1024;
-const ACCEPTED_PHOTOS = ['image/jpeg', 'image/png', 'image/webp'];
+const {
+  maximumBytesPerPhoto: MAX_PHOTO_BYTES,
+  maximumPhotoCount: MAX_PHOTOS,
+  maximumTotalBytes: MAX_TOTAL_BYTES,
+} = UPLOAD_LIMITS.menuPhotos;
+const ACCEPTED_PHOTOS: readonly string[] = ACCEPTED_IMAGE_TYPES;
 
 export function MenuDigitizer() {
   const router = useRouter();

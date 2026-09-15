@@ -1,5 +1,6 @@
 'use client';
 
+import { ACCEPTED_IMAGE_TYPES, UPLOAD_LIMITS } from '@sirio/shared';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,8 +26,8 @@ import type { RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from './owner-navigation';
 
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
-const ACCEPTED_LOGOS = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_LOGO_BYTES = UPLOAD_LIMITS.logo.maximumBytes;
+const ACCEPTED_LOGOS: readonly string[] = ACCEPTED_IMAGE_TYPES;
 const PROFILE_FIELDS = 5;
 
 export function RestaurantProfilePanel() {

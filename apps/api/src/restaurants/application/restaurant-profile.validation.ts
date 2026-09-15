@@ -1,3 +1,4 @@
+import { UPLOAD_LIMITS, toMegabytes } from '@sirio/shared';
 import type { ApiErrorParamMap, ApiProblem } from '@sirio/shared';
 
 import { RestaurantApplicationError } from '../domain/restaurant.errors.js';
@@ -7,8 +8,7 @@ import type { UpdateRestaurantProfileRecord } from './ports/restaurant-profile.r
 type ProfileField = ApiErrorParamMap['PROFILE_FIELD_TOO_LONG']['field'];
 type SocialField = 'facebookUrl' | 'instagramUrl' | 'tiktokUrl';
 
-const MAX_LOGO_MB = 2;
-const MAX_LOGO_BYTES = MAX_LOGO_MB * 1024 * 1024;
+const MAX_LOGO_BYTES = UPLOAD_LIMITS.logo.maximumBytes;
 
 const PHONE_PATTERN = /^\+?[0-9 ()-]{7,32}$/;
 const SOCIAL_HOSTS: Record<SocialField, readonly string[]> = {
@@ -59,7 +59,7 @@ export function validateRestaurantLogo(logo: RestaurantLogoUpload): void {
   if (logo.bytes.byteLength === 0 || logo.bytes.byteLength > MAX_LOGO_BYTES) {
     invalidLogo('El logo debe pesar como máximo 2 MB.', {
       code: 'LOGO_TOO_LARGE',
-      params: { maxMb: MAX_LOGO_MB },
+      params: { maxMb: toMegabytes(MAX_LOGO_BYTES) },
     });
   }
   const detected = detectLogoContentType(logo.bytes);

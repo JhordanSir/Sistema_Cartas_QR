@@ -1,8 +1,8 @@
+import { ACCEPTED_IMAGE_TYPES, UPLOAD_LIMITS } from '@sirio/shared';
+
 export const MENU_PHOTO_LIMITS = {
-  acceptedContentTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
-  maximumBytesPerPhoto: 3 * 1024 * 1024,
-  maximumPhotoCount: 5,
-  maximumTotalBytes: 12 * 1024 * 1024,
+  acceptedContentTypes: ACCEPTED_IMAGE_TYPES,
+  ...UPLOAD_LIMITS.menuPhotos,
 };
 
 export const MENU_FONT_FAMILIES = [

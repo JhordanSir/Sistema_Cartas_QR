@@ -1,3 +1,4 @@
+import { toMegabytes } from '@sirio/shared';
 import type { ApiErrorParamMap, ApiProblem } from '@sirio/shared';
 
 import { AuthRole } from '../../auth/domain/auth-role.js';
@@ -17,7 +18,6 @@ type OptionKind = ApiErrorParamMap['PRODUCT_OPTION_LIMIT']['kind'];
 type PriceField = ApiErrorParamMap['FIELD_PRICE_INVALID']['field'];
 
 const MAX_OPTIONS = 30;
-const BYTES_PER_MB = 1024 * 1024;
 
 // Labels for the API's own Spanish `message`, which stays as it was. Clients read
 // `problem` instead and name the field in the interface language.
@@ -257,7 +257,7 @@ function invalidImage(): never {
     {
       problem: {
         code: 'PRODUCT_IMAGE_INVALID',
-        params: { maxMb: PRODUCT_IMAGE_LIMITS.maximumBytes / BYTES_PER_MB },
+        params: { maxMb: toMegabytes(PRODUCT_IMAGE_LIMITS.maximumBytes) },
       },
     },
   );

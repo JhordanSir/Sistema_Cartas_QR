@@ -1,3 +1,5 @@
+import { UPLOAD_LIMITS, toMegabytes } from '@sirio/shared';
+
 import {
   authenticatedApiFetch,
   invalidOriginResponse,
@@ -6,8 +8,7 @@ import {
   proxyApiResponse,
 } from '@/lib/api-server';
 
-const MAXIMUM_IMAGE_MB = 4;
-const MAXIMUM_IMAGE_BYTES = MAXIMUM_IMAGE_MB * 1024 * 1024;
+const MAXIMUM_IMAGE_BYTES = UPLOAD_LIMITS.productImage.maximumBytes;
 
 type RouteContext = {
   params: Promise<{ productId: string; restaurantId: string }>;
@@ -32,7 +33,7 @@ export async function PUT(request: Request, context: RouteContext): Promise<Resp
   if (image.size > MAXIMUM_IMAGE_BYTES) {
     return problemResponse(413, 'Product image is too large', {
       code: 'PRODUCT_IMAGE_INVALID',
-      params: { maxMb: MAXIMUM_IMAGE_MB },
+      params: { maxMb: toMegabytes(MAXIMUM_IMAGE_BYTES) },
     });
   }
   const body = new FormData();

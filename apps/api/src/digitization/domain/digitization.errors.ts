@@ -1,4 +1,7 @@
-import type { ApiProblem } from '@sirio/shared';
+import {
+  ApplicationError,
+  type ApplicationErrorOptions,
+} from '../../common/application-error.js';
 
 export type DigitizationErrorCode =
   | 'EMPTY_MENU'
@@ -11,18 +14,10 @@ export type DigitizationErrorCode =
   | 'MODEL_UNAVAILABLE'
   | 'RESTAURANT_NOT_FOUND';
 
-export class DigitizationApplicationError extends Error {
-  /** What the client should tell the person; without it the HTTP mapper picks one. */
-  readonly problem: ApiProblem | undefined;
-
-  constructor(
-    readonly code: DigitizationErrorCode,
-    message: string,
-    options?: ErrorOptions & { problem?: ApiProblem },
-  ) {
-    super(message, options);
+export class DigitizationApplicationError extends ApplicationError<DigitizationErrorCode> {
+  constructor(code: DigitizationErrorCode, message: string, options?: ApplicationErrorOptions) {
+    super(code, message, options);
     this.name = 'DigitizationApplicationError';
-    this.problem = options?.problem;
   }
 }
 

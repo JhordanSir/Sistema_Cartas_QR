@@ -1,4 +1,7 @@
-import type { ApiProblem } from '@sirio/shared';
+import {
+  ApplicationError,
+  type ApplicationErrorOptions,
+} from '../../common/application-error.js';
 
 export type AuthErrorCode =
   | 'ACCOUNT_NOT_FOUND'
@@ -9,17 +12,9 @@ export type AuthErrorCode =
   | 'PASSWORD_POLICY'
   | 'PASSWORD_REUSE';
 
-export class AuthApplicationError extends Error {
-  /** What the client should tell the person; without it the HTTP mapper picks one. */
-  readonly problem: ApiProblem | undefined;
-
-  constructor(
-    readonly code: AuthErrorCode,
-    message: string,
-    options: { problem?: ApiProblem } = {},
-  ) {
-    super(message);
+export class AuthApplicationError extends ApplicationError<AuthErrorCode> {
+  constructor(code: AuthErrorCode, message: string, options?: ApplicationErrorOptions) {
+    super(code, message, options);
     this.name = 'AuthApplicationError';
-    this.problem = options.problem;
   }
 }

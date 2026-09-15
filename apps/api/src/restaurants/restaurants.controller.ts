@@ -19,6 +19,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { UPLOAD_LIMITS } from '@sirio/shared';
 
 import { AuthRole } from '../auth/domain/auth-role.js';
 import type { AuthPrincipal } from '../auth/domain/auth.types.js';
@@ -128,7 +129,7 @@ export class RestaurantsController {
 
   @Roles(AuthRole.OWNER)
   @UseGuards(OwnerRestaurantGuard)
-  @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: 2 * 1024 * 1024, files: 1 } }))
+  @UseInterceptors(FileInterceptor('logo', { limits: { fileSize: UPLOAD_LIMITS.logo.maximumBytes, files: 1 } }))
   @Patch('owner/restaurants/:restaurantId/profile')
   async updateProfile(
     @CurrentPrincipal() principal: AuthPrincipal,

@@ -1,6 +1,8 @@
+import { ACCEPTED_IMAGE_TYPES, UPLOAD_LIMITS } from '@sirio/shared';
+
 export const PRODUCT_IMAGE_LIMITS = {
-  acceptedContentTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
-  maximumBytes: 4 * 1024 * 1024,
+  acceptedContentTypes: ACCEPTED_IMAGE_TYPES,
+  maximumBytes: UPLOAD_LIMITS.productImage.maximumBytes,
 };
 
 export interface ProductImageUpload {

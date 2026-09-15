@@ -1,4 +1,7 @@
-import type { ApiProblem } from '@sirio/shared';
+import {
+  ApplicationError,
+  type ApplicationErrorOptions,
+} from '../../common/application-error.js';
 
 export type RestaurantErrorCode =
   | 'EMAIL_ALREADY_EXISTS'
@@ -10,17 +13,9 @@ export type RestaurantErrorCode =
   | 'RESTAURANT_NOT_FOUND'
   | 'SLUG_ALLOCATION_FAILED';
 
-export class RestaurantApplicationError extends Error {
-  /** What the client should tell the person; without it the HTTP mapper picks one. */
-  readonly problem: ApiProblem | undefined;
-
-  constructor(
-    readonly code: RestaurantErrorCode,
-    message: string,
-    options: { problem?: ApiProblem } = {},
-  ) {
-    super(message);
+export class RestaurantApplicationError extends ApplicationError<RestaurantErrorCode> {
+  constructor(code: RestaurantErrorCode, message: string, options?: ApplicationErrorOptions) {
+    super(code, message, options);
     this.name = 'RestaurantApplicationError';
-    this.problem = options.problem;
   }
 }

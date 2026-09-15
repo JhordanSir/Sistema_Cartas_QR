@@ -1,3 +1,5 @@
+import { toMegabytes } from '@sirio/shared';
+
 import { DigitizationApplicationError } from '../domain/digitization.errors.js';
 import {
   DEFAULT_CATEGORY_LAYOUT,
@@ -11,7 +13,6 @@ import {
   type MenuStyle,
 } from '../domain/menu.types.js';
 
-const BYTES_PER_MB = 1024 * 1024;
 const MAX_CATEGORIES = 50;
 const MAX_PRODUCTS = 500;
 const MAX_PRODUCTS_PER_CATEGORY = 100;
@@ -43,7 +44,7 @@ export function validateMenuPhotos(photos: MenuPhoto[]): void {
       {
         problem: {
           code: 'MENU_PHOTOS_TOO_LARGE',
-          params: { maxMb: MENU_PHOTO_LIMITS.maximumTotalBytes / BYTES_PER_MB },
+          params: { maxMb: toMegabytes(MENU_PHOTO_LIMITS.maximumTotalBytes) },
         },
       },
     );
@@ -63,7 +64,7 @@ export function validateMenuPhotos(photos: MenuPhoto[]): void {
         {
           problem: {
             code: 'MENU_PHOTO_INVALID',
-            params: { maxMb: MENU_PHOTO_LIMITS.maximumBytesPerPhoto / BYTES_PER_MB },
+            params: { maxMb: toMegabytes(MENU_PHOTO_LIMITS.maximumBytesPerPhoto) },
           },
         },
       );

@@ -1,3 +1,5 @@
+import { BYTES_PER_MEGABYTE, UPLOAD_LIMITS, toMegabytes } from '@sirio/shared';
+
 import {
   authenticatedApiFetch,
   invalidOriginResponse,
@@ -6,8 +8,13 @@ import {
   proxyApiResponse,
 } from '@/lib/api-server';
 
-const MAX_MULTIPART_BYTES = 13 * 1024 * 1024;
-const PHOTOS_TOO_LARGE = { code: 'MENU_PHOTOS_TOO_LARGE', params: { maxMb: 12 } } as const;
+const { maximumTotalBytes } = UPLOAD_LIMITS.menuPhotos;
+// The photos plus one megabyte of multipart framing (boundaries and part headers).
+const MAX_MULTIPART_BYTES = maximumTotalBytes + BYTES_PER_MEGABYTE;
+const PHOTOS_TOO_LARGE = {
+  code: 'MENU_PHOTOS_TOO_LARGE',
+  params: { maxMb: toMegabytes(maximumTotalBytes) },
+} as const;
 
 export async function POST(
   request: Request,
