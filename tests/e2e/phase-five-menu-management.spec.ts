@@ -126,7 +126,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     });
     await page.getByRole('button', { name: 'Crear producto' }).click();
     await expect(page.getByText('Producto creado en el borrador.')).toBeVisible();
-    await expect(page.getByText('1 variantes · 1 adicionales')).toBeVisible();
+    await expect(page.getByText('1 variante · 1 adicional')).toBeVisible();
 
     await page.getByRole('button', { name: 'Añadir producto a Platos de fondo' }).click();
     await page.getByLabel('Nombre').fill('Ensalada fresca');

@@ -36,6 +36,13 @@ const COPY: Record<Locale, Record<'duplicatedEmail' | 'emptyMenu' | 'expiredSess
   },
 };
 
+// Botones del panel del dueño, traducidos desde la fase 4. El backoffice sigue en
+// español hasta la fase 5, así que sus etiquetas no dependen del idioma.
+const OWNER_BUTTONS: Record<Locale, Record<'confirmPublish' | 'publishMenu' | 'saveProfile', string>> = {
+  en: { confirmPublish: 'Yes, publish menu', publishMenu: 'Publish menu', saveProfile: 'Save profile' },
+  es: { confirmPublish: 'Sí, publicar carta', publishMenu: 'Publicar carta', saveProfile: 'Guardar perfil' },
+};
+
 async function apiLogin(
   request: APIRequestContext,
   email: string,
@@ -133,10 +140,12 @@ test.describe.serial('errores de la API traducidos por código', () => {
         await signInAsOwner(page, ownerEmail, ownerPassword);
         await chooseLanguage(context, locale);
         await page.goto(`${webUrl}/admin/menu`);
-        const publish = page.getByRole('button', { name: 'Publicar carta' });
+        const publish = page.getByRole('button', { name: OWNER_BUTTONS[locale].publishMenu });
         await expect(publish).toBeEnabled({ timeout: 20_000 });
         await publish.click();
-        const confirm = page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' });
+        const confirm = page
+          .getByRole('dialog')
+          .getByRole('button', { name: OWNER_BUTTONS[locale].confirmPublish });
         await expect(confirm).toBeVisible();
 
         // Mientras la confirmación sigue abierta, el único producto deja de estar disponible.
@@ -170,7 +179,7 @@ test.describe.serial('errores de la API traducidos por código', () => {
         const refused = page.waitForResponse(
           (response) => response.url().endsWith('/profile') && response.request().method() === 'PATCH',
         );
-        await page.getByRole('button', { name: 'Guardar perfil' }).click();
+        await page.getByRole('button', { name: OWNER_BUTTONS[locale].saveProfile }).click();
         const response = await refused;
         expect(response.status()).toBe(401);
         await expect(response.json()).resolves.toMatchObject({ code: 'SESSION_EXPIRED' });
@@ -222,7 +231,7 @@ test.describe.serial('errores de la API traducidos por código', () => {
         const refused = page.waitForResponse(
           (response) => response.url().endsWith('/profile') && response.request().method() === 'PATCH',
         );
-        await page.getByRole('button', { name: 'Guardar perfil' }).click();
+        await page.getByRole('button', { name: OWNER_BUTTONS[locale].saveProfile }).click();
         const response = await refused;
         expect(response.status()).toBe(400);
         await expect(response.json()).resolves.toMatchObject({
