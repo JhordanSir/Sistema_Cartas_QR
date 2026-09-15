@@ -217,7 +217,7 @@ Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedore
 
 ## Checklist académico
 
-[`docs/checklist-academico.md`](docs/checklist-academico.md) muestra, con archivo y línea, cómo cumple el proyecto cada requisito del checklist: arquitectura en n capas, componentes con y sin estado, menú desplegable de idioma y validación del formulario de acceso con expresiones regulares.
+[`docs/informe.md`](docs/informe.md) es el informe de entrega: explica con diagramas, fragmentos de código y capturas cómo se implementaron la arquitectura en n capas, los componentes con y sin estado, la internacionalización y la validación con expresiones regulares. [`docs/checklist-academico.md`](docs/checklist-academico.md) muestra, con archivo y línea, cómo cumple el proyecto cada requisito del checklist: arquitectura en n capas, componentes con y sin estado, menú desplegable de idioma y validación del formulario de acceso con expresiones regulares.
 
 ## Despliegue con Dokploy
 
