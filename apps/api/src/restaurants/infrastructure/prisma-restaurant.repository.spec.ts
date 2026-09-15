@@ -56,4 +56,18 @@ describe('PrismaRestaurantRepository.create', () => {
 
     await expect(repository.create(RECORD)).resolves.toEqual({ kind: 'slug-conflict' });
   });
+
+  it('still understands a slug reported in the target list', async () => {
+    const repository = failingWithUniqueViolation({ target: ['slug'] });
+
+    await expect(repository.create(RECORD)).resolves.toEqual({ kind: 'slug-conflict' });
+  });
+
+  it('rethrows a unique violation on any other model instead of retrying it as a slug', async () => {
+    const repository = failingWithUniqueViolation(
+      adapterViolation('RestaurantOwner', 'RestaurantOwner_pkey'),
+    );
+
+    await expect(repository.create(RECORD)).rejects.toMatchObject({ code: 'P2002' });
+  });
 });

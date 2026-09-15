@@ -72,16 +72,10 @@ export class PrismaRestaurantRepository
 
       return { kind: 'created', restaurant: this.toSummary(created) };
     } catch (error) {
-      if (!this.isUniqueConstraintError(error)) {
-        throw error;
-      }
-      // Prisma 7 driver adapters leave `target` empty and name the violated index
-      // ("Owner_email_key") under `driverAdapterError`; reading the whole meta covers
-      // both shapes. Only Owner.email and Restaurant.slug can collide on this path.
-      const meta = JSON.stringify(error.meta ?? {}).toLowerCase();
-      return meta.includes('email')
-        ? { kind: 'email-conflict' }
-        : { kind: 'slug-conflict' };
+      const conflict = this.uniqueConflict(error);
+      if (conflict === 'email') return { kind: 'email-conflict' };
+      if (conflict === 'slug') return { kind: 'slug-conflict' };
+      throw error;
     }
   }
 
@@ -403,6 +397,21 @@ export class PrismaRestaurantRepository
       },
       where: { id: jobId },
     });
+  }
+
+  /**
+   * Which unique column a failed restaurant creation collided with. Prisma 7 driver
+   * adapters name the model and leave `target` empty; without an adapter Prisma lists
+   * the columns in `target`. Owner.email and Restaurant.slug are the only unique columns
+   * this transaction writes, so any other violation is a real failure, never a retry.
+   */
+  private uniqueConflict(error: unknown): 'email' | 'slug' | null {
+    if (!this.isUniqueConstraintError(error)) return null;
+    const { modelName, target } = (error.meta ?? {}) as { modelName?: unknown; target?: unknown };
+    const columns: unknown[] = Array.isArray(target) ? target : [];
+    if (modelName === 'Owner' || columns.includes('email')) return 'email';
+    if (modelName === 'Restaurant' || columns.includes('slug')) return 'slug';
+    return null;
   }
 
   private isUniqueConstraintError(
