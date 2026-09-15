@@ -75,8 +75,11 @@ export class PrismaRestaurantRepository
       if (!this.isUniqueConstraintError(error)) {
         throw error;
       }
-      const target = JSON.stringify(error.meta?.target ?? '').toLowerCase();
-      return target.includes('email')
+      // Prisma 7 driver adapters leave `target` empty and name the violated index
+      // ("Owner_email_key") under `driverAdapterError`; reading the whole meta covers
+      // both shapes. Only Owner.email and Restaurant.slug can collide on this path.
+      const meta = JSON.stringify(error.meta ?? {}).toLowerCase();
+      return meta.includes('email')
         ? { kind: 'email-conflict' }
         : { kind: 'slug-conflict' };
     }
