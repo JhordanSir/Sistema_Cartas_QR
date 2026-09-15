@@ -215,6 +215,10 @@ Los payloads y documentos QR se guardan en PostgreSQL junto al restaurante, no e
 
 Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedores.
 
+## Checklist académico
+
+[`docs/checklist-academico.md`](docs/checklist-academico.md) muestra, con archivo y línea, cómo cumple el proyecto cada requisito del checklist: arquitectura en n capas, componentes con y sin estado, menú desplegable de idioma y validación del formulario de acceso con expresiones regulares.
+
 ## Despliegue con Dokploy
 
 Consulta la guía paso a paso en [`docs/dokploy.md`](docs/dokploy.md). En resumen: crea un servicio **Docker Compose**, usa `./compose.yml`, carga las variables de producción en la pestaña Environment y asigna el dominio nativo al servicio `nginx` en el puerto interno `80`. Define `PUBLIC_APP_URL` con ese dominio HTTPS final antes de crear restaurantes para que los QR impresos apunten al origen correcto.
