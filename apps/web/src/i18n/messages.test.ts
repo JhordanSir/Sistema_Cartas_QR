@@ -6,6 +6,7 @@ import { ownerMenuCopy } from './messages/owner-menu';
 import { ownerPanelCopy } from './messages/owner-panel';
 import { ownerProfileCopy } from './messages/owner-profile';
 import { ownerQrCopy } from './messages/owner-qr';
+import { publicMenuCopy } from './messages/public-menu';
 import { shellCopy } from './messages/shell';
 import { statisticsCopy } from './messages/statistics';
 
@@ -18,6 +19,7 @@ const TABLES = {
   ownerPanel: ownerPanelCopy,
   ownerProfile: ownerProfileCopy,
   ownerQr: ownerQrCopy,
+  publicMenu: publicMenuCopy,
   shell: shellCopy,
   statistics: statisticsCopy,
 };

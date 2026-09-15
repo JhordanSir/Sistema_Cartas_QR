@@ -2,11 +2,16 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
 
+import { formatCurrency } from '@/i18n/format';
+import type { Locale } from '@/i18n/locale';
+import { type PublicMenuCopy, publicMenuCopy } from '@/i18n/messages/public-menu';
+import { getLocale } from '@/i18n/server';
 import { apiInternalUrl } from '@/lib/api-server';
 import { socialLinks, telHref, whatsappHref } from '@/lib/contact';
 import { menuFontClassName } from '@/lib/menu-fonts';
 import type { PublicRestaurant } from '@/lib/restaurant-types';
 
+import { publicMenuMetadata } from './public-menu-metadata';
 import { PublicViewTracker } from './public-view-tracker';
 
 /**
@@ -24,28 +29,17 @@ const loadRestaurant = cache(async (slug: string): Promise<PublicRestaurant | nu
 
 export async function generateMetadata({ params }: PageProps<'/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
-  const restaurant = await loadRestaurant(slug);
-  if (!restaurant) {
-    return { title: 'Carta no disponible | Sirio Automatiza' };
-  }
-
-  const title = `${restaurant.name} · Carta digital`;
-  const description = restaurant.address
-    ? `Carta de ${restaurant.name} en ${restaurant.address}. Platos, precios y disponibilidad al día.`
-    : `Carta de ${restaurant.name}. Platos, precios y disponibilidad al día.`;
-
-  return {
-    description,
-    openGraph: { description, locale: 'es_PE', title, type: 'website' },
-    title,
-  };
+  const [restaurant, locale] = await Promise.all([loadRestaurant(slug), getLocale()]);
+  return publicMenuMetadata(restaurant, publicMenuCopy[locale].metadata);
 }
 
 export default async function PublicRestaurantPage({ params }: PageProps<'/[slug]'>) {
   const { slug } = await params;
-  const restaurant = await loadRestaurant(slug);
+  const [restaurant, locale] = await Promise.all([loadRestaurant(slug), getLocale()]);
   if (!restaurant) notFound();
 
+  // Only this frame follows the language; what the owner wrote is shown as written.
+  const copy = publicMenuCopy[locale];
   const whatsapp = whatsappHref(restaurant.whatsapp);
   const phone = telHref(restaurant.contactPhone);
   const socials = socialLinks(restaurant);
@@ -69,14 +63,14 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
         <header className="border-b border-current/20 pt-3 pb-8">
           <div className="flex items-start justify-between gap-4">
             <span className="text-[11px] font-extrabold tracking-[0.14em] uppercase opacity-80">
-              Carta digital
+              {copy.eyebrow}
             </span>
             <span className="inline-flex min-h-7 shrink-0 items-center gap-2 rounded-full border border-current/15 px-2.5 py-1.5 text-[9px] font-extrabold tracking-[0.09em] uppercase opacity-80">
               <i
                 aria-hidden="true"
                 className="size-1.5 rounded-full bg-current shadow-[0_0_0_3px_color-mix(in_srgb,currentColor_15%,transparent)]"
               />
-              {restaurant.categories.length ? 'Carta publicada' : 'Próximamente'}
+              {restaurant.categories.length ? copy.published : copy.comingSoon.status}
             </span>
           </div>
 
@@ -85,7 +79,7 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
               // Served by the public BFF route, which only resolves enabled restaurants.
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                alt={`Logo de ${restaurant.name}`}
+                alt={copy.logoAlt(restaurant.name)}
                 className="size-16 shrink-0 rounded-2xl border border-current/15 object-cover sm:size-20"
                 src={`/api/public/restaurants/${encodeURIComponent(restaurant.slug)}/logo`}
               />
@@ -100,7 +94,7 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
           ) : null}
           {restaurant.categories.length > 0 ? (
             <p className="mt-2 mb-0 max-w-[48ch] text-[13px]/relaxed opacity-75 text-pretty">
-              Elige una sección y encuentra tu próximo favorito.
+              {copy.intro}
             </p>
           ) : null}
         </header>
@@ -110,22 +104,18 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
             <span aria-hidden="true" className="text-2xl">
               ✦
             </span>
-            <h2 className="my-1.5 font-semibold tracking-[-0.025em]">
-              Estamos preparando la carta
-            </h2>
-            <p className="m-0 text-sm/normal opacity-75">
-              Muy pronto encontrarás aquí todos los productos del restaurante.
-            </p>
+            <h2 className="my-1.5 font-semibold tracking-[-0.025em]">{copy.comingSoon.title}</h2>
+            <p className="m-0 text-sm/normal opacity-75">{copy.comingSoon.body}</p>
           </div>
         ) : (
           <>
             {restaurant.categories.length > 1 ? (
               <nav
-                aria-label="Secciones de la carta"
+                aria-label={copy.sections.label}
                 className="sticky top-0 z-10 -mx-6 mt-5 grid gap-1.5 border-y border-current/12 bg-[color-mix(in_srgb,var(--menu-background)_90%,white)] px-4 py-2 backdrop-blur-md sm:top-4 sm:mx-0 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-3 sm:rounded-xl sm:border"
               >
                 <span className="shrink-0 px-1 text-[9px] font-black tracking-[0.12em] uppercase opacity-60">
-                  Secciones
+                  {copy.sections.title}
                 </span>
                 <div className="no-scrollbar flex min-w-0 gap-1 overflow-x-auto">
                   {restaurant.categories.map((category, index) => (
@@ -164,13 +154,25 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
                   {category.layout === 'CARDS' ? (
                     <div className="grid gap-4 pt-5 sm:grid-cols-2 sm:gap-5">
                       {category.products.map((product) => (
-                        <ProductCard key={product.id} product={product} slug={restaurant.slug} />
+                        <ProductCard
+                          copy={copy}
+                          key={product.id}
+                          locale={locale}
+                          product={product}
+                          slug={restaurant.slug}
+                        />
                       ))}
                     </div>
                   ) : (
                     <div className="grid">
                       {category.products.map((product) => (
-                        <ProductRow key={product.id} product={product} slug={restaurant.slug} />
+                        <ProductRow
+                          copy={copy}
+                          key={product.id}
+                          locale={locale}
+                          product={product}
+                          slug={restaurant.slug}
+                        />
                       ))}
                     </div>
                   )}
@@ -189,7 +191,7 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
               className="m-0 text-[11px] font-extrabold tracking-[0.14em] uppercase opacity-60"
               id="contacto-titulo"
             >
-              Contacto
+              {copy.contact}
             </h2>
             <div className="grid gap-2 text-[13px]/relaxed">
               {restaurant.address ? <p className="m-0 opacity-80">{restaurant.address}</p> : null}
@@ -205,7 +207,7 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
                   rel="noreferrer"
                   target="_blank"
                 >
-                  <span aria-hidden="true">✆</span> Escribir por WhatsApp
+                  <span aria-hidden="true">✆</span> {copy.whatsapp.link}
                 </a>
               ) : null}
             </div>
@@ -235,13 +237,13 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
           >
             S
           </span>
-          Carta digital publicada con Sirio
+          {copy.footer}
         </footer>
       </section>
 
       {whatsapp ? (
         <a
-          aria-label="Escribir al restaurante por WhatsApp"
+          aria-label={copy.whatsapp.floating}
           className="fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 inline-flex min-h-13 items-center gap-2 rounded-full bg-[#25d366] px-4 text-[13px] font-extrabold text-[#06331a] no-underline shadow-[0_0.5rem_1.5rem_rgb(0_0_0/0.25)] transition-transform active:scale-95 sm:right-8 sm:bottom-8"
           href={whatsapp}
           rel="noreferrer"
@@ -259,8 +261,15 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
 
 type PublicProduct = PublicRestaurant['categories'][number]['products'][number];
 
+interface ProductProps {
+  copy: PublicMenuCopy;
+  locale: Locale;
+  product: PublicProduct;
+  slug: string;
+}
+
 /** Dense row: the default, and the only shape that reads well without photos. */
-function ProductRow({ product, slug }: { product: PublicProduct; slug: string }) {
+function ProductRow({ copy, locale, product, slug }: ProductProps) {
   return (
     <article
       data-testid="product-row"
@@ -280,8 +289,8 @@ function ProductRow({ product, slug }: { product: PublicProduct; slug: string })
         />
       ) : null}
       <div className="min-w-0">
-        <ProductHeading product={product} />
-        <ProductDetails product={product} />
+        <ProductHeading locale={locale} product={product} />
+        <ProductDetails copy={copy} locale={locale} product={product} />
       </div>
     </article>
   );
@@ -291,7 +300,7 @@ function ProductRow({ product, slug }: { product: PublicProduct; slug: string })
  * Photo-first card, chosen per section by the owner. A product without an image
  * simply renders a shorter, text-only card: no placeholder art, no broken frame.
  */
-function ProductCard({ product, slug }: { product: PublicProduct; slug: string }) {
+function ProductCard({ copy, locale, product, slug }: ProductProps) {
   return (
     <article
       className="grid content-start overflow-hidden rounded-2xl border border-current/15"
@@ -306,25 +315,25 @@ function ProductCard({ product, slug }: { product: PublicProduct; slug: string }
         />
       ) : null}
       <div className="min-w-0 p-4">
-        <ProductHeading product={product} />
-        <ProductDetails product={product} />
+        <ProductHeading locale={locale} product={product} />
+        <ProductDetails copy={copy} locale={locale} product={product} />
       </div>
     </article>
   );
 }
 
-function ProductHeading({ product }: { product: PublicProduct }) {
+function ProductHeading({ locale, product }: Omit<ProductProps, 'copy' | 'slug'>) {
   return (
     <div className="flex items-start justify-between gap-2.5 sm:items-baseline sm:gap-4">
       <h3 className="m-0 text-[17px] tracking-[-0.02em] sm:text-[19px]">{product.name}</h3>
       <strong className="shrink-0 rounded-md bg-current/8 px-1.5 py-1 text-xs whitespace-nowrap tabular-nums sm:text-[13px]">
-        S/ {product.basePrice}
+        {formatCurrency(product.basePrice, locale)}
       </strong>
     </div>
   );
 }
 
-function ProductDetails({ product }: { product: PublicProduct }) {
+function ProductDetails({ copy, locale, product }: Omit<ProductProps, 'slug'>) {
   return (
     <>
       {product.description ? (
@@ -333,18 +342,22 @@ function ProductDetails({ product }: { product: PublicProduct }) {
         </p>
       ) : null}
       {product.variants.length > 0 ? (
-        <OptionList items={product.variants} title="Presentaciones" />
+        <OptionList items={product.variants} locale={locale} title={copy.options} />
       ) : null}
-      {product.extras.length > 0 ? <OptionList items={product.extras} title="Adicionales" /> : null}
+      {product.extras.length > 0 ? (
+        <OptionList items={product.extras} locale={locale} title={copy.addOns} />
+      ) : null}
     </>
   );
 }
 
 function OptionList({
   items,
+  locale,
   title,
 }: {
   items: Array<{ id?: string; name: string; price: string }>;
+  locale: Locale;
   title: string;
 }) {
   return (
@@ -355,7 +368,7 @@ function OptionList({
       <ul className="m-0 flex list-none flex-wrap gap-x-3 gap-y-1.5 p-0">
         {items.map((item) => (
           <li className="text-[11px]" key={item.id ?? item.name}>
-            {item.name} <b className="ml-0.5 tabular-nums">S/ {item.price}</b>
+            {item.name} <b className="ml-0.5 tabular-nums">{formatCurrency(item.price, locale)}</b>
           </li>
         ))}
       </ul>
