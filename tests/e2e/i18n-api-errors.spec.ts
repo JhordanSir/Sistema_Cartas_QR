@@ -36,11 +36,30 @@ const COPY: Record<Locale, Record<'duplicatedEmail' | 'emptyMenu' | 'expiredSess
   },
 };
 
-// Botones del panel del dueño, traducidos desde la fase 4. El backoffice sigue en
-// español hasta la fase 5, así que sus etiquetas no dependen del idioma.
+// Botones del panel del dueño (traducidos en la fase 4) y del backoffice (fase 5).
 const OWNER_BUTTONS: Record<Locale, Record<'confirmPublish' | 'publishMenu' | 'saveProfile', string>> = {
   en: { confirmPublish: 'Yes, publish menu', publishMenu: 'Publish menu', saveProfile: 'Save profile' },
   es: { confirmPublish: 'Sí, publicar carta', publishMenu: 'Publicar carta', saveProfile: 'Guardar perfil' },
+};
+
+const BACKOFFICE_FORM: Record<
+  Locale,
+  { create: string; email: string; name: string; open: string; password: RegExp }
+> = {
+  en: {
+    create: 'Create restaurant',
+    email: "Owner's email",
+    name: 'Restaurant name',
+    open: 'New restaurant',
+    password: /Initial password/,
+  },
+  es: {
+    create: 'Crear restaurante',
+    email: 'Correo del dueño',
+    name: 'Nombre del restaurante',
+    open: 'Nuevo restaurante',
+    password: /Contraseña inicial/,
+  },
 };
 
 async function apiLogin(
@@ -201,15 +220,16 @@ test.describe.serial('errores de la API traducidos por código', () => {
         await chooseLanguage(context, locale);
         await page.goto(`${webUrl}/backoffice`);
 
-        await page.getByRole('button', { name: 'Nuevo restaurante' }).click();
-        await page.getByLabel('Nombre del restaurante').fill('Restaurante repetido');
-        await page.getByLabel('Correo del dueño').fill(ownerEmail);
-        await page.getByLabel(/Contraseña inicial/).fill('OtraClave-9!');
+        const form = BACKOFFICE_FORM[locale];
+        await page.getByRole('button', { name: form.open }).click();
+        await page.getByLabel(form.name).fill('Restaurante repetido');
+        await page.getByLabel(form.email).fill(ownerEmail);
+        await page.getByLabel(form.password).fill('OtraClave-9!');
         const refused = page.waitForResponse(
           (response) =>
             response.url().endsWith('/api/backoffice/restaurants') && response.request().method() === 'POST',
         );
-        await page.getByRole('button', { name: 'Crear restaurante' }).click();
+        await page.getByRole('button', { name: form.create }).click();
         const response = await refused;
         expect(response.status()).toBe(409);
         await expect(response.json()).resolves.toMatchObject({ code: 'OWNER_EMAIL_TAKEN' });

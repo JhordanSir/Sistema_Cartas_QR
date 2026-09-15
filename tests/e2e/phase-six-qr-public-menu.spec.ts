@@ -90,7 +90,9 @@ function productId(menu: PublishedMenu, name: string): string {
 }
 
 test.describe.serial('QR permanente y carta pública móvil de la Fase 6', () => {
-  test.describe.configure({ timeout: 60_000 });
+  // El recorrido abre tres contextos y toma dos capturas de página completa. En WebKit
+  // cada acción ronda el segundo, así que 60 s dejaban el test al borde del límite.
+  test.describe.configure({ timeout: 150_000 });
 
   let restaurant: CreatedRestaurant | null = null;
   let adminToken = '';
