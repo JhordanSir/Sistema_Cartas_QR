@@ -61,14 +61,20 @@ describe('LanguageSwitcher', () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it('no hace nada al volver a elegir el idioma que ya está activo', () => {
-    global.fetch = jest.fn();
+  it('guarda la última elección aunque la anterior aún no se haya aplicado', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 204 });
     render(<LanguageSwitcher />);
+    const select = screen.getByRole('combobox', { name: 'Idioma' });
 
-    fireEvent.change(screen.getByRole('combobox', { name: 'Idioma' }), {
-      target: { value: 'es' },
-    });
+    fireEvent.change(select, { target: { value: 'en' } });
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    // La página todavía no se volvió a pintar en inglés: volver al español debe guardarse.
+    fireEvent.change(select, { target: { value: 'es' } });
 
-    expect(global.fetch).not.toHaveBeenCalled();
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    const bodies = (global.fetch as jest.Mock).mock.calls.map(
+      ([, init]) => JSON.parse(String((init as RequestInit).body)) as unknown,
+    );
+    expect(bodies).toEqual([{ locale: 'en' }, { locale: 'es' }]);
   });
 });

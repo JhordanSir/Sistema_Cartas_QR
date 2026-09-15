@@ -35,7 +35,10 @@ export function LoginForm() {
       method: 'POST',
     });
     if (!response.ok) {
-      setFailure(response.status === 401 ? 'invalidCredentials' : 'serviceUnavailable');
+      // 400 is the API refusing the shape itself (a password under 8 characters, an
+      // email it does not accept): no account can match those credentials either.
+      const wrongCredentials = response.status === 400 || response.status === 401;
+      setFailure(wrongCredentials ? 'invalidCredentials' : 'serviceUnavailable');
       setSubmitting(false);
       return;
     }

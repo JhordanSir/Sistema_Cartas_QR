@@ -70,6 +70,19 @@ describe('LoginForm', () => {
     );
   });
 
+  it('trata como credenciales erróneas lo que la API rechaza por su forma', async () => {
+    // Una contraseña de menos de 8 caracteres pasa el formulario, pero la API la rechaza
+    // con 400: no puede ser la de ninguna cuenta, así que no es una caída del servicio.
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 });
+    render(<LoginForm />);
+
+    fillCredentials('admin@sirio.pe', 'Corta1');
+    submit();
+    submit();
+
+    expect(await screen.findByText('El correo o la contraseña no son correctos.')).toBeVisible();
+  });
+
   it.each(['admin', 'admin@sirio', '@sirio.pe', 'admin sirio@sirio.pe'])(
     'no envía el correo %p y explica cómo escribirlo',
     (email) => {

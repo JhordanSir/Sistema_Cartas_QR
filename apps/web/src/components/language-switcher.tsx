@@ -31,7 +31,9 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   async function changeLanguage(event: ChangeEvent<HTMLSelectElement>) {
     const select = event.currentTarget;
     const next = select.value;
-    if (!isLocale(next) || next === locale) return;
+    // No comparison with the current locale: it stays stale until the refresh lands, and
+    // skipping the request would lose a quick switch back to the previous language.
+    if (!isLocale(next)) return;
 
     const response = await fetch('/api/session/locale', {
       body: JSON.stringify({ locale: next }),

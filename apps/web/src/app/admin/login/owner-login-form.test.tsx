@@ -66,6 +66,18 @@ describe('OwnerLoginForm', () => {
     );
   });
 
+  it('trata como credenciales erróneas lo que la API rechaza por su forma', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 400 });
+    render(<OwnerLoginForm />);
+
+    fillCredentials();
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a mi restaurante' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'El correo o la contraseña no son correctos.',
+    );
+  });
+
   it('permite revisar la contraseña escrita y volver a ocultarla', () => {
     render(<OwnerLoginForm />);
 
