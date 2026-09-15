@@ -120,6 +120,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@sirio/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       dotenv:
         specifier: 17.4.2
         version: 17.4.2

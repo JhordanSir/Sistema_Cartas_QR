@@ -1,28 +1,31 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useId, useState } from 'react';
 
 import { Button } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
 import { PasswordField } from '@/components/password-field';
+import { useCredentialsValidation } from '@/lib/use-credentials-validation';
 
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const validation = useCredentialsValidation();
+  const emailErrorId = useId();
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get('email') ?? '');
+    const password = String(form.get('password') ?? '');
+    if (!validation.approveSubmission(email, password)) return;
+
     setSubmitting(true);
     setError(null);
-    const form = new FormData(event.currentTarget);
     const response = await fetch('/api/session/login', {
-      body: JSON.stringify({
-        email: form.get('email'),
-        password: form.get('password'),
-        role: 'ADMIN',
-      }),
+      body: JSON.stringify({ email, password, role: 'ADMIN' }),
       headers: { 'content-type': 'application/json' },
       method: 'POST',
     });
@@ -39,20 +42,39 @@ export function LoginForm() {
     router.refresh();
   }
 
+  // noValidate: the regex checks are the single source of truth, so the browser's
+  // own email bubble never pre-empts the message they show.
   return (
-    <form className="grid gap-5" onSubmit={handleSubmit}>
-      <Field label="Correo del administrador">
-        <input
-          autoComplete="email"
-          className={fieldControl}
-          inputMode="email"
-          name="email"
-          placeholder="admin@sirio.pe"
-          required
-          type="email"
-        />
-      </Field>
-      <PasswordField autoComplete="current-password" minLength={8} name="password" required />
+    <form className="grid gap-5" noValidate onSubmit={handleSubmit}>
+      <div className="grid gap-2">
+        <Field label="Correo del administrador">
+          <input
+            aria-describedby={validation.emailError ? emailErrorId : undefined}
+            aria-invalid={validation.emailError ? true : undefined}
+            autoComplete="email"
+            className={fieldControl}
+            inputMode="email"
+            name="email"
+            onBlur={validation.onEmailBlur}
+            onChange={(event) => validation.onEmailChange(event.currentTarget.value)}
+            placeholder="admin@sirio.pe"
+            required
+            type="email"
+          />
+        </Field>
+        {validation.emailError ? (
+          <FormError id={emailErrorId}>{validation.emailError}</FormError>
+        ) : null}
+      </div>
+      <PasswordField
+        autoComplete="current-password"
+        error={validation.passwordError}
+        hint={validation.passwordHint}
+        name="password"
+        onBlur={validation.onPasswordBlur}
+        onChange={(event) => validation.onPasswordChange(event.currentTarget.value)}
+        required
+      />
       {error ? <FormError>{error}</FormError> : null}
       <Button disabled={submitting} full type="submit">
         {submitting ? 'Ingresando…' : 'Entrar al backoffice'}

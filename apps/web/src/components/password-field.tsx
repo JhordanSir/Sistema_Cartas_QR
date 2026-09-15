@@ -1,6 +1,6 @@
 'use client';
 
-import { type InputHTMLAttributes, useId, useState } from 'react';
+import { type InputHTMLAttributes, type ReactNode, useId, useState } from 'react';
 
 import { fieldControl } from './field';
 
@@ -11,13 +11,23 @@ import { fieldControl } from './field';
  * inside a label makes every tap on it also target the input, and screen readers
  * announce the pair as one confusing control. The label is wired with htmlFor so
  * getByLabel still resolves the input in the suites.
+ *
+ * `error` blocks and is announced assertively; `hint` is advisory and polite.
  */
 export function PasswordField({
+  error,
+  hint,
   label = 'Contraseña',
   ...rest
-}: { label?: string } & Omit<InputHTMLAttributes<HTMLInputElement>, 'className' | 'type'>) {
+}: { error?: ReactNode; hint?: ReactNode; label?: string } & Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'className' | 'type'
+>) {
   const id = useId();
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
   const [revealed, setRevealed] = useState(false);
+  const describedBy = [error ? errorId : null, hint ? hintId : null].filter(Boolean).join(' ');
 
   return (
     <div className="grid gap-2">
@@ -26,6 +36,8 @@ export function PasswordField({
       </label>
       <div className="relative">
         <input
+          aria-describedby={describedBy || undefined}
+          aria-invalid={error ? true : undefined}
           className={`${fieldControl} pr-24`}
           id={id}
           type={revealed ? 'text' : 'password'}
@@ -41,6 +53,16 @@ export function PasswordField({
           {revealed ? 'Ocultar' : 'Mostrar'}
         </button>
       </div>
+      {error ? (
+        <p className="m-0 text-[13px]/relaxed text-danger" id={errorId} role="alert">
+          {error}
+        </p>
+      ) : null}
+      {hint ? (
+        <p className="m-0 text-[13px]/relaxed text-copper" id={hintId} role="status">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }

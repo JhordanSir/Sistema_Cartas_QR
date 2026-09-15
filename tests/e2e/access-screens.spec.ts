@@ -1,5 +1,10 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 
+import {
+  createE2EOwnerFixture,
+  removeE2EOwnerFixture,
+} from '../../apps/api/src/testing/e2e-owner.fixture.js';
+
 const directApiUrl = process.env.E2E_DIRECT_API_URL ?? 'http://127.0.0.1:3001/api';
 const webUrl = process.env.E2E_WEB_URL ?? 'http://127.0.0.1:3000';
 
@@ -104,7 +109,9 @@ test.describe.serial('landing y pantallas de acceso', () => {
       expect(await scrollsSideways(page)).toBe(false);
 
       await page.getByLabel('Correo del propietario').fill(ownerEmail);
-      await page.getByLabel('Contraseña').fill('contraseña-equivocada');
+      // Cumple la regla de complejidad a propósito: este caso prueba credenciales
+      // erróneas, no el aviso de contraseña débil.
+      await page.getByLabel('Contraseña').fill('ClaveErrada-9');
       await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
 
       // getByRole('alert') también coincide con el anunciador de rutas de Next,
@@ -118,6 +125,72 @@ test.describe.serial('landing y pantallas de acceso', () => {
       await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
       await expect(page).toHaveURL(`${webUrl}/admin`);
       await expect(page.getByRole('navigation', { name: 'Panel del restaurante' })).toBeVisible();
+    },
+  );
+
+  test(
+    'un correo mal escrito se corrige antes de salir hacia el servidor',
+    { tag: '@movil' },
+    async ({ page }) => {
+      const loginRequests: string[] = [];
+      page.on('request', (request) => {
+        if (new URL(request.url()).pathname === '/api/session/login') {
+          loginRequests.push(request.url());
+        }
+      });
+      await page.goto(`${webUrl}/admin/login`);
+
+      // El navegador acepta este valor como type="email"; solo el regex lo rechaza.
+      const email = page.getByLabel('Correo del propietario');
+      await email.fill('hola@turestaurante');
+      await page.getByLabel('Contraseña').fill(ownerPassword);
+      await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
+
+      await expect(
+        page.getByText('Escribe un correo válido, por ejemplo nombre@dominio.com.'),
+      ).toBeVisible();
+      await expect(email).toHaveAttribute('aria-invalid', 'true');
+      expect(loginRequests).toHaveLength(0);
+      await expect(page).toHaveURL(`${webUrl}/admin/login`);
+
+      await email.fill(ownerEmail);
+      await page.getByRole('button', { name: 'Entrar a mi restaurante' }).click();
+      await expect(page).toHaveURL(`${webUrl}/admin`);
+      expect(loginRequests).toHaveLength(1);
+    },
+  );
+
+  test(
+    'una contraseña anterior a la regla de complejidad avisa pero no impide entrar',
+    { tag: '@movil' },
+    async ({ page }) => {
+      // Creada directamente en la base: el backend ya no emitiría esta contraseña,
+      // pero una cuenta existente debe seguir pudiendo entrar con ella.
+      const legacyOwner = await createE2EOwnerFixture('clave-heredada');
+      try {
+        const loginRequests: string[] = [];
+        page.on('request', (request) => {
+          if (new URL(request.url()).pathname === '/api/session/login') {
+            loginRequests.push(request.url());
+          }
+        });
+        await page.goto(`${webUrl}/admin/login`);
+
+        await page.getByLabel('Correo del propietario').fill(legacyOwner.email);
+        await page.getByLabel('Contraseña').fill(legacyOwner.password);
+        const submit = page.getByRole('button', { name: 'Entrar a mi restaurante' });
+        await submit.click();
+
+        await expect(page.getByText('Recomendamos mayúscula, minúscula y número.')).toBeVisible();
+        expect(loginRequests).toHaveLength(0);
+        await expect(page).toHaveURL(`${webUrl}/admin/login`);
+
+        await submit.click();
+        await expect(page).toHaveURL(`${webUrl}/admin`);
+        expect(loginRequests).toHaveLength(1);
+      } finally {
+        await removeE2EOwnerFixture(legacyOwner.id);
+      }
     },
   );
 

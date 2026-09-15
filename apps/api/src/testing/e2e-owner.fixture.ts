@@ -9,13 +9,18 @@ export interface E2EOwnerFixture {
   password: string;
 }
 
-export async function createE2EOwnerFixture(): Promise<E2EOwnerFixture> {
+/**
+ * Writes the owner straight through Prisma, bypassing the password policy, so a
+ * caller can also reproduce an account created before a rule existed.
+ */
+export async function createE2EOwnerFixture(
+  password = 'OwnerPass-1',
+): Promise<E2EOwnerFixture> {
   assertSafeTestEnvironment();
   const prisma = createPrismaClient();
   try {
     const suffix = `${Date.now()}-${crypto.randomUUID()}`;
     const email = `auth-owner-${suffix}@example.test`;
-    const password = 'OwnerPass-1';
     const passwordHash = await new Argon2PasswordHasher().hash(password);
     const owner = await prisma.owner.create({
       data: { email, passwordHash },

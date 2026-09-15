@@ -83,6 +83,111 @@ describe('OwnerLoginForm', () => {
     expect(password).toHaveAttribute('type', 'password');
   });
 
+  it('no envía un correo con formato inválido y explica cómo escribirlo', () => {
+    global.fetch = jest.fn();
+    render(<OwnerLoginForm />);
+
+    fireEvent.change(screen.getByLabelText('Correo del propietario'), {
+      target: { value: 'hola@turestaurante' },
+    });
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'OwnerPass-1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a mi restaurante' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Escribe un correo válido, por ejemplo nombre@dominio.com.',
+    );
+    expect(screen.getByLabelText('Correo del propietario')).toHaveAttribute('aria-invalid', 'true');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('revisa el correo al pasar a la contraseña y retira el aviso en cuanto se corrige', () => {
+    render(<OwnerLoginForm />);
+    const email = screen.getByLabelText('Correo del propietario');
+
+    fireEvent.change(email, { target: { value: 'sin-arroba' } });
+    fireEvent.blur(email, { relatedTarget: screen.getByLabelText('Contraseña') });
+    expect(screen.getByRole('alert')).toHaveTextContent('Escribe un correo válido');
+
+    fireEvent.change(email, { target: { value: 'hola@turestaurante.pe' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(email).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('no desplaza lo que se está pulsando: salir del correo hacia un botón no añade avisos', () => {
+    render(<OwnerLoginForm />);
+    const email = screen.getByLabelText('Correo del propietario');
+
+    fireEvent.change(email, { target: { value: 'sin-arroba' } });
+    fireEvent.blur(email, {
+      relatedTarget: screen.getByRole('button', { name: 'Entrar a mi restaurante' }),
+    });
+    fireEvent.blur(email, { relatedTarget: screen.getByRole('button', { name: 'Mostrar' }) });
+    // Safari no enfoca los botones al pulsarlos: el foco no va a ningún elemento.
+    fireEvent.blur(email, { relatedTarget: null });
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('pide la contraseña cuando se envía vacía y retira el aviso al escribirla', () => {
+    global.fetch = jest.fn();
+    render(<OwnerLoginForm />);
+
+    fireEvent.change(screen.getByLabelText('Correo del propietario'), {
+      target: { value: 'hola@turestaurante.pe' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar a mi restaurante' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Escribe tu contraseña.');
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: 'OwnerPass-1' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('recomienda una contraseña más fuerte sin impedir entrar al insistir', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 });
+    render(<OwnerLoginForm />);
+
+    fireEvent.change(screen.getByLabelText('Correo del propietario'), {
+      target: { value: 'hola@turestaurante.pe' },
+    });
+    fireEvent.change(screen.getByLabelText('Contraseña'), {
+      target: { value: 'contraseña-antigua' },
+    });
+    const submit = screen.getByRole('button', { name: 'Entrar a mi restaurante' });
+    fireEvent.click(submit);
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Recomendamos mayúscula, minúscula y número.',
+    );
+    expect(screen.getByLabelText('Contraseña')).not.toHaveAttribute('aria-invalid');
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    fireEvent.click(submit);
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/admin'));
+  });
+
+  it('vuelve a avisar si se cambia por otra contraseña que tampoco cumple', () => {
+    global.fetch = jest.fn();
+    render(<OwnerLoginForm />);
+
+    fireEvent.change(screen.getByLabelText('Correo del propietario'), {
+      target: { value: 'hola@turestaurante.pe' },
+    });
+    const password = screen.getByLabelText('Contraseña');
+    const submit = screen.getByRole('button', { name: 'Entrar a mi restaurante' });
+
+    fireEvent.change(password, { target: { value: 'primera-debil' } });
+    fireEvent.click(submit);
+    fireEvent.change(password, { target: { value: 'segunda-debil' } });
+    fireEvent.click(submit);
+
+    expect(screen.getByRole('status')).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
   it('evita envíos repetidos mientras la petición está en curso', async () => {
     global.fetch = jest.fn().mockReturnValue(new Promise(() => undefined));
     render(<OwnerLoginForm />);

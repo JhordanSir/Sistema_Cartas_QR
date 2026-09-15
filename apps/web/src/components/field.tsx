@@ -34,9 +34,9 @@ export function Field({ children, className, hint, label }: FieldProps) {
   );
 }
 
-export function FormError({ children }: { children: ReactNode }) {
+export function FormError({ children, id }: { children: ReactNode; id?: string }) {
   return (
-    <p className="m-0 text-[13px]/relaxed text-danger" role="alert">
+    <p className="m-0 text-[13px]/relaxed text-danger" id={id} role="alert">
       {children}
     </p>
   );
