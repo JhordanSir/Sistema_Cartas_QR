@@ -13,7 +13,7 @@ export interface ApiErrorParamMap {
   CATEGORY_LAYOUT_INVALID: undefined;
   CATEGORY_NOT_FOUND: undefined;
   CURRENT_PASSWORD_INVALID: undefined;
-  DELETION_CONFIRMATION_MISMATCH: { confirmation: string };
+  DELETION_CONFIRMATION_MISMATCH: { slug: string };
   FIELD_INVALID: {
     field:
       | "categoryId"

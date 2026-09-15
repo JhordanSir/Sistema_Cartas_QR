@@ -14,7 +14,7 @@ const EXAMPLES: { [Code in ApiErrorCode]: Extract<ApiProblem, { code: Code }> } 
   CURRENT_PASSWORD_INVALID: { code: 'CURRENT_PASSWORD_INVALID' },
   DELETION_CONFIRMATION_MISMATCH: {
     code: 'DELETION_CONFIRMATION_MISMATCH',
-    params: { confirmation: 'ELIMINAR luna' },
+    params: { slug: 'luna' },
   },
   FIELD_INVALID: { code: 'FIELD_INVALID', params: { field: 'productName' } },
   FIELD_PRICE_INVALID: { code: 'FIELD_PRICE_INVALID', params: { field: 'variantPrice' } },

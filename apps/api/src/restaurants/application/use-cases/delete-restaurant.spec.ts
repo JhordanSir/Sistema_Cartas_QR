@@ -68,8 +68,34 @@ describe('DeleteRestaurant', () => {
       }),
     ).rejects.toMatchObject({
       code: 'INVALID_CONFIRMATION',
-      problem: { code: 'DELETION_CONFIRMATION_MISMATCH' },
+      problem: { code: 'DELETION_CONFIRMATION_MISMATCH', params: { slug: 'cevicheria-sur' } },
     });
+    expect(repo.scheduleDeletion).not.toHaveBeenCalled();
+  });
+
+  it('accepts the English phrase the backoffice asks for in English', async () => {
+    await expect(
+      useCase.execute({
+        acknowledgePermanentDeletion: true,
+        confirmationText: 'DELETE cevicheria-sur',
+        id: RESTAURANT_ID,
+        principal: ADMIN,
+      }),
+    ).resolves.toEqual({ assets: 'deleted', deleted: true });
+  });
+
+  it.each([
+    ['another restaurant', 'ELIMINAR otro-local'],
+    ['a lowercase verb', 'delete cevicheria-sur'],
+  ])('rejects a phrase naming %s', async (_label, confirmationText) => {
+    await expect(
+      useCase.execute({
+        acknowledgePermanentDeletion: true,
+        confirmationText,
+        id: RESTAURANT_ID,
+        principal: ADMIN,
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_CONFIRMATION' });
     expect(repo.scheduleDeletion).not.toHaveBeenCalled();
   });
 

@@ -1,4 +1,4 @@
-import type { ApiErrorCode, ApiErrorParamMap } from '@sirio/shared';
+import { type ApiErrorCode, type ApiErrorParamMap, deletionConfirmationPhrase } from '@sirio/shared';
 
 import type { Locale } from '../locale';
 
@@ -118,8 +118,8 @@ export const apiErrorCopy: Record<Locale, ApiErrorCopy> = {
       CATEGORY_LAYOUT_INVALID: 'Choose list or cards for the section.',
       CATEGORY_NOT_FOUND: "We couldn't find that section.",
       CURRENT_PASSWORD_INVALID: 'Your current password is incorrect.',
-      DELETION_CONFIRMATION_MISMATCH: ({ confirmation }) =>
-        `Type ${confirmation} and confirm that the deletion is permanent.`,
+      DELETION_CONFIRMATION_MISMATCH: ({ slug }) =>
+        `Type ${deletionConfirmationPhrase(slug, 'en')} and confirm that the deletion is permanent.`,
       FIELD_INVALID: ({ field }) => `The ${EN_MENU_FIELDS[field]} isn't valid.`,
       FIELD_PRICE_INVALID: ({ field }) => `The ${EN_PRICE_FIELDS[field]} isn't a valid price.`,
       INVALID_CREDENTIALS: 'The email or password is incorrect.',
@@ -187,8 +187,8 @@ export const apiErrorCopy: Record<Locale, ApiErrorCopy> = {
       CATEGORY_LAYOUT_INVALID: 'Elige lista o tarjetas para la sección.',
       CATEGORY_NOT_FOUND: 'No encontramos esa sección.',
       CURRENT_PASSWORD_INVALID: 'La contraseña actual no es correcta.',
-      DELETION_CONFIRMATION_MISMATCH: ({ confirmation }) =>
-        `Escribe ${confirmation} y confirma que la eliminación es definitiva.`,
+      DELETION_CONFIRMATION_MISMATCH: ({ slug }) =>
+        `Escribe ${deletionConfirmationPhrase(slug, 'es')} y confirma que la eliminación es definitiva.`,
       FIELD_INVALID: ({ field }) => `El campo ${ES_MENU_FIELDS[field]} no es válido.`,
       FIELD_PRICE_INVALID: ({ field }) => `El campo ${ES_PRICE_FIELDS[field]} no es un precio válido.`,
       INVALID_CREDENTIALS: 'El correo o la contraseña no son correctos.',

@@ -142,7 +142,7 @@ Endpoints de administración bajo `/api/backoffice/restaurants`:
 - `GET /`: listado, búsqueda y filtro por estado.
 - `POST /`: alta de restaurante y dueño.
 - `PATCH /:id/status`: deshabilitar o reactivar sin bloquear el panel del dueño.
-- `DELETE /:id`: eliminación definitiva; exige `acknowledgePermanentDeletion: true` y el texto exacto `ELIMINAR <slug>`.
+- `DELETE /:id`: eliminación definitiva; exige `acknowledgePermanentDeletion: true` y el texto exacto `ELIMINAR <slug>` o `DELETE <slug>` (el backoffice pide el del idioma de la interfaz).
 
 `GET /api/restaurants/public/:slug` devuelve solo restaurantes habilitados con sus categorías y productos disponibles, junto con los datos de contacto que el dueño haya cargado: `contactPhone`, `whatsapp`, `address`, `instagramUrl`, `facebookUrl`, `tiktokUrl` y `hasLogo`. `GET /api/restaurants/public/:slug/logo` sirve el logo con la misma regla: un restaurante deshabilitado deja de exponerlo en el mismo instante en que su carta responde 404. La ruta web `/{slug}` muestra la carta publicada y responde con la página 404 cuando el local está deshabilitado o eliminado.
 

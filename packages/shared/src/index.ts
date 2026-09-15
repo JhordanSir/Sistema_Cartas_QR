@@ -2,6 +2,10 @@ export { isApiErrorCode } from "./api-errors.js";
 
 export type { ApiErrorCode, ApiErrorParamMap, ApiProblem } from "./api-errors.js";
 
+export { deletionConfirmationPhrase, isDeletionConfirmed } from "./deletion-confirmation.js";
+
+export type { DeletionConfirmationLanguage } from "./deletion-confirmation.js";
+
 export {
   isValidEmailFormat,
   meetsPasswordPolicy

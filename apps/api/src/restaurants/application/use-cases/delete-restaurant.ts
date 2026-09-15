@@ -1,3 +1,5 @@
+import { deletionConfirmationPhrase, isDeletionConfirmed } from '@sirio/shared';
+
 import type { AuthPrincipal } from '../../../auth/domain/auth.types.js';
 import { RestaurantApplicationError } from '../../domain/restaurant.errors.js';
 import type { RestaurantRepository } from '../ports/restaurant.repository.js';
@@ -32,18 +34,17 @@ export class DeleteRestaurant {
       );
     }
 
-    const expectedConfirmation = `ELIMINAR ${restaurant.slug}`;
     if (
       !command.acknowledgePermanentDeletion ||
-      command.confirmationText !== expectedConfirmation
+      !isDeletionConfirmed(command.confirmationText, restaurant.slug)
     ) {
       throw new RestaurantApplicationError(
         'INVALID_CONFIRMATION',
-        `Type ${expectedConfirmation} and acknowledge the irreversible deletion`,
+        `Type ${deletionConfirmationPhrase(restaurant.slug, 'es')} or ${deletionConfirmationPhrase(restaurant.slug, 'en')} and acknowledge the irreversible deletion`,
         {
           problem: {
             code: 'DELETION_CONFIRMATION_MISMATCH',
-            params: { confirmation: expectedConfirmation },
+            params: { slug: restaurant.slug },
           },
         },
       );
