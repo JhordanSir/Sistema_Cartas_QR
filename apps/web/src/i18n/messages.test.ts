@@ -1,3 +1,4 @@
+import { backofficeCopy } from './messages/backoffice';
 import { landingCopy } from './messages/landing';
 import { loginCopy } from './messages/login';
 import { ownerHelpCopy } from './messages/owner-help';
@@ -9,6 +10,7 @@ import { shellCopy } from './messages/shell';
 import { statisticsCopy } from './messages/statistics';
 
 const TABLES = {
+  backoffice: backofficeCopy,
   landing: landingCopy,
   login: loginCopy,
   ownerHelp: ownerHelpCopy,

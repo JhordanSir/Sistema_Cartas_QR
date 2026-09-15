@@ -1,4 +1,4 @@
-import { formatCount, formatCurrency, formatNumber } from './format';
+import { formatCount, formatCurrency, formatDate, formatNumber } from './format';
 
 // Intl separates the symbol with a no-break space; compare with a plain one.
 const plain = (text: string) => text.replace(/ /g, ' ');
@@ -15,6 +15,20 @@ describe('formatCurrency', () => {
   it('accepts the decimal strings the API returns', () => {
     expect(plain(formatCurrency('18.5', 'es'))).toBe('S/ 18.50');
     expect(plain(formatCurrency('1234.5', 'en'))).toBe('PEN 1,234.50');
+  });
+});
+
+describe('formatDate', () => {
+  // Midday UTC falls on the same calendar day in any time zone from UTC−11 to UTC+11.
+  const midday = '2026-09-14T12:00:00.000Z';
+
+  it('writes the month in the interface language', () => {
+    expect(formatDate(midday, 'en')).toBe('Sep 14, 2026');
+    expect(formatDate(midday, 'es')).toMatch(/^14 set\.? 2026$/);
+  });
+
+  it('accepts a Date as well as the ISO strings the API returns', () => {
+    expect(formatDate(new Date(midday), 'en')).toBe('Sep 14, 2026');
   });
 });
 

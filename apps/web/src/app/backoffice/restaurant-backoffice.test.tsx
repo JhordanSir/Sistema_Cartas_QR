@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+
+import { LocaleProvider } from '@/i18n/locale-provider';
 
 import { RestaurantBackoffice } from './restaurant-backoffice';
 
@@ -46,6 +48,10 @@ describe('RestaurantBackoffice', () => {
       'minlength',
       '8',
     );
+    // La pista describe la misma regla que exige la API desde la fase 1.
+    expect(
+      screen.getByText('Mínimo 8 caracteres, con mayúscula, minúscula y número.'),
+    ).toBeVisible();
   });
 
   it('muestra los estados y folios de los locales visibles en el registro', async () => {
@@ -131,6 +137,48 @@ describe('RestaurantBackoffice', () => {
       await screen.findByRole('heading', { name: 'Eliminar Casa Oliva' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Eliminar definitivamente' })).toBeDisabled();
+  });
+
+  it('en inglés traduce el registro y pide la frase DELETE, no la del otro idioma', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({
+        items: [restaurant('Casa Oliva', 'ENABLED')],
+        page: 1,
+        pageSize: 20,
+        total: 1,
+      }),
+      ok: true,
+      status: 200,
+    } as unknown as Response);
+
+    const { container } = render(
+      <LocaleProvider locale="en">
+        <RestaurantBackoffice />
+      </LocaleProvider>,
+    );
+    await screen.findByText('Casa Oliva');
+
+    expect(screen.getByRole('heading', { name: 'Restaurants', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText('1 restaurant in this search')).toBeVisible();
+    expect(screen.getByText('1 in service')).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Restaurants' })).toHaveAttribute('aria-current', 'page');
+
+    const row = container.querySelector<HTMLElement>('details[data-testid="restaurant-row"]');
+    if (!row) throw new Error('Restaurant row was not rendered');
+    expect(within(row).getByText('Enabled')).toBeInTheDocument();
+    expect(within(row).getByText('Sep 1, 2026')).toBeInTheDocument();
+    expect(within(row).getByRole('link', { name: /View statistics/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Casa Oliva' }));
+    expect(await screen.findByRole('heading', { name: 'Delete Casa Oliva' })).toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: 'Delete permanently' });
+    const phrase = screen.getByLabelText(/Type DELETE casa-oliva/);
+
+    fireEvent.click(screen.getByLabelText('I understand this deletion cannot be undone.'));
+    fireEvent.change(phrase, { target: { value: 'ELIMINAR casa-oliva' } });
+    expect(submit).toBeDisabled();
+    fireEvent.change(phrase, { target: { value: 'DELETE casa-oliva' } });
+    expect(submit).toBeEnabled();
   });
 });
 

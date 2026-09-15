@@ -8,6 +8,13 @@ export function formatCurrency(amount: number | string, locale: Locale): string 
   }).format(Number(amount));
 }
 
+/** A calendar date in the interface language, in the viewer's own time zone. */
+export function formatDate(value: Date | string, locale: Locale): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { dateStyle: 'medium' }).format(
+    new Date(value),
+  );
+}
+
 export function formatNumber(value: number, locale: Locale): string {
   return new Intl.NumberFormat(INTL_LOCALE[locale]).format(value);
 }

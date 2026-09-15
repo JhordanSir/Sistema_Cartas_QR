@@ -1,5 +1,6 @@
 'use client';
 
+import { deletionConfirmationPhrase } from '@sirio/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -10,8 +11,10 @@ import { Button, InlineAction } from '@/components/button';
 import { Field, FormError, fieldControl } from '@/components/field';
 import { Card, ErrorBanner, Kicker, Notice, StatusPill } from '@/components/surfaces';
 import { readApiError } from '@/i18n/api-errors';
-import { useCopy } from '@/i18n/locale-provider';
+import { formatDate } from '@/i18n/format';
+import { useCopy, useLocale } from '@/i18n/locale-provider';
 import { apiErrorCopy } from '@/i18n/messages/api-errors';
+import { backofficeCopy } from '@/i18n/messages/backoffice';
 import type {
   PaginatedRestaurants,
   RestaurantStatus,
@@ -22,6 +25,8 @@ import { BackofficeNavigation } from './backoffice-navigation';
 
 const PAGE_STEP = 20;
 
+const STATUS_FILTERS: ReadonlyArray<'' | RestaurantStatus> = ['', 'ENABLED', 'DISABLED'];
+
 const EMPTY_LIST: PaginatedRestaurants = {
   items: [],
   page: 1,
@@ -31,6 +36,7 @@ const EMPTY_LIST: PaginatedRestaurants = {
 
 export function RestaurantBackoffice() {
   const router = useRouter();
+  const copy = useCopy(backofficeCopy);
   const errorCopy = useCopy(apiErrorCopy);
   const [data, setData] = useState(EMPTY_LIST);
   const [loading, setLoading] = useState(true);
@@ -57,13 +63,13 @@ export function RestaurantBackoffice() {
       return;
     }
     if (!response.ok) {
-      setError('No pudimos cargar los restaurantes. Vuelve a intentarlo.');
+      setError(copy.notices.loadError);
       setLoading(false);
       return;
     }
     setData((await response.json()) as PaginatedRestaurants);
     setLoading(false);
-  }, [query, router, status, visible]);
+  }, [copy, query, router, status, visible]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadRestaurants(), 180);
@@ -92,7 +98,7 @@ export function RestaurantBackoffice() {
     const created = (await response.json()) as RestaurantSummary;
     formElement.reset();
     setShowCreate(false);
-    setNotice(`${created.name} fue dado de alta con la URL /${created.slug}.`);
+    setNotice(copy.notices.created(created.name, created.slug));
     await loadRestaurants();
   }
 
@@ -108,13 +114,13 @@ export function RestaurantBackoffice() {
       },
     );
     if (!response.ok) {
-      setError('No pudimos cambiar el estado del restaurante.');
+      setError(copy.notices.statusError);
       return;
     }
     setNotice(
       nextStatus === 'ENABLED'
-        ? `${restaurant.name} volvió a estar visible.`
-        : `${restaurant.name} dejó de estar visible públicamente.`,
+        ? copy.notices.enabled(restaurant.name)
+        : copy.notices.disabled(restaurant.name),
     );
     await loadRestaurants();
   }
@@ -126,15 +132,13 @@ export function RestaurantBackoffice() {
           actions={
             <Button className="max-md:w-full" onClick={() => setShowCreate((value) => !value)}>
               <span aria-hidden="true">＋</span>
-              {showCreate ? 'Cerrar alta' : 'Nuevo restaurante'}
+              {showCreate ? copy.header.close : copy.header.open}
             </Button>
           }
         >
-          <Kicker>Backoffice</Kicker>
-          <PageTitle>Restaurantes</PageTitle>
-          <SupportingCopy>
-            Altas, visibilidad pública y bajas definitivas en un solo lugar.
-          </SupportingCopy>
+          <Kicker>{copy.header.kicker}</Kicker>
+          <PageTitle>{copy.header.title}</PageTitle>
+          <SupportingCopy>{copy.header.lede}</SupportingCopy>
         </WorkspaceHeader>
 
         {showCreate ? <CreateRestaurantPanel onSubmit={createRestaurant} /> : null}
@@ -144,34 +148,34 @@ export function RestaurantBackoffice() {
         <Card aria-labelledby="registry-title" className="overflow-hidden">
           <div className="grid gap-5 border-b border-line p-5 sm:p-6 lg:grid-cols-[minmax(13.75rem,0.8fr)_minmax(0,1.2fr)] lg:items-end lg:gap-8">
             <div>
-              <Kicker tone="copper">Registro operativo</Kicker>
+              <Kicker tone="copper">{copy.registry.kicker}</Kicker>
               <h2
                 className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]"
                 id="registry-title"
               >
-                Registro de locales
+                {copy.registry.title}
               </h2>
               <p className="m-0 text-sm text-ink-muted tabular-nums">
-                {data.total} {data.total === 1 ? 'restaurante' : 'restaurantes'} en esta búsqueda
+                {copy.registry.total(data.total)}
               </p>
             </div>
             <div className="grid min-w-0 gap-3 lg:justify-items-end">
               <div
-                aria-label="Resumen de esta vista"
+                aria-label={copy.registry.summary}
                 className="flex items-center gap-3 text-[10px] font-extrabold tracking-[0.06em] uppercase"
               >
                 <span className="inline-flex items-center gap-1.5 text-olive">
                   <i aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-                  {visibleCount} en servicio
+                  {copy.registry.inService(visibleCount)}
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-ink-muted">
                   <i aria-hidden="true" className="size-1.5 rounded-full bg-current" />
-                  {pausedCount} pausados
+                  {copy.registry.paused(pausedCount)}
                 </span>
               </div>
               <div className="grid w-full gap-2 sm:grid-cols-[minmax(0,1fr)_11rem] lg:w-auto">
                 <label className="flex min-h-11 items-center gap-2 rounded-lg bg-control px-3">
-                  <span className="sr-only">Buscar restaurante</span>
+                  <span className="sr-only">{copy.registry.search}</span>
                   <span aria-hidden="true" className="text-ink-muted">
                     ⌕
                   </span>
@@ -182,13 +186,13 @@ export function RestaurantBackoffice() {
                       setQuery(event.target.value);
                       setVisible(PAGE_STEP);
                     }}
-                    placeholder="Buscar nombre, slug o correo"
+                    placeholder={copy.registry.searchPlaceholder}
                     type="search"
                     value={query}
                   />
                 </label>
                 <label>
-                  <span className="sr-only">Filtrar por estado</span>
+                  <span className="sr-only">{copy.registry.filter}</span>
                   <select
                     className={fieldControl}
                     onChange={(event) => {
@@ -197,9 +201,11 @@ export function RestaurantBackoffice() {
                     }}
                     value={status}
                   >
-                    <option value="">Todos los estados</option>
-                    <option value="ENABLED">Habilitados</option>
-                    <option value="DISABLED">Deshabilitados</option>
+                    {STATUS_FILTERS.map((option) => (
+                      <option key={option} value={option}>
+                        {copy.registry.statuses[option]}
+                      </option>
+                    ))}
                   </select>
                 </label>
               </div>
@@ -207,7 +213,7 @@ export function RestaurantBackoffice() {
           </div>
 
           {loading && data.items.length === 0 ? (
-            <div aria-label="Cargando restaurantes" className="grid" role="status">
+            <div aria-label={copy.registry.loading} className="grid" role="status">
               {[0, 1, 2].map((item) => (
                 <span className="h-16 animate-pulse border-b border-line bg-ink/3" key={item} />
               ))}
@@ -222,11 +228,9 @@ export function RestaurantBackoffice() {
                 S/
               </span>
               <h3 className="mt-4 mb-1.5 font-display text-xl font-semibold tracking-tight">
-                No hay restaurantes en esta vista
+                {copy.registry.empty.title}
               </h3>
-              <p className="m-0 text-sm text-ink-soft">
-                Cambia los filtros o crea el primer registro.
-              </p>
+              <p className="m-0 text-sm text-ink-soft">{copy.registry.empty.body}</p>
             </div>
           ) : null}
           {data.items.length > 0 ? (
@@ -250,10 +254,12 @@ export function RestaurantBackoffice() {
                 onClick={() => setVisible((current) => current + PAGE_STEP)}
                 tone="secondary"
               >
-                {loading ? 'Cargando…' : `Cargar ${Math.min(remaining, PAGE_STEP)} más`}
+                {loading
+                  ? copy.registry.loadingMore
+                  : copy.registry.loadMore(Math.min(remaining, PAGE_STEP))}
               </Button>
               <p className="mt-2 mb-0 text-[11px] text-ink-muted tabular-nums">
-                Mostrando {data.items.length} de {data.total}
+                {copy.registry.showing(data.items.length, data.total)}
               </p>
             </div>
           ) : null}
@@ -265,7 +271,7 @@ export function RestaurantBackoffice() {
         onClose={() => setDeleting(null)}
         onDeleted={async (restaurant) => {
           setDeleting(null);
-          setNotice(`${restaurant.name} fue eliminado definitivamente.`);
+          setNotice(copy.notices.deleted(restaurant.name));
           await loadRestaurants();
         }}
         restaurant={deleting}
@@ -279,28 +285,27 @@ function CreateRestaurantPanel({
 }: {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const copy = useCopy(backofficeCopy).create;
   return (
     <section
       aria-labelledby="create-title"
       className="mb-6 grid gap-6 rounded-xl border-l-4 border-l-copper bg-paper-raised p-6 shadow-soft sm:p-7 lg:grid-cols-[minmax(13.75rem,0.7fr)_minmax(0,1.7fr)] lg:gap-8"
     >
       <div>
-        <Kicker tone="copper">Nueva alta</Kicker>
+        <Kicker tone="copper">{copy.kicker}</Kicker>
         <h2
           className="my-1.5 font-display text-2xl font-semibold tracking-[-0.025em]"
           id="create-title"
         >
-          Abre la ficha del restaurante
+          {copy.title}
         </h2>
-        <p className="m-0 text-sm/normal text-ink-soft">
-          El slug se asignará automáticamente y no cambiará después.
-        </p>
+        <p className="m-0 text-sm/normal text-ink-soft">{copy.body}</p>
       </div>
       <form className="grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
-        <Field className="sm:col-span-2" label="Nombre del restaurante">
+        <Field className="sm:col-span-2" label={copy.name}>
           <input className={fieldControl} maxLength={160} minLength={2} name="name" required />
         </Field>
-        <Field label="Correo del dueño">
+        <Field label={copy.email}>
           <input
             autoComplete="email"
             className={fieldControl}
@@ -311,7 +316,7 @@ function CreateRestaurantPanel({
             type="email"
           />
         </Field>
-        <Field hint="Mínimo 8 caracteres." label="Contraseña inicial">
+        <Field hint={copy.passwordHint} label={copy.password}>
           <input
             autoComplete="new-password"
             className={fieldControl}
@@ -324,7 +329,7 @@ function CreateRestaurantPanel({
         </Field>
         <div className="sm:col-span-2 sm:justify-self-end">
           <Button className="max-sm:w-full" type="submit">
-            Crear restaurante
+            {copy.submit}
           </Button>
         </div>
       </form>
@@ -351,6 +356,8 @@ function RestaurantRow({
   onStatus: () => void;
   restaurant: RestaurantSummary;
 }) {
+  const locale = useLocale();
+  const copy = useCopy(backofficeCopy).row;
   const [actionsOpen, setActionsOpen] = useState(false);
   const enabled = restaurant.status === 'ENABLED';
   const initial = restaurant.name.trim().charAt(0).toLocaleUpperCase('es');
@@ -375,7 +382,7 @@ function RestaurantRow({
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <strong className="text-[15px] font-extrabold">{restaurant.name}</strong>
             <StatusPill tone={enabled ? 'positive' : 'muted'}>
-              {enabled ? 'Habilitado' : 'Deshabilitado'}
+              {copy.status[restaurant.status]}
             </StatusPill>
           </span>
           <span className="mt-0.5 block truncate text-xs text-ink-muted">
@@ -394,7 +401,7 @@ function RestaurantRow({
         <dl className="grid gap-3 sm:grid-cols-2">
           <div className="grid gap-1">
             <dt className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">
-              Folio
+              {copy.folio}
             </dt>
             <dd className="m-0 text-[13px] font-semibold tabular-nums">
               {String(folio).padStart(3, '0')}
@@ -402,12 +409,10 @@ function RestaurantRow({
           </div>
           <div className="grid gap-1">
             <dt className="text-[10px] font-bold tracking-[0.1em] text-ink-muted uppercase">
-              Alta
+              {copy.created}
             </dt>
             <dd className="m-0 text-[13px] font-semibold tabular-nums">
-              {new Intl.DateTimeFormat('es-PE', { dateStyle: 'medium' }).format(
-                new Date(restaurant.createdAt),
-              )}
+              {formatDate(restaurant.createdAt, locale)}
             </dd>
           </div>
         </dl>
@@ -420,7 +425,7 @@ function RestaurantRow({
             rel="noreferrer"
             target="_blank"
           >
-            Abrir carta <span aria-hidden="true">↗</span>
+            {copy.openMenu} <span aria-hidden="true">↗</span>
             <small className="font-mono text-[10px] font-semibold text-ink-muted">
               /{restaurant.slug}
             </small>
@@ -429,35 +434,35 @@ function RestaurantRow({
             className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-olive no-underline hover:underline"
             href={`/backoffice/statistics?restaurante=${encodeURIComponent(restaurant.id)}`}
           >
-            Ver estadísticas <span aria-hidden="true">→</span>
+            {copy.statistics} <span aria-hidden="true">→</span>
           </Link>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <Button className="max-sm:flex-1" onClick={onStatus} tone="secondary">
-            {enabled ? 'Deshabilitar' : 'Reactivar'}
+            {enabled ? copy.disable : copy.reactivate}
           </Button>
           <InlineAction
-            aria-label={`Acciones de ${restaurant.name}`}
+            aria-label={copy.actionsFor(restaurant.name)}
             className="lg:hidden"
             onClick={() => setActionsOpen(true)}
           >
-            Acciones ⌄
+            {copy.actions}
           </InlineAction>
           <ActionSheet
-            label={`Acciones de ${restaurant.name}`}
+            label={copy.actionsFor(restaurant.name)}
             onClose={() => setActionsOpen(false)}
             open={actionsOpen}
           >
             <InlineAction
-              aria-label={`Eliminar ${restaurant.name}`}
+              aria-label={copy.deleteFor(restaurant.name)}
               danger
               onClick={() => {
                 setActionsOpen(false);
                 onDelete();
               }}
             >
-              Eliminar definitivamente
+              {copy.deletePermanently}
             </InlineAction>
           </ActionSheet>
         </div>
@@ -479,8 +484,12 @@ function DeleteRestaurantDialog({
   const [confirmation, setConfirmation] = useState('');
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const locale = useLocale();
+  const copy = useCopy(backofficeCopy).deletion;
   const errorCopy = useCopy(apiErrorCopy);
-  const expected = restaurant ? `ELIMINAR ${restaurant.slug}` : '';
+  // Only the phrase of the language on screen enables the button, even though the API
+  // accepts both: what the administrator reads is what they are asked to type.
+  const expected = restaurant ? deletionConfirmationPhrase(restaurant.slug, locale) : '';
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -522,17 +531,14 @@ function DeleteRestaurantDialog({
         >
           !
         </span>
-        <Kicker tone="danger">Acción irreversible</Kicker>
+        <Kicker tone="danger">{copy.kicker}</Kicker>
         <h2 className="-mt-3 mb-0 font-display text-2xl font-semibold tracking-[-0.025em] sm:text-3xl">
-          Eliminar {restaurant.name}
+          {copy.title(restaurant.name)}
         </h2>
-        <p className="m-0 text-sm/normal text-ink-soft">
-          Se borrarán el restaurante, su cuenta sin otros locales, estadísticas y archivos
-          asociados.
-        </p>
+        <p className="m-0 text-sm/normal text-ink-soft">{copy.body}</p>
         <label className="grid gap-2">
           <span className="text-[13px] font-bold text-ink-soft">
-            Escribe <strong>{expected}</strong>
+            {copy.type} <strong>{expected}</strong>
           </span>
           <input
             className={fieldControl}
@@ -547,15 +553,15 @@ function DeleteRestaurantDialog({
             onChange={(event) => setAcknowledged(event.target.checked)}
             type="checkbox"
           />
-          <span>Entiendo que esta eliminación no se puede deshacer.</span>
+          <span>{copy.acknowledge}</span>
         </label>
         {error ? <FormError>{error}</FormError> : null}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button onClick={() => dialogRef.current?.close()} tone="secondary">
-            Cancelar
+            {copy.cancel}
           </Button>
           <Button disabled={!acknowledged || confirmation !== expected} tone="danger" type="submit">
-            Eliminar definitivamente
+            {copy.submit}
           </Button>
         </div>
       </form>
