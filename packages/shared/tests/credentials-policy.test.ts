@@ -28,7 +28,10 @@ describe("meetsPasswordPolicy", () => {
   test.each([
     ["the minimum length", "Abcdefg1"],
     ["symbols alongside the required characters", "OwnerPass-1!"],
-    ["the maximum length", `${"a".repeat(126)}A1`]
+    ["the maximum length", `${"a".repeat(126)}A1`],
+    ["an accented uppercase letter as the only capital", "Ñandú2024"],
+    ["an accented lowercase letter as the only small letter", "ÑANDú2024"],
+    ["a line break inside the password", "Clave\nSegura1"]
   ])("accepts %s", (_label, value) => {
     expect(meetsPasswordPolicy(value)).toBe(true);
   });
@@ -39,7 +42,9 @@ describe("meetsPasswordPolicy", () => {
     ["no uppercase letter", "abcdefg1"],
     ["no lowercase letter", "ABCDEFG1"],
     ["no digit", "Abcdefgh"],
-    ["129 characters", `${"a".repeat(127)}A1`]
+    ["129 characters", `${"a".repeat(127)}A1`],
+    ["accented letters but no uppercase", "ñandú2024éxito"],
+    ["accented letters but no lowercase", "ÑANDÚ2024ÉXITO"]
   ])("rejects %s", (_label, value) => {
     expect(meetsPasswordPolicy(value)).toBe(false);
   });
