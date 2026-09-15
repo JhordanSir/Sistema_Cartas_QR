@@ -12,9 +12,8 @@ import { OwnerNavigation } from '../owner-navigation';
 import { ownerTutorials } from './tutorials';
 
 /**
- * Written walkthroughs. The recorded tutorials were retired because they show the
- * previous interface; the .mp4, .vtt and poster assets stay in public/tutorials for
- * the eventual re-recording.
+ * Written walkthroughs. They replaced the recorded video tutorials, which showed the
+ * previous interface and were removed from the repository.
  *
  * Built on native <details> so it opens without JavaScript and screen readers
  * announce the expanded state for free. The first step is open by default.

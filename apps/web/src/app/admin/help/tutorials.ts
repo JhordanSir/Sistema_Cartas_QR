@@ -1,7 +1,7 @@
 import type { Locale } from '@/i18n/locale';
 
 export interface OwnerTutorial {
-  /** Matches the recorded asset under public/tutorials, kept for the future re-recording. */
+  /** Stable across languages; identifies the guide in lists and tests. */
   id: string;
   description: string;
   destination: { href: string; label: string } | null;
