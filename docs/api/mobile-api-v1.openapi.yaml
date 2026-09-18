@@ -1,0 +1,1624 @@
+openapi: 3.1.0
+info:
+  title: Sirio Cartas — API móvil del dueño
+  version: 1.0.0-draft
+  summary: Contrato de /mobile-api/v1 para la app Android «Sirio Cartas».
+  license:
+    name: Propietario
+    identifier: LicenseRef-Sirio-Proprietary
+  description: |
+    Contrato entre la app Android del dueño y NestJS.
+
+    ## Cómo llega la app a la API
+    nginx publica `/mobile-api/v1/*` y lo reenvía a `api-internal:3001/api/*`. Esa ruta
+    existe solo en nginx (fase 1); el navegador sigue usando el BFF de Next.js con cookies.
+    nginx añade `X-Sirio-Client: mobile` en este prefijo y lo borra en el resto, de modo que
+    el cliente **no puede** declararse móvil por sí mismo.
+
+    `/mobile-api/v1/backoffice/*` responde 404 en nginx: la app es exclusiva del rol `OWNER`.
+
+    ## Estados de cada operación
+    - Sin `x-sirio-estado`: existe hoy en NestJS con este comportamiento.
+    - `x-sirio-estado: propuesto`: se implementa en la fase indicada por `x-sirio-fase`.
+    - `deprecated: true`: se retira en la fase indicada.
+
+    ## Autenticación
+    `Authorization: Bearer <accessToken>`. El access token dura `JWT_ACCESS_TTL` (15 min por
+    defecto). Ante un 401, la app renueva **una sola vez y en serie** con `POST /auth/refresh`:
+    el refresh token rota en cada uso y reutilizar uno ya rotado **revoca la sesión**, así que
+    dos renovaciones concurrentes cierran la sesión del dueño.
+
+    ## Formato de error
+    Es el formato por defecto de NestJS (`HttpError`), no RFC 7807, para mantener un único
+    formato con la web. Con `ValidationPipe` (`whitelist` + `forbidNonWhitelisted`), `message`
+    puede ser un arreglo y cualquier propiedad no declarada responde 400.
+
+    ## Paginación
+    Ninguna colección del dueño está paginada: `GET /owner/restaurants` devuelve los locales de
+    una cuenta (pocos) y la carta está acotada por validación (500 ids por orden, 30 variantes y
+    30 adicionales por producto).
+
+    ## Versionado
+    Un cambio incompatible crea `/mobile-api/v2` en nginx mientras v1 sigue sirviendo a las
+    versiones instaladas. `GET /mobile/config` entrega `minimumAppVersion` para forzar la
+    actualización cuando v1 deje de mantenerse.
+
+    ## Límites de tamaño
+    nginx corta cualquier cuerpo mayor de 16 MB con un 413 **en HTML**, antes de llegar a
+    NestJS. Dentro de ese margen, multer responde 413 JSON cuando un archivo supera su límite.
+servers:
+  - url: https://{dominio}/mobile-api/v1
+    description: Producción (Dokploy → Traefik → nginx)
+    variables:
+      dominio:
+        default: tu-dominio.pe
+        description: Host de PUBLIC_APP_URL.
+  - url: http://{ipLan}:{puerto}/mobile-api/v1
+    description: Desarrollo contra el Compose local con compose.nginx-host.yml
+    variables:
+      ipLan:
+        default: 192.168.15.16
+        description: IP de la PC en la red local; requiere NGINX_BIND_ADDRESS=0.0.0.0.
+      puerto:
+        default: '8080'
+        description: NGINX_PORT.
+security:
+  - BearerAuth: []
+tags:
+  - name: Sesión
+    description: Login, renovación, cierre y cambio de contraseña.
+  - name: Configuración
+    description: Parámetros remotos de la app.
+  - name: Restaurantes
+    description: Locales asociados a la cuenta del dueño.
+  - name: Perfil
+    description: Datos de contacto y logo del restaurante.
+  - name: QR
+    description: Código QR permanente del restaurante.
+  - name: Estadísticas
+    description: Visitas únicas a la carta pública.
+  - name: Carta
+    description: Borrador, plantilla y publicación.
+  - name: Digitalización
+    description: Conversión de fotos de la carta física en borrador.
+  - name: Secciones
+    description: Categorías de la carta.
+  - name: Productos
+    description: Productos, variantes, adicionales, disponibilidad e imagen.
+  - name: Diagnóstico
+    description: Reporte de errores de la app.
+paths:
+  /auth/login:
+    post:
+      tags: [Sesión]
+      summary: Iniciar sesión
+      operationId: login
+      description: |
+        La app envía siempre `role: OWNER`. Desde el prefijo móvil la sesión se crea con
+        cliente `MOBILE` y refresh de 30 días deslizantes (fase 1); hoy dura 7 días.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: duena@restaurante.pe
+              password: contraseña-segura
+              role: OWNER
+      responses:
+        '200':
+          description: Sesión creada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Correo o contraseña incorrectos, o cuenta inactiva (mismo mensaje en ambos casos).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+              example:
+                statusCode: 401
+                message: Invalid email or password
+                error: Unauthorized
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /auth/refresh:
+    post:
+      tags: [Sesión]
+      summary: Renovar tokens
+      operationId: refreshSession
+      description: |
+        Rota el refresh token. La app debe guardar el nuevo par **antes** de reintentar la
+        petición original y serializar las renovaciones (single-flight).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Nuevo par de tokens.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Refresh inválido, expirado, revocado o reutilizado (en este último caso la sesión queda revocada).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+  /auth/logout:
+    post:
+      tags: [Sesión]
+      summary: Cerrar sesión
+      operationId: logout
+      description: |
+        Idempotente: un refresh token con firma válida que ya estaba revocado también responde
+        204. Solo falla si el JWT no verifica (firma, expiración o tipo de token).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Sesión revocada.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: '`INVALID_TOKEN`: el JWT no verifica (firma, expiración o no es un refresh token).'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+  /auth/me:
+    get:
+      tags: [Sesión]
+      summary: Principal autenticado
+      operationId: getCurrentPrincipal
+      responses:
+        '200':
+          description: Cuenta de la sesión actual.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /auth/password:
+    post:
+      tags: [Sesión]
+      summary: Cambiar la contraseña propia
+      operationId: changeOwnPassword
+      description: |
+        Revoca **todas** las sesiones de la cuenta, incluida la actual: tras el 204 la app
+        borra sus tokens y vuelve al login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Contraseña cambiada y sesiones revocadas.
+        '400':
+          description: Validación, `PASSWORD_POLICY` (8–128 caracteres) o `PASSWORD_REUSE`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '401':
+          description: Token inválido o `CURRENT_PASSWORD_INVALID`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /mobile/config:
+    get:
+      tags: [Configuración]
+      summary: Configuración remota de la app
+      operationId: getMobileConfig
+      x-sirio-estado: propuesto
+      x-sirio-fase: 1
+      security: []
+      responses:
+        '200':
+          description: Parámetros vigentes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileConfig'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /mobile/error-reports:
+    post:
+      tags: [Diagnóstico]
+      summary: Reportar un error de JavaScript
+      operationId: createClientErrorReport
+      description: Sin datos personales ni tokens. Se conserva 30 días. Campos a confirmar en la fase 1.
+      x-sirio-estado: propuesto
+      x-sirio-fase: 1
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClientErrorReportRequest'
+      responses:
+        '202':
+          description: Reporte aceptado.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /owner/restaurants:
+    get:
+      tags: [Restaurantes]
+      summary: Restaurantes del dueño
+      operationId: listOwnedRestaurants
+      responses:
+        '200':
+          description: Locales asociados a la cuenta, incluidos los deshabilitados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RestaurantProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /owner/restaurants/{restaurantId}/profile:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [Perfil]
+      summary: Obtener el perfil
+      operationId: getRestaurantProfile
+      responses:
+        '200':
+          description: Perfil del restaurante.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Perfil]
+      summary: Actualizar el perfil y el logo
+      operationId: updateRestaurantProfile
+      description: |
+        **Reemplaza los seis campos de contacto**: uno omitido o vacío queda en `null`. La app
+        debe enviar siempre todos los valores actuales. El nombre del restaurante no es editable
+        por el dueño. El logo solo cambia si se adjunta; no hay operación para quitarlo.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateRestaurantProfileForm'
+            encoding:
+              logo:
+                contentType: image/png, image/jpeg, image/webp
+      responses:
+        '200':
+          description: Perfil actualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantProfile'
+        '400':
+          description: Validación, `INVALID_INPUT` (teléfono o red social inválidos) o `INVALID_LOGO` (firma binaria no coincide).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+  /owner/restaurants/{restaurantId}/logo:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [Perfil]
+      summary: Descargar el logo
+      operationId: getRestaurantLogo
+      responses:
+        '200':
+          description: Bytes del logo (inline).
+          content:
+            image/png:
+              schema:
+                $ref: '#/components/schemas/Binary'
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/Binary'
+            image/webp:
+              schema:
+                $ref: '#/components/schemas/Binary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /owner/restaurants/{restaurantId}/qr:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [QR]
+      summary: Identidad del QR
+      operationId: getRestaurantQrIdentity
+      description: En restaurantes legado materializa el QR una sola vez con el PUBLIC_APP_URL vigente.
+      responses:
+        '200':
+          description: Enlace permanente que contiene el QR.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantQrIdentity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/QrUnavailable'
+  /owner/restaurants/{restaurantId}/qr/{format}:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - name: format
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [png, svg]
+      - name: download
+        in: query
+        required: false
+        description: '`true` añade `Content-Disposition: attachment` con un nombre basado en el slug.'
+        schema:
+          type: string
+          enum: ['true']
+    get:
+      tags: [QR]
+      summary: Documento del QR
+      operationId: getRestaurantQrDocument
+      responses:
+        '200':
+          description: PNG o SVG materializado; nunca cambia tras crearse.
+          content:
+            image/png:
+              schema:
+                $ref: '#/components/schemas/Binary'
+            image/svg+xml:
+              schema:
+                $ref: '#/components/schemas/Binary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/QrUnavailable'
+  /owner/restaurants/{restaurantId}/statistics:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [Estadísticas]
+      summary: Visitas únicas a la carta pública
+      operationId: getRestaurantViewStatistics
+      responses:
+        '200':
+          description: Totales y distribución por hora y día, calculados en America/Lima.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestaurantViewStatistics'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /owner/restaurants/{restaurantId}/menu:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [Carta]
+      summary: Borrador de la carta y estado de publicación
+      operationId: getOwnedMenu
+      responses:
+        '200':
+          description: Borrador actual con plantilla, estilo y estado de publicación.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedMenu'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /owner/restaurants/{restaurantId}/menu/publish:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Carta]
+      summary: Publicar el borrador
+      operationId: publishMenu
+      description: La carta pública solo cambia con esta operación. El enlace del QR no cambia.
+      responses:
+        '201':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          description: '`EMPTY_MENU`: no hay ningún producto disponible.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+              example:
+                statusCode: 400
+                message: Agrega al menos un producto disponible antes de publicar la carta.
+                error: Bad Request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/template:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Carta]
+      summary: Elegir la plantilla del borrador
+      operationId: setMenuTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MenuTemplateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/digitize:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Digitalización]
+      summary: Digitalizar de forma síncrona (se retira)
+      operationId: digitizeMenuSynchronously
+      deprecated: true
+      description: Reemplazado por los jobs asíncronos. La app no debe usarlo.
+      x-sirio-retiro-fase: 2
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MenuPhotosForm'
+      responses:
+        '201':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+  /owner/restaurants/{restaurantId}/menu/digitization-jobs:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Digitalización]
+      summary: Crear un job de digitalización
+      operationId: createDigitizationJob
+      description: |
+        Valida las fotos (1–5, JPG/PNG/WebP por firma binaria, ≤3 MB cada una, ≤12 MB en total),
+        las guarda temporalmente y responde de inmediato. Mientras el job esté activo, toda
+        mutación de la carta responde 409. Las fotos se borran al terminar, fallar o cancelar.
+      x-sirio-estado: propuesto
+      x-sirio-fase: 2
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MenuPhotosForm'
+            encoding:
+              photos:
+                contentType: image/jpeg, image/png, image/webp
+      responses:
+        '202':
+          description: Job encolado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DigitizationJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`DIGITIZATION_JOB_ALREADY_ACTIVE`: ya hay un job en curso para este restaurante.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+  /owner/restaurants/{restaurantId}/menu/digitization-jobs/current:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    get:
+      tags: [Digitalización]
+      summary: Job activo o último terminado
+      operationId: getCurrentDigitizationJob
+      description: La app lo consulta en primer plano y al volver a la app para retomar el progreso.
+      x-sirio-estado: propuesto
+      x-sirio-fase: 2
+      responses:
+        '200':
+          description: '`job` es `null` si nunca hubo uno o el último ya fue visto.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentDigitizationJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /owner/restaurants/{restaurantId}/menu/digitization-jobs/{jobId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/JobId'
+    post:
+      tags: [Digitalización]
+      summary: Cancelar un job
+      operationId: cancelDigitizationJob
+      description: Descarta el resultado aunque Gemini ya haya respondido y libera el bloqueo de la carta.
+      x-sirio-estado: propuesto
+      x-sirio-fase: 2
+      responses:
+        '200':
+          description: Job cancelado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DigitizationJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: '`DIGITIZATION_JOB_FINISHED`: el job ya terminó.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+  /owner/restaurants/{restaurantId}/menu/categories:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Secciones]
+      summary: Crear una sección
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/categories/{categoryId}:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/CategoryId'
+    patch:
+      tags: [Secciones]
+      summary: Renombrar una sección o cambiar su diseño
+      operationId: updateCategory
+      description: '`name` es obligatorio incluso si solo cambia `layout`.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+    delete:
+      tags: [Secciones]
+      summary: Eliminar una sección y sus productos
+      operationId: deleteCategory
+      description: También elimina las imágenes de sus productos del volumen.
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/categories-order:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    put:
+      tags: [Secciones]
+      summary: Reordenar las secciones
+      operationId: reorderCategories
+      description: '`orderedIds` debe contener exactamente todas las secciones (`INVALID_ORDER` si no).'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/categories/{categoryId}/products-order:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/CategoryId'
+    put:
+      tags: [Productos]
+      summary: Reordenar los productos de una sección
+      operationId: reorderProducts
+      description: '`orderedIds` debe contener exactamente todos los productos de la sección.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/products:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+    post:
+      tags: [Productos]
+      summary: Crear un producto
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/products/{productId}:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/ProductId'
+    patch:
+      tags: [Productos]
+      summary: Editar o mover un producto
+      operationId: updateProduct
+      description: Enviar `variants` o `extras` reemplaza la lista completa correspondiente.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+    delete:
+      tags: [Productos]
+      summary: Eliminar un producto
+      operationId: deleteProduct
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/products/{productId}/availability:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/ProductId'
+    patch:
+      tags: [Productos]
+      summary: Cambiar la disponibilidad
+      operationId: setProductAvailability
+      description: Un producto no disponible conserva sus datos y desaparece de la carta publicada al publicar.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductAvailabilityRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+  /owner/restaurants/{restaurantId}/menu/products/{productId}/image:
+    parameters:
+      - $ref: '#/components/parameters/RestaurantId'
+      - $ref: '#/components/parameters/ProductId'
+    get:
+      tags: [Productos]
+      summary: Descargar la imagen del producto
+      operationId: getOwnedProductImage
+      responses:
+        '200':
+          description: Bytes de la imagen (inline).
+          content:
+            image/png:
+              schema:
+                $ref: '#/components/schemas/Binary'
+            image/jpeg:
+              schema:
+                $ref: '#/components/schemas/Binary'
+            image/webp:
+              schema:
+                $ref: '#/components/schemas/Binary'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Productos]
+      summary: Subir o reemplazar la imagen
+      operationId: uploadProductImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductImageForm'
+            encoding:
+              image:
+                contentType: image/png, image/jpeg, image/webp
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          description: Imagen ausente, validación o `INVALID_IMAGE` (firma binaria no coincide).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HttpError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+    delete:
+      tags: [Productos]
+      summary: Quitar la imagen
+      operationId: deleteProductImage
+      responses:
+        '200':
+          $ref: '#/components/responses/MenuResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/MenuLocked'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RestaurantId:
+      name: restaurantId
+      in: path
+      required: true
+      description: UUID v4 de un restaurante asociado a la cuenta (si no, 403).
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    MenuResponse:
+      description: Borrador resultante tras la operación.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PublishedMenu'
+    BadRequest:
+      description: Cuerpo, parámetro o archivo inválido.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+          example:
+            statusCode: 400
+            message:
+              - name must be longer than or equal to 1 characters
+            error: Bad Request
+    Unauthorized:
+      description: Falta el Bearer o el access token es inválido o expiró. Renovar con /auth/refresh.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+          example:
+            statusCode: 401
+            message: Invalid or expired access token
+            error: Unauthorized
+    Forbidden:
+      description: La cuenta no es OWNER o el restaurante no le pertenece.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+          example:
+            statusCode: 403
+            message: Restaurant access denied
+            error: Forbidden
+    NotFound:
+      description: Restaurante, sección, producto, archivo o job inexistente.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+    PayloadTooLarge:
+      description: |
+        Archivo por encima del límite de multer (JSON). Si el cuerpo total supera 16 MB, nginx
+        responde 413 en HTML antes de llegar a la API: la app debe validar tamaños antes de subir.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+    QrUnavailable:
+      description: '`QR_UNAVAILABLE`: el QR no pudo materializarse.'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+    MenuLocked:
+      description: |
+        Propuesto (fase 2). `MENU_LOCKED_BY_DIGITIZATION`: hay un job de digitalización activo
+        y la carta está en solo lectura hasta que termine o se cancele.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+          example:
+            statusCode: 409
+            message: La carta se está digitalizando. Espera a que termine o cancela el proceso.
+            error: Conflict
+    TooManyRequests:
+      description: Propuesto (fase 1). Límite por IP de nginx (10 peticiones/min en login).
+      headers:
+        Retry-After:
+          description: Segundos hasta poder reintentar.
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HttpError'
+  schemas:
+    HttpError:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode:
+          type: integer
+        message:
+          description: Texto, o lista de textos cuando falla la validación del DTO.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        error:
+          type: string
+          description: Nombre del estado HTTP.
+    Binary:
+      type: string
+      contentEncoding: binary
+    Uuid:
+      type: string
+      format: uuid
+    Price:
+      type: string
+      description: Decimal con punto y hasta 2 decimales, en soles.
+      pattern: '^\d{1,8}(?:\.\d{1,2})?$'
+      examples: ['18.50']
+    Role:
+      type: string
+      enum: [OWNER, ADMIN]
+    Principal:
+      type: object
+      required: [accountId, email, role]
+      properties:
+        accountId:
+          $ref: '#/components/schemas/Uuid'
+        email:
+          type: string
+          format: email
+        role:
+          $ref: '#/components/schemas/Role'
+    LoginRequest:
+      type: object
+      required: [email, password, role]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        role:
+          $ref: '#/components/schemas/Role'
+    RefreshTokenRequest:
+      type: object
+      required: [refreshToken]
+      additionalProperties: false
+      properties:
+        refreshToken:
+          type: string
+          minLength: 1
+    TokenResponse:
+      type: object
+      required: [accessToken, accessExpiresIn, refreshToken, refreshExpiresIn, tokenType, principal]
+      properties:
+        accessToken:
+          type: string
+        accessExpiresIn:
+          type: integer
+          description: Segundos (900 por defecto).
+        refreshToken:
+          type: string
+          description: Guardar solo en almacenamiento seguro del sistema.
+        refreshExpiresIn:
+          type: integer
+          description: Segundos. 604800 (7 días) hoy; 2592000 (30 días) para sesiones móviles desde la fase 1.
+        tokenType:
+          const: Bearer
+        principal:
+          $ref: '#/components/schemas/Principal'
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      additionalProperties: false
+      properties:
+        currentPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+    MobileConfig:
+      type: object
+      description: Propuesto (fase 1).
+      required: [minimumAppVersion, supportWhatsapp]
+      properties:
+        minimumAppVersion:
+          type: string
+          description: Versión semántica mínima; por debajo, la app bloquea el uso y enlaza a Play.
+          pattern: '^\d+\.\d+\.\d+$'
+          examples: ['1.0.0']
+        supportWhatsapp:
+          type: string
+          description: Número de soporte con código de país, solo dígitos, para https://wa.me/<número>.
+          pattern: '^\d{8,15}$'
+    ClientErrorReportRequest:
+      type: object
+      description: Propuesto (fase 1). Nunca incluye correo, ids de cuenta, tokens ni contenido de la carta.
+      required: [appVersion, runtimeVersion, message, isFatal, occurredAt]
+      additionalProperties: false
+      properties:
+        appVersion:
+          type: string
+          maxLength: 32
+        runtimeVersion:
+          type: string
+          maxLength: 64
+        androidVersion:
+          type: string
+          maxLength: 16
+        screen:
+          type: string
+          maxLength: 120
+        message:
+          type: string
+          maxLength: 1000
+        stack:
+          type: string
+          maxLength: 8000
+        isFatal:
+          type: boolean
+        occurredAt:
+          type: string
+          format: date-time
+    RestaurantStatus:
+      type: string
+      enum: [ENABLED, DISABLED]
+    RestaurantProfile:
+      type: object
+      required: [id, name, slug, status, address, contactPhone, whatsapp, instagramUrl, facebookUrl, tiktokUrl, logoPath, updatedAt]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        slug:
+          type: string
+          description: Inmutable. La carta pública vive en PUBLIC_APP_URL/{slug}.
+        status:
+          $ref: '#/components/schemas/RestaurantStatus'
+        address:
+          type: [string, 'null']
+        contactPhone:
+          type: [string, 'null']
+        whatsapp:
+          type: [string, 'null']
+        instagramUrl:
+          type: [string, 'null']
+        facebookUrl:
+          type: [string, 'null']
+        tiktokUrl:
+          type: [string, 'null']
+        logoPath:
+          type: [string, 'null']
+          description: Solo indica si hay logo; los bytes se piden a /logo.
+        updatedAt:
+          type: string
+          format: date-time
+    UpdateRestaurantProfileForm:
+      type: object
+      properties:
+        contactPhone:
+          type: string
+          maxLength: 32
+          pattern: '^\+?[0-9 ()-]{7,32}$'
+        whatsapp:
+          type: string
+          maxLength: 32
+          pattern: '^\+?[0-9 ()-]{7,32}$'
+        address:
+          type: string
+          maxLength: 500
+        instagramUrl:
+          type: string
+          maxLength: 2048
+          description: HTTPS con host instagram.com o www.instagram.com.
+        facebookUrl:
+          type: string
+          maxLength: 2048
+          description: HTTPS con host facebook.com, www.facebook.com, fb.com o www.fb.com.
+        tiktokUrl:
+          type: string
+          maxLength: 2048
+          description: HTTPS con host tiktok.com o www.tiktok.com.
+        logo:
+          type: string
+          contentMediaType: application/octet-stream
+          description: PNG, JPG o WebP de hasta 2 MB; se valida la firma binaria contra el MIME declarado.
+    RestaurantQrIdentity:
+      type: object
+      required: [publicUrl, slug]
+      properties:
+        publicUrl:
+          type: string
+          format: uri
+        slug:
+          type: string
+    RestaurantViewStatistics:
+      type: object
+      required: [generatedForDate, timeZone, uniqueViews, hourly, weekdays]
+      properties:
+        generatedForDate:
+          type: string
+          format: date
+          description: Fecha de hoy en America/Lima.
+        timeZone:
+          const: America/Lima
+        uniqueViews:
+          type: object
+          required: [allTime, last7Days, last30Days]
+          properties:
+            allTime:
+              type: integer
+            last7Days:
+              type: integer
+            last30Days:
+              type: integer
+        hourly:
+          type: array
+          minItems: 24
+          maxItems: 24
+          items:
+            type: object
+            required: [hour, totalViews, averageViews]
+            properties:
+              hour:
+                type: integer
+                minimum: 0
+                maximum: 23
+              totalViews:
+                type: integer
+              averageViews:
+                type: number
+        weekdays:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: object
+            required: [dayOfWeek, totalViews, averageViews]
+            properties:
+              dayOfWeek:
+                type: integer
+                minimum: 0
+                maximum: 6
+                description: 0 = domingo … 6 = sábado, según el calendario de Lima.
+              totalViews:
+                type: integer
+              averageViews:
+                type: number
+    MenuTemplate:
+      type: string
+      enum: [ORIGINAL, TRADITIONAL, CASUAL, PREMIUM]
+    MenuFontFamily:
+      type: string
+      enum:
+        - Inter
+        - Roboto
+        - Open Sans
+        - Lato
+        - Montserrat
+        - Poppins
+        - Playfair Display
+        - Merriweather
+        - Oswald
+        - Raleway
+        - Nunito
+        - Libre Baskerville
+    CategoryLayout:
+      type: string
+      enum: [LIST, CARDS]
+      description: LIST = lista compacta; CARDS = tarjetas con foto.
+    MenuOption:
+      type: object
+      required: [name, price]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        price:
+          $ref: '#/components/schemas/Price'
+    MenuProduct:
+      type: object
+      required: [name, description, basePrice, isAvailable, imagePath, variants, extras]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        description:
+          type: [string, 'null']
+        basePrice:
+          $ref: '#/components/schemas/Price'
+        isAvailable:
+          type: boolean
+        imagePath:
+          type: [string, 'null']
+          description: Solo indica si hay imagen; los bytes se piden a /products/{productId}/image.
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuOption'
+        extras:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuOption'
+    MenuCategory:
+      type: object
+      required: [name, layout, products]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+        layout:
+          $ref: '#/components/schemas/CategoryLayout'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuProduct'
+    PublishedMenu:
+      type: object
+      description: |
+        Borrador del dueño. Para previsualizar como el comensal: omitir productos con
+        `isAvailable: false` y las secciones que queden vacías.
+      required: [restaurantId, template, style, categories, publication, updatedAt]
+      properties:
+        restaurantId:
+          $ref: '#/components/schemas/Uuid'
+        template:
+          $ref: '#/components/schemas/MenuTemplate'
+        style:
+          type: object
+          required: [backgroundColor, textColor, fontFamily]
+          properties:
+            backgroundColor:
+              type: string
+              examples: ['#FFF8ED']
+            textColor:
+              type: string
+              examples: ['#3D2A20']
+            fontFamily:
+              $ref: '#/components/schemas/MenuFontFamily'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuCategory'
+        publication:
+          type: object
+          required: [hasPublishedMenu, hasUnpublishedChanges, publishedAt]
+          properties:
+            hasPublishedMenu:
+              type: boolean
+            hasUnpublishedChanges:
+              type: boolean
+            publishedAt:
+              type: [string, 'null']
+              format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    MenuTemplateRequest:
+      type: object
+      required: [template]
+      properties:
+        template:
+          $ref: '#/components/schemas/MenuTemplate'
+    CategoryRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        layout:
+          $ref: '#/components/schemas/CategoryLayout'
+    ReorderRequest:
+      type: object
+      required: [orderedIds]
+      additionalProperties: false
+      properties:
+        orderedIds:
+          type: array
+          minItems: 1
+          maxItems: 500
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/Uuid'
+    ProductOptionInput:
+      type: object
+      required: [name, price]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        price:
+          $ref: '#/components/schemas/Price'
+    CreateProductRequest:
+      type: object
+      required: [categoryId, name, basePrice]
+      additionalProperties: false
+      properties:
+        categoryId:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        basePrice:
+          $ref: '#/components/schemas/Price'
+        variants:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/ProductOptionInput'
+        extras:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/ProductOptionInput'
+    UpdateProductRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        categoryId:
+          $ref: '#/components/schemas/Uuid'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: [string, 'null']
+          maxLength: 2000
+        basePrice:
+          $ref: '#/components/schemas/Price'
+        isAvailable:
+          type: boolean
+        variants:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/ProductOptionInput'
+        extras:
+          type: array
+          maxItems: 30
+          items:
+            $ref: '#/components/schemas/ProductOptionInput'
+    ProductAvailabilityRequest:
+      type: object
+      required: [isAvailable]
+      additionalProperties: false
+      properties:
+        isAvailable:
+          type: boolean
+    ProductImageForm:
+      type: object
+      required: [image]
+      properties:
+        image:
+          type: string
+          contentMediaType: application/octet-stream
+          description: PNG, JPG o WebP de hasta 4 MB; se valida la firma binaria.
+    MenuPhotosForm:
+      type: object
+      required: [photos]
+      properties:
+        photos:
+          type: array
+          minItems: 1
+          maxItems: 5
+          description: JPG, PNG o WebP; ≤3 MB cada una y ≤12 MB en total.
+          items:
+            type: string
+            contentMediaType: application/octet-stream
+    DigitizationJobStatus:
+      type: string
+      enum: [QUEUED, PROCESSING, SUCCEEDED, FAILED, CANCELLED]
+    DigitizationJob:
+      type: object
+      description: Propuesto (fase 2).
+      required: [id, status, photoCount, createdAt, startedAt, finishedAt, error]
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          $ref: '#/components/schemas/DigitizationJobStatus'
+        photoCount:
+          type: integer
+          minimum: 1
+          maximum: 5
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: [string, 'null']
+          format: date-time
+        finishedAt:
+          type: [string, 'null']
+          format: date-time
+        error:
+          description: Solo en FAILED. Códigos del mapeo actual de Gemini más los del ciclo de vida del job.
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [code, message]
+              properties:
+                code:
+                  type: string
+                  examples: [MODEL_TIMEOUT, MODEL_UNAVAILABLE, MODEL_CONFIGURATION_ERROR, INVALID_MODEL_RESPONSE, JOB_TIMED_OUT]
+                message:
+                  type: string
+                  description: Mensaje en español listo para mostrar.
+    CurrentDigitizationJob:
+      type: object
+      required: [job]
+      properties:
+        job:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/DigitizationJob'
