@@ -6,6 +6,7 @@ import { ownerMenuCopy } from './messages/owner-menu';
 import { ownerPanelCopy } from './messages/owner-panel';
 import { ownerProfileCopy } from './messages/owner-profile';
 import { ownerQrCopy } from './messages/owner-qr';
+import { ownerWeatherCopy } from './messages/owner-weather';
 import { publicMenuCopy } from './messages/public-menu';
 import { shellCopy } from './messages/shell';
 import { statisticsCopy } from './messages/statistics';
@@ -19,13 +20,14 @@ const TABLES = {
   ownerPanel: ownerPanelCopy,
   ownerProfile: ownerProfileCopy,
   ownerQr: ownerQrCopy,
+  ownerWeather: ownerWeatherCopy,
   publicMenu: publicMenuCopy,
   shell: shellCopy,
   statistics: statisticsCopy,
 };
 
 // Names that legitimately read the same in both languages.
-const SAME_IN_BOTH = new Set(['Casual', 'Original', 'Premium', 'QR']);
+const SAME_IN_BOTH = new Set(['Casual', 'Miraflores, Lima', 'Original', 'Premium', 'QR']);
 
 /** Flattens a message table into [path, text] pairs; message functions are called. */
 function entries(value: unknown, path = ''): Array<[string, unknown]> {

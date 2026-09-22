@@ -58,6 +58,17 @@ describe('RestaurantProfilePanel', () => {
     expect(screen.getByLabelText('Instagram')).toHaveAttribute('type', 'url');
   });
 
+  it('pide la ciudad y, mientras falte, el clima solo invita a completarla', async () => {
+    render(<RestaurantProfilePanel />);
+
+    expect(await screen.findByLabelText(/^Ciudad/)).toHaveAttribute('maxlength', '120');
+    expect(screen.getByLabelText(/^Ciudad/)).toHaveAttribute('name', 'city');
+    expect(screen.getByRole('region', { name: 'Clima ahora' })).toHaveTextContent(
+      'Agrega la ciudad de tu local para ver el clima de tu zona.',
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects a logo larger than 2 MB before sending it', async () => {
     render(<RestaurantProfilePanel />);
     const input = await screen.findByLabelText('Logo del restaurante');
@@ -93,4 +104,67 @@ describe('RestaurantProfilePanel', () => {
     expect(screen.getByLabelText('Phone')).toHaveValue('(01) 555-0199');
     expect(global.fetch).toHaveBeenCalledTimes(requests);
   });
+
+  it('solo vuelve a pedir el clima cuando se guarda otra ciudad', async () => {
+    let saved = { ...PROFILE, city: 'Lima' };
+    global.fetch = jest.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.startsWith('https://geocoding-api.open-meteo.com/')) {
+        return Promise.resolve(
+          jsonResponse({ results: [{ admin1: 'Provincia de Lima', latitude: -12.04, longitude: -77.03 }] }),
+        );
+      }
+      if (url.startsWith('https://api.open-meteo.com/')) {
+        return Promise.resolve(
+          jsonResponse({
+            current: { is_day: 1, temperature_2m: 19, time: '2026-09-22T15:00', weather_code: 0 },
+          }),
+        );
+      }
+      if (init?.method === 'PATCH') {
+        const city = (init.body as FormData).get('city');
+        saved = { ...saved, city: String(city), updatedAt: new Date().toISOString() };
+        return Promise.resolve(jsonResponse(saved));
+      }
+      return Promise.resolve(jsonResponse([saved]));
+    }) as jest.Mock;
+    const openMeteoCalls = () =>
+      (global.fetch as jest.Mock).mock.calls.filter(([url]) => String(url).includes('open-meteo.com'))
+        .length;
+
+    render(<RestaurantProfilePanel />);
+    expect(await screen.findByText('19 °C')).toBeVisible();
+    expect(openMeteoCalls()).toBe(2);
+
+    fireEvent.change(screen.getByLabelText('Teléfono'), { target: { value: '(01) 555-0199' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }));
+    expect(await screen.findByText(/Perfil guardado/)).toBeVisible();
+    expect(screen.getByText('19 °C')).toBeVisible();
+    expect(openMeteoCalls()).toBe(2);
+
+    fireEvent.change(screen.getByLabelText(/^Ciudad/), { target: { value: 'Cusco' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }));
+    await waitFor(() => expect(openMeteoCalls()).toBe(4));
+    expect(await screen.findByText('Cusco · Provincia de Lima')).toBeVisible();
+  });
 });
+
+const PROFILE = {
+  address: null,
+  city: null,
+  contactPhone: null,
+  facebookUrl: null,
+  id: '33333333-3333-4333-8333-333333333333',
+  instagramUrl: null,
+  logoPath: null,
+  name: 'Mesa Norte',
+  slug: 'mesa-norte',
+  status: 'ENABLED',
+  tiktokUrl: null,
+  updatedAt: '2026-08-26T18:00:00.000Z',
+  whatsapp: null,
+};
+
+function jsonResponse(body: unknown): Response {
+  return { json: jest.fn().mockResolvedValue(body), ok: true, status: 200 } as unknown as Response;
+}

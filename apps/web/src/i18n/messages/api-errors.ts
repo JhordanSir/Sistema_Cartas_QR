@@ -56,6 +56,7 @@ const ES_PRICE_FIELDS: Record<PriceField, string> = {
 
 const ES_PROFILE_FIELDS: Record<ProfileField, string> = {
   address: 'La dirección',
+  city: 'La ciudad',
   contactPhone: 'El teléfono',
   facebookUrl: 'El enlace de Facebook',
   instagramUrl: 'El enlace de Instagram',
@@ -92,6 +93,7 @@ const EN_PRICE_FIELDS: Record<PriceField, string> = {
 
 const EN_PROFILE_FIELDS: Record<ProfileField, string> = {
   address: 'The address',
+  city: 'The city',
   contactPhone: 'The phone number',
   facebookUrl: 'The Facebook link',
   instagramUrl: 'The Instagram link',

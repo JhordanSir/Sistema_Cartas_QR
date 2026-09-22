@@ -25,6 +25,7 @@ import { ownerProfileCopy } from '@/i18n/messages/owner-profile';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
 
 import { OwnerNavigation } from './owner-navigation';
+import { RestaurantWeatherCard, useRestaurantWeather, type WeatherState } from './restaurant-weather';
 
 const MAX_LOGO_BYTES = UPLOAD_LIMITS.logo.maximumBytes;
 const ACCEPTED_LOGOS: readonly string[] = ACCEPTED_IMAGE_TYPES;
@@ -49,6 +50,7 @@ export function RestaurantProfilePanel() {
     () => restaurants.find((restaurant) => restaurant.id === selectedId) ?? restaurants[0],
     [restaurants, selectedId],
   );
+  const weather = useRestaurantWeather(selected?.city ?? null);
 
   const loadRestaurants = useCallback(async () => {
     setLoading(true);
@@ -175,6 +177,7 @@ export function RestaurantProfilePanel() {
             previewUrl={previewUrl}
             profile={selected}
             saving={saving}
+            weather={weather}
           />
         ) : null}
       </Workspace>
@@ -189,6 +192,7 @@ function ProfileForm({
   previewUrl,
   profile,
   saving,
+  weather,
 }: {
   logo: File | null;
   onLogoChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -196,6 +200,7 @@ function ProfileForm({
   previewUrl: string | null;
   profile: RestaurantProfile;
   saving: boolean;
+  weather: WeatherState;
 }) {
   const copy = useCopy(ownerProfileCopy);
   const persistedLogo = profile.logoPath
@@ -215,63 +220,63 @@ function ProfileForm({
       className="grid items-start gap-6 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]"
       onSubmit={onSubmit}
     >
-      <Card
-        accent="teal"
-        className="grid justify-items-center p-7 text-center lg:sticky lg:top-8"
-      >
-        <Kicker className="justify-self-start" tone="teal">
-          {copy.preview}
-        </Kicker>
-        <div className="relative mt-7 mb-5 grid size-32 place-items-center overflow-hidden rounded-[2rem] bg-olive-wash font-display text-5xl font-bold text-olive shadow-[inset_0_0_0_1px_rgb(29_41_33/0.1)] sm:size-40 sm:rounded-[2.25rem] sm:text-6xl">
-          {logoUrl ? (
-            <Image alt={copy.logo.alt(profile.name)} fill sizes="160px" src={logoUrl} unoptimized />
-          ) : (
-            <span aria-hidden="true">{profile.name.charAt(0).toLocaleUpperCase('es')}</span>
-          )}
-        </div>
-        <h2 className="m-0 max-w-[14ch] font-display text-3xl leading-tight tracking-[-0.035em] text-balance">
-          {profile.name}
-        </h2>
-        <a
-          className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-olive-wash px-3 text-xs font-extrabold text-olive no-underline hover:bg-olive-wash/70"
-          href={`/${profile.slug}`}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <span aria-hidden="true">↗</span> {copy.openPublicMenu}
-        </a>
-        <div
-          aria-label={copy.progress.label(completed, PROFILE_FIELDS)}
-          className="my-6 w-full border-y border-line py-5"
-        >
-          <div className="h-1.5 overflow-hidden rounded-full bg-control">
-            <span
-              className="block h-full rounded-full bg-copper transition-[width] duration-200 ease-soft"
-              style={{ width: `${(completed / PROFILE_FIELDS) * 100}%` }}
-            />
+      <div className="grid gap-6 lg:sticky lg:top-8">
+        <Card accent="teal" className="grid justify-items-center p-7 text-center">
+          <Kicker className="justify-self-start" tone="teal">
+            {copy.preview}
+          </Kicker>
+          <div className="relative mt-7 mb-5 grid size-32 place-items-center overflow-hidden rounded-[2rem] bg-olive-wash font-display text-5xl font-bold text-olive shadow-[inset_0_0_0_1px_rgb(29_41_33/0.1)] sm:size-40 sm:rounded-[2.25rem] sm:text-6xl">
+            {logoUrl ? (
+              <Image alt={copy.logo.alt(profile.name)} fill sizes="160px" src={logoUrl} unoptimized />
+            ) : (
+              <span aria-hidden="true">{profile.name.charAt(0).toLocaleUpperCase('es')}</span>
+            )}
           </div>
-          <p className="mt-2.5 mb-0 text-[11px] text-ink-muted">
-            <strong className="text-ink tabular-nums">
-              {completed}/{PROFILE_FIELDS}
-            </strong>{' '}
-            {copy.progress.hint}
-          </p>
-        </div>
-        <label className="relative inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-control px-4 text-[13px] font-bold text-ink hover:bg-control-hover">
-          <span>
-            {logo ? copy.logo.change : profile.logoPath ? copy.logo.replace : copy.logo.upload}
-          </span>
-          <input
-            accept="image/png,image/jpeg,image/webp"
-            aria-label={copy.logo.input}
-            className="absolute size-px opacity-0"
-            name="logo"
-            onChange={onLogoChange}
-            type="file"
-          />
-        </label>
-        <small className="mt-2 text-[10px] text-ink-muted">{copy.logo.hint}</small>
-      </Card>
+          <h2 className="m-0 max-w-[14ch] font-display text-3xl leading-tight tracking-[-0.035em] text-balance">
+            {profile.name}
+          </h2>
+          <a
+            className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-olive-wash px-3 text-xs font-extrabold text-olive no-underline hover:bg-olive-wash/70"
+            href={`/${profile.slug}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <span aria-hidden="true">↗</span> {copy.openPublicMenu}
+          </a>
+          <div
+            aria-label={copy.progress.label(completed, PROFILE_FIELDS)}
+            className="my-6 w-full border-y border-line py-5"
+          >
+            <div className="h-1.5 overflow-hidden rounded-full bg-control">
+              <span
+                className="block h-full rounded-full bg-copper transition-[width] duration-200 ease-soft"
+                style={{ width: `${(completed / PROFILE_FIELDS) * 100}%` }}
+              />
+            </div>
+            <p className="mt-2.5 mb-0 text-[11px] text-ink-muted">
+              <strong className="text-ink tabular-nums">
+                {completed}/{PROFILE_FIELDS}
+              </strong>{' '}
+              {copy.progress.hint}
+            </p>
+          </div>
+          <label className="relative inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-lg bg-control px-4 text-[13px] font-bold text-ink hover:bg-control-hover">
+            <span>
+              {logo ? copy.logo.change : profile.logoPath ? copy.logo.replace : copy.logo.upload}
+            </span>
+            <input
+              accept="image/png,image/jpeg,image/webp"
+              aria-label={copy.logo.input}
+              className="absolute size-px opacity-0"
+              name="logo"
+              onChange={onLogoChange}
+              type="file"
+            />
+          </label>
+          <small className="mt-2 text-[10px] text-ink-muted">{copy.logo.hint}</small>
+        </Card>
+        <RestaurantWeatherCard city={profile.city} state={weather} />
+      </div>
 
       <Card className="overflow-hidden">
         <NumberedHeading body={copy.contact.body} number="01" title={copy.contact.title} />
@@ -303,6 +308,15 @@ function ProfileForm({
               maxLength={500}
               name="address"
               placeholder={copy.address.placeholder}
+            />
+          </Field>
+          <Field hint={copy.city.hint} label={copy.city.label}>
+            <input
+              className={fieldControl}
+              defaultValue={profile.city ?? ''}
+              maxLength={120}
+              name="city"
+              placeholder={copy.city.placeholder}
             />
           </Field>
         </div>

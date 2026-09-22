@@ -3,6 +3,7 @@ import type { Locale } from '../locale';
 /** The owner's profile screen. The restaurant's own data is never part of this table. */
 interface OwnerProfileCopy {
   address: { label: string; placeholder: string };
+  city: { hint: string; label: string; placeholder: string };
   contact: { body: string; title: string };
   emptyBody: string;
   kicker: string;
@@ -39,6 +40,11 @@ interface OwnerProfileCopy {
 export const ownerProfileCopy: Record<Locale, OwnerProfileCopy> = {
   en: {
     address: { label: 'Address', placeholder: '123 Main Ave, Miraflores' },
+    city: {
+      hint: 'We use it to show your local weather.',
+      label: 'City',
+      placeholder: 'Miraflores, Lima',
+    },
     contact: {
       body: 'Add the details your customers need to find you or get in touch.',
       title: 'How people find you',
@@ -79,6 +85,11 @@ export const ownerProfileCopy: Record<Locale, OwnerProfileCopy> = {
   },
   es: {
     address: { label: 'Dirección', placeholder: 'Av. Principal 123, Miraflores' },
+    city: {
+      hint: 'La usamos para mostrarte el clima de tu zona.',
+      label: 'Ciudad',
+      placeholder: 'Miraflores, Lima',
+    },
     contact: {
       body: 'Agrega los datos que tus clientes necesitan para ubicarte o escribirte.',
       title: 'Cómo te encuentran',
