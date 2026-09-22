@@ -91,6 +91,22 @@ Recorrido de «actualizar el perfil» en el módulo [`restaurants`](../apps/api/
 
 Las capas se conectan en [`restaurants.module.ts:164`](../apps/api/src/restaurants/restaurants.module.ts#L164): el módulo inyecta el repositorio de Prisma en el caso de uso mediante `useFactory`. Gracias a eso las pruebas unitarias crean el caso de uso con un repositorio simulado, sin levantar NestJS.
 
+### 1.3 Diagrama de componentes
+
+[`docs/diagrams/component-diagram.html`](diagrams/component-diagram.html) dibuja un componente por módulo de la API (`auth`, `analytics`, `restaurants`, `menu-management`, `health`, `digitization`), junto con Next.js, PostgreSQL, el volumen `uploads_data` y los servicios externos Gemini y Open-Meteo. Es una página interactiva generada con [Archify](https://github.com/tt-a1i/archify) a partir de [`component-diagram.json`](diagrams/component-diagram.json); cada componente cita su archivo de origen:
+
+| Componente | Archivo citado |
+|---|---|
+| Next.js (BFF) | [`app/api/session/login/route.ts`](../apps/web/src/app/api/session/login/route.ts), [`next.config.ts`](../apps/web/next.config.ts) |
+| `auth` | [`auth.module.ts`](../apps/api/src/auth/auth.module.ts) |
+| `analytics` | [`view-statistics.module.ts`](../apps/api/src/analytics/view-statistics.module.ts) |
+| `restaurants` | [`restaurants.module.ts`](../apps/api/src/restaurants/restaurants.module.ts) |
+| `menu-management` | [`menu-management.module.ts`](../apps/api/src/menu-management/menu-management.module.ts) |
+| `health` | [`health.module.ts`](../apps/api/src/health/health.module.ts) |
+| `digitization` | [`digitization.module.ts`](../apps/api/src/digitization/digitization.module.ts) |
+| Volumen `uploads_data` | [`compose.yml`](../compose.yml) |
+| PostgreSQL | [`prisma/schema.prisma`](../prisma/schema.prisma) |
+
 ---
 
 ## 2. Dos componentes *stateful*

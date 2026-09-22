@@ -179,6 +179,29 @@ Esta separación trae tres ventajas concretas:
 - **Reemplazo de piezas:** cambiar el almacenamiento local de archivos por uno en la nube solo exige un adaptador nuevo que cumpla el mismo puerto.
 - **Errores coherentes:** el dominio lanza errores con un código propio, y una única pieza de `presentation` los convierte en respuestas HTTP con un código que la interfaz traduce (sección 5.5).
 
+### 2.3 Diagrama de componentes
+
+Los dos diagramas anteriores muestran capas. El diagrama de componentes baja un nivel: dibuja cada módulo de la API como una pieza propia y muestra con qué se conecta cada uno.
+
+El diagrama se generó con [Archify](https://github.com/tt-a1i/archify) y es una página HTML interactiva: [`docs/diagrams/component-diagram.html`](diagrams/component-diagram.html). Se abre en cualquier navegador sin instalar nada y permite acercar la vista, buscar un componente, resaltar sus conexiones y recorrer cuatro vistas guiadas. Su fuente es [`component-diagram.json`](diagrams/component-diagram.json). Cada componente cita el archivo del repositorio que lo implementa, y Archify comprobó que esos archivos existen en la revisión indicada antes de dibujarlo.
+
+| Componente | Tipo | Qué hace |
+|---|---|---|
+| Navegador | Externo | Lo usan el comensal, el dueño y el administrador |
+| Next.js | Servidor web | Genera las páginas y hace de BFF con sus *Route Handlers* |
+| `auth`, `analytics`, `restaurants`, `menu-management`, `digitization` | Módulos de dominio de la API | Siguen la arquitectura hexagonal de la sección 2.2 |
+| `health` | Módulo de la API | Informa si la API y la base de datos responden |
+| Volumen `uploads_data` | Almacenamiento de archivos | Guarda logos y fotos de producto |
+| PostgreSQL | Base de datos | Guarda todos los datos del negocio, incluido el QR en PNG y SVG |
+| Google Gemini | Servicio externo | Convierte las fotos de la carta en un borrador estructurado |
+| Open-Meteo | Servicio externo | Da el clima actual de la zona del restaurante |
+
+El diagrama deja a la vista tres decisiones:
+
+1. **Todo el tráfico del sistema pasa por Next.js.** El archivo `next.config.ts` solo reescribe `/api/health*` y `/api/auth/*` hacia la API; cualquier otra ruta pasa por un *Route Handler* explícito que valida el origen.
+2. **El volumen de archivos está dentro del contenedor de la API.** Docker Compose lo monta solo ahí (`uploads_data:/app/storage`). Únicamente `restaurants` (logos) y `menu-management` (imágenes de producto) escriben en él.
+3. **Los dos servicios externos se usan desde lados opuestos.** Gemini se llama solo desde el backend, porque exige una clave secreta (`GEMINI_API_KEY`). Open-Meteo se llama directamente desde el navegador, porque es público y no necesita clave. Es la única petición del navegador que no pasa por el BFF.
+
 ---
 
 ## 3. Componentes con estado (*stateful*)
