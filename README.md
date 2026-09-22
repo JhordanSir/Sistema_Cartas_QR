@@ -156,10 +156,22 @@ Endpoints del propietario:
 
 - `GET /api/owner/restaurants`: restaurantes asociados a la cuenta autenticada.
 - `GET /api/owner/restaurants/:restaurantId/profile`: perfil, protegido por rol y pertenencia.
-- `PATCH /api/owner/restaurants/:restaurantId/profile`: actualización multipart de teléfono, WhatsApp, dirección, redes y logo.
+- `PATCH /api/owner/restaurants/:restaurantId/profile`: actualización multipart de teléfono, WhatsApp, dirección, ciudad, redes y logo.
 - `GET /api/owner/restaurants/:restaurantId/logo`: lectura autenticada del logo.
 
 El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el MIME declarado como la firma binaria y guarda el archivo en `restaurants/<uuid>/profile/logo`. Las redes sociales son opcionales, requieren HTTPS y se restringen al dominio de la plataforma indicada.
+
+### Clima de la zona (Open-Meteo)
+
+La tarjeta «Clima ahora» del perfil es la única parte del frontend que llama a un tercero sin pasar por el BFF. El navegador consulta directamente la [Geocoding API](https://open-meteo.com/en/docs/geocoding-api) y la [Forecast API](https://open-meteo.com/en/docs) de Open-Meteo, que son públicas, no piden clave y aceptan CORS. La lógica vive en [`apps/web/src/lib/weather.ts`](apps/web/src/lib/weather.ts).
+
+- La consulta usa el campo **Ciudad** del perfil, no la dirección: la geocodificación solo entiende nombres de lugar o códigos postales, no calles. La búsqueda se limita a Perú.
+- La tarjeta muestra la región que encontró Open-Meteo junto a la ciudad guardada. Algunos distritos de Lima (Barranco, San Miguel) no existen en su base y se resuelven a pueblos homónimos de otras regiones; la región deja ver el error.
+- Se consulta al abrir el perfil y al guardar otra ciudad. En inglés la temperatura se pide en °F.
+- La licencia CC BY 4.0 exige el enlace «Weather data by Open-Meteo.com» junto a los datos.
+- **El plan gratuito es solo para uso no comercial** (menos de 10 000 llamadas al día). Antes de cobrar a los restaurantes hay que contratar una clave comercial de Open-Meteo.
+
+La carta pública muestra la ciudad a continuación de la dirección.
 
 ## Digitalización con Gemini
 
