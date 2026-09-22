@@ -9,7 +9,7 @@
       "url": "https://github.com/JhordanSir/Sistema_Cartas_QR",
       "provider": "github",
       "link_mode": "local-only",
-      "revision": "c237ca5441204c2eda615d372792c388645cc597"
+      "revision": "9243d78be2bdb533c9b8df827bf33029ac976c93"
     },
     "views": [
       {
@@ -84,7 +84,6 @@
       "type": "external",
       "label": "Open-Meteo",
       "sublabel": "clima, API pública",
-      "tag": "en construcción",
       "pos": [
         40,
         520
@@ -92,6 +91,16 @@
       "size": [
         170,
         64
+      ],
+      "sources": [
+        {
+          "path": "apps/web/src/lib/weather.ts",
+          "label": "cliente de Open-Meteo"
+        },
+        {
+          "path": "apps/web/src/app/admin/restaurant-weather.tsx",
+          "label": "tarjeta Clima ahora"
+        }
       ]
     },
     {
