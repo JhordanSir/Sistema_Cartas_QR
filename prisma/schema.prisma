@@ -41,6 +41,7 @@ model Restaurant {
   contactPhone    String?          @db.VarChar(32)
   whatsapp        String?          @db.VarChar(32)
   address         String?          @db.VarChar(500)
+  city            String?          @db.VarChar(120)
   instagramUrl    String?          @db.VarChar(2048)
   facebookUrl     String?          @db.VarChar(2048)
   tiktokUrl       String?          @db.VarChar(2048)

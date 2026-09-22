@@ -17,6 +17,7 @@ const RESTAURANT_ID = '33333333-3333-4333-8333-333333333333';
 function profile(overrides: Partial<RestaurantProfile> = {}): RestaurantProfile {
   return {
     address: null,
+    city: null,
     contactPhone: null,
     facebookUrl: null,
     id: RESTAURANT_ID,
@@ -54,6 +55,7 @@ describe('UpdateRestaurantProfile', () => {
     repository.updateProfileForOwner.mockResolvedValue(
       profile({
         address: 'Av. Central 456',
+        city: 'Miraflores',
         logoPath: `restaurants/${RESTAURANT_ID}/profile/logo`,
         whatsapp: '+51 999 888 777',
       }),
@@ -66,18 +68,20 @@ describe('UpdateRestaurantProfile', () => {
     await expect(
       useCase.execute({
         address: '  Av. Central 456 ',
+        city: ' Miraflores ',
         logo,
         principal: OWNER,
         restaurantId: RESTAURANT_ID,
         whatsapp: ' +51 999 888 777 ',
       }),
-    ).resolves.toMatchObject({ address: 'Av. Central 456' });
+    ).resolves.toMatchObject({ address: 'Av. Central 456', city: 'Miraflores' });
     expect(storage.saveLogo).toHaveBeenCalledWith(RESTAURANT_ID, logo);
     expect(repository.updateProfileForOwner).toHaveBeenCalledWith(
       OWNER.accountId,
       RESTAURANT_ID,
       expect.objectContaining({
         address: 'Av. Central 456',
+        city: 'Miraflores',
         logoPath: `restaurants/${RESTAURANT_ID}/profile/logo`,
         whatsapp: '+51 999 888 777',
       }),

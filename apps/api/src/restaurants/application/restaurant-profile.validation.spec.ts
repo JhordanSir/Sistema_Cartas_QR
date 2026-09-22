@@ -10,6 +10,7 @@ describe('restaurant profile validation', () => {
     expect(
       normalizeRestaurantProfile({
         address: '  Av. Principal 123  ',
+        city: '  Miraflores, Lima ',
         contactPhone: ' (01) 555-0123 ',
         facebookUrl: '',
         instagramUrl: 'https://instagram.com/sirio.pe',
@@ -18,6 +19,7 @@ describe('restaurant profile validation', () => {
       }),
     ).toEqual({
       address: 'Av. Principal 123',
+      city: 'Miraflores, Lima',
       contactPhone: '(01) 555-0123',
       facebookUrl: null,
       instagramUrl: 'https://instagram.com/sirio.pe',
@@ -82,6 +84,10 @@ describe('restaurant profile validation', () => {
     expect(problemOf(() => normalizeRestaurantProfile({ address: 'a'.repeat(501) }))).toEqual({
       code: 'PROFILE_FIELD_TOO_LONG',
       params: { field: 'address', max: 500 },
+    });
+    expect(problemOf(() => normalizeRestaurantProfile({ city: 'a'.repeat(121) }))).toEqual({
+      code: 'PROFILE_FIELD_TOO_LONG',
+      params: { field: 'city', max: 120 },
     });
     expect(
       problemOf(() =>

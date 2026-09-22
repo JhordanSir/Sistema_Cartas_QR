@@ -2,6 +2,7 @@ import type { RestaurantProfile } from '../../domain/restaurant.types.js';
 
 export interface UpdateRestaurantProfileRecord {
   address: string | null;
+  city: string | null;
   contactPhone: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;

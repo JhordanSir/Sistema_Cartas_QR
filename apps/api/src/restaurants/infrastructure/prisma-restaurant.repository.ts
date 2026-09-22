@@ -315,6 +315,7 @@ export class PrismaRestaurantRepository
             })),
           })),
         })),
+      city: restaurant.city,
       contactPhone: restaurant.contactPhone,
       facebookUrl: restaurant.facebookUrl,
       fontFamily: menu.style.fontFamily,
@@ -446,6 +447,7 @@ export class PrismaRestaurantRepository
   private toProfile(record: Restaurant): RestaurantProfile {
     return {
       address: record.address,
+      city: record.city,
       contactPhone: record.contactPhone,
       facebookUrl: record.facebookUrl,
       id: record.id,

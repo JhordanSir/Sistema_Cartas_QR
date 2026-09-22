@@ -54,7 +54,7 @@ export interface ApiErrorParamMap {
   PRODUCT_OPTION_LIMIT: { kind: OptionKind; max: number };
   PRODUCT_PATCH_EMPTY: undefined;
   PROFILE_FIELD_TOO_LONG: {
-    field: "address" | "contactPhone" | "facebookUrl" | "instagramUrl" | "tiktokUrl" | "whatsapp";
+    field: "address" | "city" | "contactPhone" | "facebookUrl" | "instagramUrl" | "tiktokUrl" | "whatsapp";
     max: number;
   };
   PROFILE_PHONE_INVALID: undefined;

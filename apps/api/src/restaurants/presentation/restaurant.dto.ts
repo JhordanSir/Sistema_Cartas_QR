@@ -78,6 +78,10 @@ export class UpdateRestaurantProfileDto {
 
   @IsOptional()
   @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
   instagramUrl?: string;
 
   @IsOptional()

@@ -24,6 +24,7 @@ const SOCIAL_NETWORKS: Record<SocialField, ApiErrorParamMap['SOCIAL_URL_MISMATCH
 
 export interface RestaurantProfileInput {
   address?: string;
+  city?: string;
   contactPhone?: string;
   facebookUrl?: string;
   instagramUrl?: string;
@@ -47,6 +48,7 @@ export function normalizeRestaurantProfile(
 
   return {
     address: optionalText(input.address, 500, 'address'),
+    city: optionalText(input.city, 120, 'city'),
     contactPhone,
     facebookUrl: optionalSocialUrl(input.facebookUrl, 'facebookUrl'),
     instagramUrl: optionalSocialUrl(input.instagramUrl, 'instagramUrl'),
