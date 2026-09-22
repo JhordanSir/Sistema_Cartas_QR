@@ -25,6 +25,7 @@ export interface PublicRestaurant {
   address: string | null;
   backgroundColor: string;
   categories: MenuCategory[];
+  city: string | null;
   contactPhone: string | null;
   facebookUrl: string | null;
   fontFamily: string;
@@ -85,6 +86,7 @@ export interface PublishedMenu {
 
 export interface RestaurantProfile {
   address: string | null;
+  city: string | null;
   contactPhone: string | null;
   facebookUrl: string | null;
   id: string;

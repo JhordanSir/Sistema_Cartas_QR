@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import type { PublicMenuCopy } from '@/i18n/messages/public-menu';
+import { restaurantLocation } from '@/lib/contact';
 import type { PublicRestaurant } from '@/lib/restaurant-types';
 
 /**
@@ -8,14 +9,15 @@ import type { PublicRestaurant } from '@/lib/restaurant-types';
  * language cookie; link previews and search crawlers send no cookie and get Spanish.
  */
 export function publicMenuMetadata(
-  restaurant: Pick<PublicRestaurant, 'address' | 'name'> | null,
+  restaurant: Pick<PublicRestaurant, 'address' | 'city' | 'name'> | null,
   copy: PublicMenuCopy['metadata'],
 ): Metadata {
   if (!restaurant) return { title: copy.unavailableTitle };
 
   const title = copy.title(restaurant.name);
-  const description = restaurant.address
-    ? copy.descriptionWithAddress(restaurant.name, restaurant.address)
+  const location = restaurantLocation(restaurant);
+  const description = location
+    ? copy.descriptionWithAddress(restaurant.name, location)
     : copy.description(restaurant.name);
 
   return {

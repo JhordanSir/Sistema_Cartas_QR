@@ -1,4 +1,19 @@
-import { socialLinks, telHref, whatsappHref } from './contact';
+import { restaurantLocation, socialLinks, telHref, whatsappHref } from './contact';
+
+describe('restaurantLocation', () => {
+  it('une la dirección y la ciudad, o muestra la que exista', () => {
+    expect(restaurantLocation({ address: 'Av. Larco 123', city: 'Miraflores, Lima' })).toBe(
+      'Av. Larco 123 · Miraflores, Lima',
+    );
+    expect(restaurantLocation({ address: 'Av. Larco 123', city: null })).toBe('Av. Larco 123');
+    expect(restaurantLocation({ address: null, city: ' Cusco ' })).toBe('Cusco');
+  });
+
+  it('devuelve null cuando no hay ubicación que mostrar', () => {
+    expect(restaurantLocation({ address: null, city: null })).toBeNull();
+    expect(restaurantLocation({ address: '  ', city: '' })).toBeNull();
+  });
+});
 
 describe('whatsappHref', () => {
   it('normaliza los formatos que suelen escribir los dueños', () => {

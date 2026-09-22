@@ -27,6 +27,15 @@ export function telHref(value: string | null): string | null {
   return `tel:${trimmed.startsWith('+') ? '+' : ''}${digits}`;
 }
 
+/** "Av. Larco 123 · Miraflores, Lima": the street and the city, whichever the owner filled. */
+export function restaurantLocation(place: {
+  address: string | null;
+  city: string | null;
+}): string | null {
+  const parts = [place.address, place.city].flatMap((part) => part?.trim() || []);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
 export interface SocialLink {
   href: string;
   label: string;

@@ -2,7 +2,7 @@ import { publicMenuCopy } from '@/i18n/messages/public-menu';
 
 import { publicMenuMetadata } from './public-menu-metadata';
 
-const restaurant = { address: 'Av. La Marina 1234, San Miguel', name: 'Cevichería Luna' };
+const restaurant = { address: 'Av. La Marina 1234, San Miguel', city: null, name: 'Cevichería Luna' };
 
 describe('publicMenuMetadata', () => {
   it('describe la carta en español con la dirección del local', () => {
@@ -28,6 +28,13 @@ describe('publicMenuMetadata', () => {
       "Cevichería Luna's menu at Av. La Marina 1234, San Miguel. Dishes, prices and availability, always up to date.",
     );
     expect(metadata.openGraph).toMatchObject({ locale: 'en_US', title: 'Cevichería Luna · Digital menu' });
+  });
+
+  it('añade la ciudad tras la dirección, o la usa sola si no hay dirección', () => {
+    expect(publicMenuMetadata({ ...restaurant, city: 'Lima' }, publicMenuCopy.es.metadata).description)
+      .toBe('Carta de Cevichería Luna en Av. La Marina 1234, San Miguel · Lima. Platos, precios y disponibilidad al día.');
+    expect(publicMenuMetadata({ ...restaurant, address: null, city: 'Lima' }, publicMenuCopy.es.metadata).description)
+      .toBe('Carta de Cevichería Luna en Lima. Platos, precios y disponibilidad al día.');
   });
 
   it('omite la dirección cuando el local no la registró', () => {

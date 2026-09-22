@@ -7,7 +7,7 @@ import type { Locale } from '@/i18n/locale';
 import { type PublicMenuCopy, publicMenuCopy } from '@/i18n/messages/public-menu';
 import { getLocale } from '@/i18n/server';
 import { apiInternalUrl } from '@/lib/api-server';
-import { socialLinks, telHref, whatsappHref } from '@/lib/contact';
+import { restaurantLocation, socialLinks, telHref, whatsappHref } from '@/lib/contact';
 import { menuFontClassName } from '@/lib/menu-fonts';
 import type { PublicRestaurant } from '@/lib/restaurant-types';
 
@@ -43,7 +43,8 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
   const whatsapp = whatsappHref(restaurant.whatsapp);
   const phone = telHref(restaurant.contactPhone);
   const socials = socialLinks(restaurant);
-  const hasContact = Boolean(whatsapp ?? phone ?? restaurant.address) || socials.length > 0;
+  const location = restaurantLocation(restaurant);
+  const hasContact = Boolean(whatsapp ?? phone ?? location) || socials.length > 0;
 
   return (
     <main
@@ -89,8 +90,8 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
             </h1>
           </div>
 
-          {restaurant.address ? (
-            <p className="mt-3 mb-0 text-[13px]/relaxed opacity-75">{restaurant.address}</p>
+          {location ? (
+            <p className="mt-3 mb-0 text-[13px]/relaxed opacity-75">{location}</p>
           ) : null}
           {restaurant.categories.length > 0 ? (
             <p className="mt-2 mb-0 max-w-[48ch] text-[13px]/relaxed opacity-75 text-pretty">
@@ -194,7 +195,7 @@ export default async function PublicRestaurantPage({ params }: PageProps<'/[slug
               {copy.contact}
             </h2>
             <div className="grid gap-2 text-[13px]/relaxed">
-              {restaurant.address ? <p className="m-0 opacity-80">{restaurant.address}</p> : null}
+              {location ? <p className="m-0 opacity-80">{location}</p> : null}
               {phone ? (
                 <a className="inline-flex min-h-11 w-fit items-center font-bold no-underline" href={phone}>
                   {restaurant.contactPhone}
