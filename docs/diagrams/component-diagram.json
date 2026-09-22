@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Sirio — Diagrama de componentes",
+    "output": "component-diagram.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/JhordanSir/Sistema_Cartas_QR",
+      "provider": "github",
+      "link_mode": "local-only",
+      "revision": "c237ca5441204c2eda615d372792c388645cc597"
+    },
+    "views": [
+      {
+        "id": "bff-boundary",
+        "label": "Frontera del BFF",
+        "focus": [
+          "browser",
+          "web",
+          "auth",
+          "analytics",
+          "restaurants",
+          "menu-management",
+          "health",
+          "digitization"
+        ],
+        "note": "El navegador nunca habla con NestJS directamente; todo pasa por Next.js."
+      },
+      {
+        "id": "frontend-exception",
+        "label": "Excepción: clima desde el frontend",
+        "focus": [
+          "browser",
+          "weather"
+        ],
+        "note": "Única llamada que sale del navegador directo a un tercero, sin pasar por el BFF."
+      },
+      {
+        "id": "external-services",
+        "label": "Servicios externos",
+        "focus": [
+          "digitization",
+          "gemini",
+          "browser",
+          "weather"
+        ],
+        "note": "Gemini se invoca solo desde el backend; Open-Meteo solo desde el frontend."
+      },
+      {
+        "id": "data-layer",
+        "label": "Datos y archivos",
+        "focus": [
+          "auth",
+          "analytics",
+          "restaurants",
+          "storage",
+          "menu-management",
+          "health",
+          "digitization",
+          "db"
+        ],
+        "note": "Todos los módulos persisten en PostgreSQL; solo dos escriben en el volumen."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "browser",
+      "type": "external",
+      "label": "Navegador",
+      "sublabel": "Comensal, dueño, admin",
+      "pos": [
+        40,
+        318
+      ],
+      "size": [
+        170,
+        72
+      ]
+    },
+    {
+      "id": "weather",
+      "type": "external",
+      "label": "Open-Meteo",
+      "sublabel": "clima, API pública",
+      "tag": "en construcción",
+      "pos": [
+        40,
+        520
+      ],
+      "size": [
+        170,
+        64
+      ]
+    },
+    {
+      "id": "web",
+      "type": "frontend",
+      "label": "Next.js",
+      "sublabel": "App Router + BFF",
+      "pos": [
+        290,
+        318
+      ],
+      "size": [
+        200,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/web/src/app/api/session/login/route.ts",
+          "label": "Route Handler (BFF)"
+        },
+        {
+          "path": "apps/web/next.config.ts",
+          "label": "rewrites /api/health, /api/auth"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "backend",
+      "label": "auth",
+      "sublabel": "login, sesiones, JWT",
+      "pos": [
+        760,
+        40
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/auth/auth.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "analytics",
+      "type": "backend",
+      "label": "analytics",
+      "sublabel": "visitas, estadísticas",
+      "pos": [
+        760,
+        136
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/analytics/view-statistics.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "restaurants",
+      "type": "backend",
+      "label": "restaurants",
+      "sublabel": "perfil, slug, QR",
+      "pos": [
+        760,
+        232
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/restaurants/restaurants.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "type": "cloud",
+      "label": "Volumen uploads_data",
+      "sublabel": "montado en /app/storage",
+      "pos": [
+        760,
+        328
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "compose.yml"
+        }
+      ]
+    },
+    {
+      "id": "menu-management",
+      "type": "backend",
+      "label": "menu-management",
+      "sublabel": "carta y publicación",
+      "pos": [
+        760,
+        424
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/menu-management/menu-management.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "health",
+      "type": "backend",
+      "label": "health",
+      "sublabel": "estado de la API y la BD",
+      "pos": [
+        760,
+        520
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/health/health.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "digitization",
+      "type": "backend",
+      "label": "digitization",
+      "sublabel": "fotos de carta a borrador",
+      "pos": [
+        760,
+        616
+      ],
+      "size": [
+        210,
+        52
+      ],
+      "sources": [
+        {
+          "path": "apps/api/src/digitization/digitization.module.ts"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "postgres-internal:5432",
+      "pos": [
+        1140,
+        322
+      ],
+      "size": [
+        200,
+        64
+      ],
+      "sources": [
+        {
+          "path": "prisma/schema.prisma"
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "type": "external",
+      "label": "Google Gemini",
+      "sublabel": "modelo multimodal",
+      "pos": [
+        1140,
+        612
+      ],
+      "size": [
+        200,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Contenedor api — api-internal:3001",
+      "wraps": [
+        "auth",
+        "analytics",
+        "restaurants",
+        "storage",
+        "menu-management",
+        "health",
+        "digitization"
+      ],
+      "pad": 34
+    }
+  ],
+  "connections": [
+    {
+      "id": "browser-web",
+      "from": "browser",
+      "to": "web",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "id": "browser-weather",
+      "from": "browser",
+      "to": "weather",
+      "label": "fetch directo, sin BFF",
+      "variant": "dashed",
+      "labelDy": 78
+    },
+    {
+      "id": "web-auth",
+      "from": "web",
+      "to": "auth",
+      "label": "sesión + rewrite",
+      "labelSegment": 2
+    },
+    {
+      "id": "web-analytics",
+      "from": "web",
+      "to": "analytics",
+      "label": "Route Handler",
+      "labelSegment": 2
+    },
+    {
+      "id": "web-restaurants",
+      "from": "web",
+      "to": "restaurants",
+      "label": "Route Handler",
+      "labelSegment": 2
+    },
+    {
+      "id": "web-menu-management",
+      "from": "web",
+      "to": "menu-management",
+      "label": "Route Handler",
+      "labelSegment": 2
+    },
+    {
+      "id": "web-health",
+      "from": "web",
+      "to": "health",
+      "label": "rewrite",
+      "labelSegment": 2
+    },
+    {
+      "id": "web-digitization",
+      "from": "web",
+      "to": "digitization",
+      "label": "Route Handler",
+      "labelSegment": 2
+    },
+    {
+      "id": "restaurants-storage",
+      "from": "restaurants",
+      "to": "storage",
+      "label": "logos",
+      "labelDy": 35
+    },
+    {
+      "id": "menu-management-storage",
+      "from": "menu-management",
+      "to": "storage",
+      "label": "imágenes"
+    },
+    {
+      "id": "auth-db",
+      "from": "auth",
+      "to": "db",
+      "label": "Prisma",
+      "labelSegment": 0
+    },
+    {
+      "id": "analytics-db",
+      "from": "analytics",
+      "to": "db",
+      "label": "Prisma",
+      "labelSegment": 0
+    },
+    {
+      "id": "restaurants-db",
+      "from": "restaurants",
+      "to": "db",
+      "label": "Prisma",
+      "labelSegment": 0
+    },
+    {
+      "id": "menu-management-db",
+      "from": "menu-management",
+      "to": "db",
+      "label": "Prisma",
+      "labelSegment": 0
+    },
+    {
+      "id": "health-db",
+      "from": "health",
+      "to": "db",
+      "label": "ping",
+      "labelSegment": 0
+    },
+    {
+      "id": "digitization-db",
+      "from": "digitization",
+      "to": "db",
+      "label": "Prisma",
+      "labelSegment": 0
+    },
+    {
+      "id": "digitization-gemini",
+      "from": "digitization",
+      "to": "gemini",
+      "label": "fotos a JSON",
+      "variant": "emphasis",
+      "labelDx": 40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Frontera BFF",
+      "items": [
+        "Los Route Handlers validan el origen y guardan los JWT en cookies HttpOnly"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Módulos de la API",
+      "items": [
+        "Los cinco módulos de dominio son hexagonales; health es un servicio simple de comprobación"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Datos y archivos",
+      "items": [
+        "El QR se guarda en PostgreSQL como PNG y SVG, no en el volumen"
+      ]
+    }
+  ]
+}
