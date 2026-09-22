@@ -19,7 +19,8 @@
 4. [Componentes sin estado (*stateless*)](#4-componentes-sin-estado-stateless)
 5. [Internacionalización (i18n) con menú desplegable de idioma](#5-internacionalización-i18n-con-menú-desplegable-de-idioma)
 6. [Validación de formularios con expresiones regulares](#6-validación-de-formularios-con-expresiones-regulares)
-7. [Conclusiones](#7-conclusiones)
+7. [Consumo de un servicio externo desde el frontend](#7-consumo-de-un-servicio-externo-desde-el-frontend)
+8. [Conclusiones](#8-conclusiones)
 
 ---
 
@@ -46,12 +47,13 @@ Tecnologías principales:
 | Pruebas | Jest y Testing Library (unitarias), Playwright (extremo a extremo) |
 | Despliegue | Docker Compose con Nginx |
 
-Este informe explica cómo se implementaron cuatro requisitos del trabajo:
+Este informe explica cómo se implementaron cinco requisitos del trabajo:
 
-- la arquitectura en n capas;
+- la arquitectura en n capas y su diagrama de componentes;
 - los componentes con y sin estado;
 - la internacionalización con un menú desplegable de idioma;
-- la validación de un formulario con expresiones regulares.
+- la validación de un formulario con expresiones regulares;
+- el consumo de un servicio externo desde el frontend.
 
 Las citas exactas de cada punto, con archivo y línea, están en el anexo [`checklist-academico.md`](checklist-academico.md).
 
@@ -184,6 +186,11 @@ Esta separación trae tres ventajas concretas:
 Los dos diagramas anteriores muestran capas. El diagrama de componentes baja un nivel: dibuja cada módulo de la API como una pieza propia y muestra con qué se conecta cada uno.
 
 El diagrama se generó con [Archify](https://github.com/tt-a1i/archify) y es una página HTML interactiva: [`docs/diagrams/component-diagram.html`](diagrams/component-diagram.html). Se abre en cualquier navegador sin instalar nada y permite acercar la vista, buscar un componente, resaltar sus conexiones y recorrer cuatro vistas guiadas. Su fuente es [`component-diagram.json`](diagrams/component-diagram.json). Cada componente cita el archivo del repositorio que lo implementa, y Archify comprobó que esos archivos existen en la revisión indicada antes de dibujarlo.
+
+<!-- docx: landscape -->
+![Diagrama de componentes generado con Archify](img/informe/06-diagrama-componentes.png)
+
+*Figura 1. Diagrama de componentes: un componente por módulo de la API, la frontera del BFF y los dos servicios externos, cada uno usado desde un lado distinto.*
 
 | Componente | Tipo | Qué hace |
 |---|---|---|
@@ -340,11 +347,11 @@ Toda la aplicación está disponible en **español** (idioma por defecto) e **in
 
 ![Página de inicio en español con el selector de idioma](img/informe/01-landing-es.png)
 
-*Figura 1. Página de inicio en español; el selector «Español» está junto a la marca.*
+*Figura 2. Página de inicio en español; el selector «Español» está junto a la marca.*
 
 ![Página de inicio en inglés](img/informe/02-landing-en.png)
 
-*Figura 2. La misma página tras elegir «English» en el menú desplegable.*
+*Figura 3. La misma página tras elegir «English» en el menú desplegable.*
 
 ### 5.1 Decisiones de diseño
 
@@ -426,7 +433,7 @@ Cuando la API rechaza una operación, no envía un texto fijo en un idioma, sino
 
 ![Panel del dueño en inglés](img/informe/05-panel-en.png)
 
-*Figura 3. Panel del dueño en inglés; el nombre del restaurante, que es contenido del dueño, no se traduce.*
+*Figura 4. Panel del dueño en inglés; el nombre del restaurante, que es contenido del dueño, no se traduce.*
 
 ---
 
@@ -532,21 +539,212 @@ El formulario trata distinto las dos reglas:
 
 ![Aviso de correo inválido](img/informe/03-login-correo-invalido.png)
 
-*Figura 4. El correo `hola@turestaurante` no cumple la expresión regular y el formulario no se envía.*
+*Figura 5. El correo `hola@turestaurante` no cumple la expresión regular y el formulario no se envía.*
 
 ![Recomendación de contraseña más segura](img/informe/04-login-contrasena-debil.png)
 
-*Figura 5. La contraseña no tiene mayúscula ni número: el formulario lo recomienda, pero permite continuar.*
+*Figura 6. La contraseña no tiene mayúscula ni número: el formulario lo recomienda, pero permite continuar.*
 
 Los mensajes también están traducidos: la validación devuelve una clave, como `emailFormat`, y el diccionario del idioma activo la convierte en texto. El formulario usa además el atributo `noValidate`, para que los globos nativos del navegador no se adelanten a los mensajes de estas reglas.
 
 ---
 
-## 7. Conclusiones
+## 7. Consumo de un servicio externo desde el frontend
 
-- **Arquitectura en n capas.** Se aplicó en dos niveles: el sistema se divide en presentación, servidor web (BFF), lógica de negocio y datos, y cada módulo de la API separa dominio, aplicación, infraestructura y presentación. Esto aísla la seguridad de la sesión en el servidor web y permite probar cada caso de uso sin base de datos.
+El perfil del dueño muestra ahora una tarjeta **«Clima ahora»** con el tiempo actual en la zona del restaurante. Le sirve para anticipar el día: con calor se venden más bebidas frías; con lluvia, más pedidos para llevar.
+
+Los datos vienen de [Open-Meteo](https://open-meteo.com/), un servicio meteorológico público. Se usan dos de sus APIs:
+
+| API | Para qué | Ejemplo de respuesta |
+|---|---|---|
+| Geocoding API | Convierte el nombre de un lugar en coordenadas | `Miraflores, Lima` → latitud −12,11, longitud −77,03, región «Departamento de Lima» |
+| Forecast API | Devuelve el tiempo actual en esas coordenadas | 22 °C, código WMO 3 (nublado), medido a las 08:30 hora local |
+
+### 7.1 Por qué la llamada sale del navegador
+
+El resto de la aplicación nunca habla con un servidor ajeno desde el navegador: todo pasa por el BFF (sección 2.1). Esa regla existe para proteger los tokens de sesión y la API interna. Open-Meteo no necesita ninguna de las dos cosas:
+
+- **No pide clave.** No hay ningún secreto que esconder en el servidor.
+- **No recibe datos privados.** Solo viaja el nombre de una ciudad.
+- **Acepta peticiones de cualquier sitio.** Responde con la cabecera CORS `access-control-allow-origin: *`, así que el navegador permite leer la respuesta.
+
+Pasar la llamada por el BFF solo añadiría un salto y carga al servidor. Por eso es la única excepción a la regla, y está documentada en el README.
+
+El caso contrario es Google Gemini, que digitaliza las cartas: exige una clave secreta (`GEMINI_API_KEY`), así que solo se llama desde la API. El diagrama de componentes (figura 1) muestra ambos servicios, cada uno conectado desde un lado distinto.
+
+```mermaid
+sequenceDiagram
+  participant D as Dueño
+  participant N as Navegador
+  participant B as Next.js (BFF) y API
+  participant G as Open-Meteo Geocoding
+  participant F as Open-Meteo Forecast
+  D->>N: Escribe la ciudad y pulsa Guardar perfil
+  N->>B: PATCH /api/owner/restaurants/:id/profile
+  B-->>N: Perfil guardado, con la ciudad
+  N->>G: GET /v1/search?name=Miraflores, Lima&countryCode=PE
+  G-->>N: Coordenadas y región
+  N->>F: GET /v1/forecast?latitude=…&longitude=…&current=…
+  F-->>N: Temperatura, código WMO y hora local
+  N-->>D: Tarjeta «Clima ahora»
+```
+
+### 7.2 Un campo nuevo: la ciudad
+
+La primera idea fue geocodificar la dirección que el dueño ya había guardado. Al probarlo contra la API real no funcionó: la geocodificación solo entiende **nombres de lugares o códigos postales**, no calles.
+
+| Texto buscado | Resultado |
+|---|---|
+| `Av. Larco 123, Miraflores, Lima` | Ningún resultado |
+| `Lima` | Lima, Provincia de Lima (correcto) |
+| `Miraflores, Lima` | Miraflores, Departamento de Lima (correcto) |
+| `Barranco` | Un pueblo de Cajamarca: ese distrito de Lima no está en la base de Open-Meteo |
+
+Por eso el perfil tiene ahora un campo **Ciudad**. Se guarda en la columna nueva `Restaurant.city`, opcional y de hasta 120 caracteres, y la API la valida con la misma función que al resto del perfil (`normalizeRestaurantProfile`, en la capa `application`). La carta pública también la muestra, a continuación de la dirección: «Malecón de la Reserva 610 · Miraflores, Lima».
+
+### 7.3 El cliente de Open-Meteo
+
+Toda la comunicación con el servicio está en un único módulo, [`apps/web/src/lib/weather.ts`](../apps/web/src/lib/weather.ts). Son funciones sin estado: reciben datos y devuelven datos, así que se prueban sin montar ningún componente.
+
+```ts
+// apps/web/src/lib/weather.ts
+const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
+const COUNTRY_CODE = 'PE';
+
+export function geocodingUrl(city: string, locale: Locale): string {
+  const query = new URLSearchParams({
+    count: '1',
+    countryCode: COUNTRY_CODE,
+    format: 'json',
+    language: locale,
+    name: city,
+  });
+  return `${GEOCODING_URL}?${query.toString()}`;
+}
+
+export async function lookUpWeather(
+  city: string,
+  locale: Locale,
+  signal?: AbortSignal,
+): Promise<WeatherLookup> {
+  const place = parsePlace(await requestJson(geocodingUrl(city, locale), signal));
+  if (!place) return { kind: 'not-found' };
+  const unit = temperatureUnit(locale); // °C en español, °F en inglés
+  const weather = parseCurrentWeather(
+    await requestJson(forecastUrl(place, unit), signal),
+    unit,
+  );
+  return { kind: 'found', region: place.region, weather };
+}
+
+async function requestJson(url: string, signal?: AbortSignal): Promise<unknown> {
+  const response = await fetch(url, { signal }); // fetch del navegador, sin /api
+  if (!response.ok) {
+    throw new WeatherUnavailableError(`Open-Meteo answered ${response.status}`);
+  }
+  return response.json();
+}
+```
+
+Tres decisiones del módulo:
+
+1. **La respuesta de un tercero no se da por buena.** `parsePlace` y `parseCurrentWeather` comprueban cada campo antes de usarlo, por ejemplo que la temperatura sea un número. Si la forma no es la esperada, lanzan un error propio en lugar de dibujar datos rotos.
+2. **La búsqueda se limita a Perú.** Sin el filtro, «San Miguel» devuelve primero San Miguelito, en Panamá.
+3. **Los códigos del tiempo se traducen.** Open-Meteo devuelve códigos WMO (0 = despejado, 3 = nublado, 61 = lluvia…). `weatherCondition` los agrupa en 15 condiciones con texto en español y en inglés.
+
+### 7.4 La tarjeta «Clima ahora»
+
+La tarjeta es un componente de cliente con estado. El hook `useRestaurantWeather` pide el clima cuando cambia la ciudad guardada o el idioma, y cancela la petición anterior si el dueño cambia de ciudad antes de recibir la respuesta:
+
+```tsx
+// apps/web/src/app/admin/restaurant-weather.tsx
+export function useRestaurantWeather(savedCity: string | null): WeatherState {
+  const locale = useLocale();
+  const city = savedCity?.trim() ?? '';
+  const key = `${locale}\n${city}`;
+  const [result, setResult] =
+    useState<{ key: string; state: WeatherState } | null>(null);
+
+  useEffect(() => {
+    if (!city) return;
+    const controller = new AbortController();
+    lookUpWeather(city, locale, controller.signal).then(
+      (lookup) =>
+        setResult({
+          key,
+          state:
+            lookup.kind === 'found'
+              ? { region: lookup.region, status: 'ready', weather: lookup.weather }
+              : { status: 'not-found' },
+        }),
+      () => {
+        if (!controller.signal.aborted) {
+          setResult({ key, state: { status: 'error' } });
+        }
+      },
+    );
+    return () => controller.abort(); // cancela la consulta anterior
+  }, [city, key, locale]);
+
+  if (!city) return { status: 'idle' };
+  return result?.key === key ? result.state : { status: 'loading' };
+}
+```
+
+El hook vive en el panel del perfil y no dentro del formulario. El formulario se vuelve a montar cada vez que se guarda, y si el hook estuviera dentro, guardar el teléfono volvería a consultar el clima. Una prueba lo impide: guardar sin cambiar la ciudad no genera peticiones nuevas.
+
+| Estado | Qué ve el dueño |
+|---|---|
+| Sin ciudad | «Agrega la ciudad de tu local para ver el clima de tu zona.» |
+| Consultando | «Consultando el clima…» |
+| Ciudad no encontrada | «No encontramos «X». Prueba solo con el distrito o la ciudad.» |
+| Error de red | «No pudimos cargar el clima. Inténtalo más tarde.» El resto del perfil sigue funcionando. |
+| Listo | Temperatura, estado del cielo, ciudad y región encontrada, hora de la medición y el enlace a Open-Meteo |
+
+La tarjeta muestra la región que devolvió Open-Meteo junto a la ciudad guardada. Así, si la API elige un lugar equivocado (el caso de Barranco), el dueño lo ve y puede corregir la ciudad. El enlace «Weather data by Open-Meteo.com» lo exige la licencia CC BY 4.0 de los datos.
+
+![Perfil del dueño con la tarjeta del clima](img/informe/07-clima-perfil.png)
+
+*Figura 7. Perfil del dueño con la ciudad «Miraflores, Lima» y la tarjeta «Clima ahora» con datos reales de Open-Meteo.*
+
+### 7.5 Evidencia de que la petición la hace el navegador
+
+La figura 8 es la pestaña Network del visor de trazas de Playwright, grabada en la misma sesión de la figura 7. Filtrada por «open-meteo», muestra las dos peticiones (`search` y `forecast`) y el detalle de la primera.
+
+![Petición a Open-Meteo en el visor de trazas](img/informe/08-clima-red-trazas.png)
+
+*Figura 8. Petición del navegador a la Geocoding API de Open-Meteo, con sus cabeceras de petición y de respuesta.*
+
+Las cabeceras prueban el origen de la llamada:
+
+- `Origin: http://127.0.0.1:3000`: la petición la inició la página web de Sirio, no el servidor.
+- `Sec-Fetch-Mode: cors` y `Sec-Fetch-Site: cross-site`: el navegador la trató como una petición entre sitios distintos.
+- `access-control-allow-origin: *` en la respuesta: Open-Meteo autoriza que cualquier página lea el resultado.
+
+La prueba E2E [`owner-weather.spec.ts`](../tests/e2e/owner-weather.spec.ts) comprueba lo mismo de forma automática. Intercepta Open-Meteo con `page.route`, que solo ve las peticiones del navegador: si la llamada saliera del servidor Next.js, la prueba fallaría. Además verifica que la petición sea de tipo `fetch` y venga de la página.
+
+### 7.6 Pruebas
+
+| Prueba | Qué comprueba |
+|---|---|
+| `lib/weather.test.ts` (14 casos) | URLs y parámetros, validación de respuestas, códigos WMO, «no encontrada», errores HTTP y cancelación |
+| `restaurant-weather.test.tsx` (6 casos) | Cada estado de la tarjeta, °F en inglés, hora en 24 h y nueva consulta al cambiar de ciudad |
+| `restaurant-profile-panel.test.tsx` (2 casos nuevos) | El campo Ciudad, y que guardar sin cambiar la ciudad no repite la consulta |
+| `owner-weather.spec.ts` (3 escenarios en 3 navegadores) | Guardado de la ciudad, clima en español e inglés, ciudad desconocida, corte de red y ciudad en la carta pública |
+
+### 7.7 Limitaciones
+
+- **Distritos que no existen en la base.** Barranco y San Miguel (Lima) se resuelven a pueblos homónimos de otras regiones. La región visible en la tarjeta deja ver el error.
+- **Uso comercial.** El plan gratuito de Open-Meteo es solo para uso no comercial, hasta 10 000 llamadas al día. Antes de cobrar a los restaurantes hay que contratar una clave comercial.
+
+---
+
+## 8. Conclusiones
+
+- **Arquitectura en n capas.** Se aplicó en dos niveles: el sistema se divide en presentación, servidor web (BFF), lógica de negocio y datos, y cada módulo de la API separa dominio, aplicación, infraestructura y presentación. Esto aísla la seguridad de la sesión en el servidor web y permite probar cada caso de uso sin base de datos. El diagrama de componentes, generado con Archify a partir del código real, muestra cada módulo y sus conexiones.
 - **Componentes con y sin estado.** `LoginForm` y `PasswordField` concentran la interacción mediante `useState`; `Card` y `StatusPill` son funciones puras de sus props que dan coherencia visual en toda la aplicación.
 - **Internacionalización.** Español e inglés conviven sin librerías externas, gracias a diccionarios tipados, una cookie de sesión y un menú desplegable accesible. Se respetan dos restricciones reales del producto: la URL fija de cada QR y el contenido escrito por el dueño.
 - **Expresiones regulares.** Las reglas de correo y contraseña se definen una sola vez y se aplican en la web y en la API. Cada regla tiene un comportamiento diferenciado: el correo inválido se bloquea y la contraseña débil solo se advierte, para no dejar fuera a ningún usuario existente.
+- **Servicio externo desde el frontend.** El navegador consulta directamente a Open-Meteo para mostrar el clima de la zona del restaurante. Es la única excepción a la regla del BFF, y está justificada: el servicio es público, no pide clave y no recibe datos privados. Las respuestas del tercero se validan antes de usarse, y un fallo del servicio solo afecta a su tarjeta.
 
 Las rutas y líneas exactas de cada fragmento citado, y las pruebas que lo verifican, están en [`checklist-academico.md`](checklist-academico.md).

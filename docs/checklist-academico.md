@@ -1,6 +1,6 @@
 # Checklist académico — Sistema de Cartas QR
 
-Este documento muestra dónde cumple el proyecto cada uno de los cinco requisitos del checklist. Cada punto cita el archivo y la línea exacta, e indica cómo verificarlo con las pruebas del repositorio. Las rutas son relativas a la raíz del repositorio.
+Este documento muestra dónde cumple el proyecto cada uno de los seis requisitos del checklist. Cada punto cita el archivo y la línea exacta, e indica cómo verificarlo con las pruebas del repositorio. Las rutas son relativas a la raíz del repositorio.
 
 | # | Requisito | Dónde se cumple |
 |---|---|---|
@@ -9,6 +9,7 @@ Este documento muestra dónde cumple el proyecto cada uno de los cinco requisito
 | 3 | Dos componentes *stateless* | [`Card`](../apps/web/src/components/surfaces.tsx#L20) y [`StatusPill`](../apps/web/src/components/surfaces.tsx#L77) |
 | 4 | Menú desplegable de idioma | [`LanguageSwitcher`](../apps/web/src/components/language-switcher.tsx#L24): español e inglés en toda la aplicación |
 | 5 | Formulario validado con expresiones regulares | Los dos formularios de acceso, con [`EMAIL_PATTERN` y `PASSWORD_POLICY_PATTERN`](../packages/shared/src/credentials-policy.ts#L1) |
+| 6 | Consumo de un servicio externo desde el frontend | La tarjeta «Clima ahora» del perfil llama a Open-Meteo desde el navegador con [`lookUpWeather`](../apps/web/src/lib/weather.ts#L149) |
 
 ---
 
@@ -106,6 +107,7 @@ Las capas se conectan en [`restaurants.module.ts:164`](../apps/api/src/restauran
 | `digitization` | [`digitization.module.ts`](../apps/api/src/digitization/digitization.module.ts) |
 | Volumen `uploads_data` | [`compose.yml`](../compose.yml) |
 | PostgreSQL | [`prisma/schema.prisma`](../prisma/schema.prisma) |
+| Open-Meteo | [`lib/weather.ts`](../apps/web/src/lib/weather.ts), [`restaurant-weather.tsx`](../apps/web/src/app/admin/restaurant-weather.tsx) |
 
 ---
 
@@ -300,6 +302,39 @@ sequenceDiagram
 
 ---
 
+## 6. Consumo de un servicio externo desde el frontend
+
+El perfil del dueño (`/admin`) muestra el clima actual de la zona del restaurante. Los datos vienen de [Open-Meteo](https://open-meteo.com/), un servicio público que no pide clave, y los pide el navegador directamente, sin pasar por el BFF. Es la única excepción a esa regla; la justificación está en la sección 7.1 del [informe](informe.md).
+
+### 6.1 El cliente del servicio
+
+Todo el acceso a Open-Meteo está en [`apps/web/src/lib/weather.ts`](../apps/web/src/lib/weather.ts):
+
+| Qué | Dónde |
+|---|---|
+| URLs de las dos APIs y filtro por país (Perú) | [`weather.ts:7`](../apps/web/src/lib/weather.ts#L7) a la línea 11 |
+| Parámetros de la geocodificación | [`geocodingUrl`, línea 93](../apps/web/src/lib/weather.ts#L93) |
+| Parámetros del pronóstico (°C o °F según el idioma) | [`forecastUrl`, línea 104](../apps/web/src/lib/weather.ts#L104) |
+| Validación de las respuestas del tercero | [`parsePlace`, línea 119](../apps/web/src/lib/weather.ts#L119) y [`parseCurrentWeather`, línea 131](../apps/web/src/lib/weather.ts#L131) |
+| Códigos WMO convertidos en condiciones legibles | [`weatherCondition`, línea 85](../apps/web/src/lib/weather.ts#L85) |
+| Flujo completo: geocodificar y luego pedir el clima | [`lookUpWeather`, línea 149](../apps/web/src/lib/weather.ts#L149) |
+| El `fetch` del navegador hacia Open-Meteo | [`requestJson`, línea 162](../apps/web/src/lib/weather.ts#L162) |
+
+### 6.2 Dónde se usa
+
+1. [`restaurant-weather.tsx:43`](../apps/web/src/app/admin/restaurant-weather.tsx#L43) — el hook `useRestaurantWeather` llama a `lookUpWeather` en un efecto (línea 52) y cancela la consulta anterior al cambiar de ciudad (línea 65).
+2. [`restaurant-weather.tsx:72`](../apps/web/src/app/admin/restaurant-weather.tsx#L72) — `RestaurantWeatherCard` dibuja cada estado y el enlace de atribución que exige la licencia (línea 122).
+3. [`restaurant-profile-panel.tsx:53`](../apps/web/src/app/admin/restaurant-profile-panel.tsx#L53) — el panel usa el hook fuera del formulario, que se vuelve a montar al guardar; así, guardar sin cambiar la ciudad no repite la consulta. La tarjeta se monta en la línea 278 y el campo Ciudad en la 318.
+4. La ciudad se guarda en la columna `city` ([`schema.prisma:44`](../prisma/schema.prisma#L44), migración [`20260922120000_restaurant_city`](../prisma/migrations/20260922120000_restaurant_city/migration.sql)) y la API la valida en [`restaurant-profile.validation.ts:51`](../apps/api/src/restaurants/application/restaurant-profile.validation.ts#L51).
+
+**Verificación:**
+- [`weather.test.ts`](../apps/web/src/lib/weather.test.ts) prueba las URLs, la validación de respuestas, los códigos WMO, «no encontrada», los errores HTTP y la cancelación.
+- [`restaurant-weather.test.tsx`](../apps/web/src/app/admin/restaurant-weather.test.tsx) prueba cada estado de la tarjeta y los °F en inglés.
+- [`restaurant-profile-panel.test.tsx`](../apps/web/src/app/admin/restaurant-profile-panel.test.tsx) prueba que guardar sin cambiar la ciudad no repite la consulta.
+- El E2E [`owner-weather.spec.ts`](../tests/e2e/owner-weather.spec.ts) intercepta Open-Meteo con `page.route`, que solo ve peticiones del navegador. Además comprueba que la petición es de tipo `fetch` y sale de la página (líneas 173 y 174).
+
+---
+
 ## Cómo ejecutar las pruebas
 
 Desde la raíz del repositorio (requiere Node 24 y pnpm 11):
@@ -309,5 +344,5 @@ pnpm install
 pnpm --filter @sirio/shared test        # expresiones regulares
 pnpm test                               # unitarias de API y web
 pnpm compose:dev                        # levanta el stack con Docker
-pnpm exec playwright test tests/e2e/access-screens.spec.ts tests/e2e/i18n-switch.spec.ts
+pnpm exec playwright test tests/e2e/access-screens.spec.ts tests/e2e/i18n-switch.spec.ts tests/e2e/owner-weather.spec.ts
 ```
