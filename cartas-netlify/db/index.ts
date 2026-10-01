@@ -5,6 +5,9 @@ import pg from 'pg';
 
 /** Drizzle client shared by Server Components, Route Handlers and Netlify Functions. */
 export type Database = PgAsyncDatabase<PgQueryResultHKT>;
+export type Transaction = Parameters<Parameters<Database['transaction']>[0]>[0];
+/** Anything that can run queries: the client itself or an open transaction. */
+export type Executor = Database | Transaction;
 
 const globalCache = globalThis as typeof globalThis & { sirioDatabase?: Database };
 

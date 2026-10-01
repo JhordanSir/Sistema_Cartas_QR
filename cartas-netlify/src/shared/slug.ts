@@ -52,6 +52,12 @@ export class EmptySlugError extends Error {
 }
 
 /**
+ * Room left for a "-N" suffix inside `restaurants.slug varchar(160)`. NFKD can
+ * expand one character into several, so a 160-character name may not fit as is.
+ */
+export const SLUG_BASE_MAX_LENGTH = 150;
+
+/**
  * The slug for a new restaurant: the normalized name, or the first free "-2", "-3"…
  * variant when it is reserved or already taken. The caller decides what "taken" means.
  */
@@ -59,7 +65,7 @@ export async function resolveUniqueSlug(
   name: string,
   slugExists: (candidate: string) => Promise<boolean>,
 ): Promise<string> {
-  const base = normalizeSlug(name);
+  const base = [...normalizeSlug(name)].slice(0, SLUG_BASE_MAX_LENGTH).join('').replace(EDGE_HYPHENS, '');
   if (!base) throw new EmptySlugError();
 
   let candidate = base;

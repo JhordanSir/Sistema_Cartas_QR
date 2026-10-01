@@ -10,7 +10,7 @@ describe('GET /api/salud', () => {
     isDatabaseUp.mockReset();
   });
 
-  it('answers 200 with the database up', async () => {
+  it('responde 200 con la base de datos activa', async () => {
     isDatabaseUp.mockResolvedValue(true);
 
     const response = await GET();
@@ -20,7 +20,7 @@ describe('GET /api/salud', () => {
     expect(await response.json()).toEqual({ ok: true, database: 'up' });
   });
 
-  it('answers 503 without any detail when the database is down', async () => {
+  it('responde 503 sin detalles cuando la base de datos falla', async () => {
     isDatabaseUp.mockResolvedValue(false);
 
     const response = await GET();

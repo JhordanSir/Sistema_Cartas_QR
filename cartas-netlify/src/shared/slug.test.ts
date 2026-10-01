@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { EmptySlugError, isReservedSlug, normalizeSlug, resolveUniqueSlug } from './slug';
+import {
+  EmptySlugError,
+  isReservedSlug,
+  normalizeSlug,
+  resolveUniqueSlug,
+  SLUG_BASE_MAX_LENGTH,
+} from './slug';
 
 const nothingTaken = async () => false;
 
@@ -49,5 +55,13 @@ describe('resolveUniqueSlug', () => {
 
   it('rechaza un nombre sin letras ni números', async () => {
     await expect(resolveUniqueSlug('---', nothingTaken)).rejects.toBeInstanceOf(EmptySlugError);
+  });
+
+  it('recorta el slug para que quepa con su sufijo en 160 caracteres', async () => {
+    // U+FDFA se descompone en 18 caracteres: 160 de ellos superarían la columna.
+    const slug = await resolveUniqueSlug('ﷺ'.repeat(160), nothingTaken);
+
+    expect([...slug].length).toBeLessThanOrEqual(SLUG_BASE_MAX_LENGTH);
+    expect(slug).not.toMatch(/^-|-$/);
   });
 });
