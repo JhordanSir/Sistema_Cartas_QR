@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 6 de 13 — Editor: variantes, adicionales e imágenes de producto.
+Fase 7 de 13 — Publicación y carta pública.
 
 ## Fases completadas
 
@@ -11,6 +11,7 @@ Fase 6 de 13 — Editor: variantes, adicionales e imágenes de producto.
 3. Cuentas: registro, inicio y cierre de sesión, cambio de contraseña, y la barra superior del panel y del backoffice.
 4. Perfil del restaurante (logo en Netlify Blobs y `/media`) y código QR.
 5. Editor de la carta: secciones y productos, orden, disponibilidad y bloqueo por digitalización.
+6. Opciones (variantes), adicionales e imagen de cada producto.
 
 ## Decisiones
 
@@ -156,6 +157,26 @@ Fase 6 de 13 — Editor: variantes, adicionales e imágenes de producto.
 - **404 → 405 bajo `netlify dev`.** Al reintentar un 404 de un POST como archivo estático, la última alternativa termina en 405. La prueba de aislamiento entre restaurantes va directo a Next: la cookie de `localhost` sirve en cualquier puerto.
 - **La E2E del bloqueo por digitalización queda para la fase 9**, cuando exista un trabajo real que crear desde la API.
 
+### Opciones, adicionales e imágenes (fase 6)
+
+- **Nombres en la interfaz.** Las variantes se llaman «Opciones» y los extras «Adicionales», como en la carta pública (§E8).
+- **Reemplazo en bloque.** El `POST` y el `PATCH` del producto llevan las dos listas completas. En la misma transacción de la edición se borran las anteriores y se insertan las nuevas, con `sort_order` según su posición.
+  - Cambiar el producto de sección no rompe las claves foráneas compuestas, porque apuntan a (id, restaurant_id) del mismo restaurante.
+- **Validación (§E5).** Hasta 30 por lista, nombre de 1 a 160 caracteres y precio válido.
+  - Los errores llegan por fila (`variants.1.price`).
+  - En la API las listas aceptan hasta 200 filas para que el límite de 30 responda con su propio mensaje («Puedes agregar hasta 30 opciones.»).
+  - En el formulario, «Agregar opción» se deshabilita al llegar a 30.
+- **Errores de fila con clave estable.** El formulario guarda los errores por la clave de cada fila, no por su índice. Así siguen a su fila al reordenarla o quitar otra, y se quitan en cuanto esa fila se corrige. El foco va al primer error, en el orden de la pantalla.
+- **Etiquetas accesibles por fila.** «Nombre» y «Precio» visibles, y un sufijo solo para lectores de pantalla («de la opción 2», «del adicional 1, en soles»). Por eso `Field` acepta ahora contenido enriquecido como etiqueta.
+- **Imagen del producto.**
+  - `PUT /api/carta/productos/{id}/imagen` (multipart, campo `image`): ≤ 4 MB, firma binaria y clave `restaurants/{id}/products/{productId}/{uuid}`.
+  - Se comprueba que el producto es del dueño antes de subir nada, para no dejar blobs de productos ajenos. El blob anterior se borra después del commit.
+  - Se aplica al instante, aparte del formulario, y responde el borrador completo, así la miniatura de la lista se actualiza.
+  - Al crear un producto la hoja avisa «Podrás agregar una foto después de crear el producto.»: hace falta su id.
+  - Pasa por el mismo bloqueo de §E7 que el resto de la carta.
+- **La hoja de edición guarda solo ids.** El producto se toma del borrador vigente, así la foto recién subida se ve sin cerrar la hoja.
+- **El anunciador de rutas de Next.** Next deja un `role="alert"` vacío en `<body>`, así que las pruebas que comprueban «sin errores» miran solo dentro de `<main>`.
+
 ## Verificación
 
 ### Fase 1
@@ -249,6 +270,25 @@ Fase 6 de 13 — Editor: variantes, adicionales e imágenes de producto.
   - Escape;
   - que otro dueño recibe 404 en cinco operaciones sobre la carta ajena.
 - Capturas a 390 y 1280 px del editor, la hoja del producto y la confirmación, revisadas a mano.
+
+### Fase 6
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 158 pruebas. Las nuevas cubren:
+  - 30 elementos aceptados y 31 rechazados, en las dos listas;
+  - nombre vacío y precio inválido por fila;
+  - la normalización;
+  - `parseMenuDraft` con las listas.
+- `pnpm test:e2e`: 52 de 52. Los de la fase 6 cubren:
+  - un producto con 2 opciones y 1 adicional, igual tras recargar, con «2 opciones · 1 adicional» en la lista;
+  - la validación y corrección por fila, con el foco en el error;
+  - reordenar y quitar filas;
+  - la API con 31 opciones;
+  - la foto: subir, ver la miniatura, cambiarla (el blob anterior devuelve 404) y quitarla;
+  - un texto disfrazado de PNG, rechazado en el navegador y en la API;
+  - que borrar el producto o la sección borra la foto;
+  - otro dueño, que recibe 404.
+- Capturas de la hoja del producto (foto, opciones y adicionales) a 1280 y 390 px, revisadas a mano.
 
 ## Pendientes
 - Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
