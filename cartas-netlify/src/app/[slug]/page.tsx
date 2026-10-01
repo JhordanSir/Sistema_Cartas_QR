@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
 import type { CSSProperties, ReactNode } from 'react';
 
+import { menuFontFamily } from '@/app/menu-fonts';
 import { getPublicMenu } from '@/server/next/public-menu-cache';
 import type { PublicMenu } from '@/server/public-menu';
 import { formatPrice } from '@/shared/menu';
@@ -71,7 +72,7 @@ export async function generateViewport(props: Props): Promise<Viewport> {
 function menuVariables(style: MenuStyle): CSSProperties {
   return {
     '--menu-background': style.backgroundColor,
-    '--menu-font': `"${style.fontFamily}", system-ui, sans-serif`,
+    '--menu-font': menuFontFamily(style.fontFamily),
     '--menu-foreground': style.textColor,
   } as CSSProperties;
 }
