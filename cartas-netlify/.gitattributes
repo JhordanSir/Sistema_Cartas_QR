@@ -1,0 +1,2 @@
+# Applied migrations must keep identical bytes on every checkout and deploy.
+netlify/database/migrations/** text eol=lf
