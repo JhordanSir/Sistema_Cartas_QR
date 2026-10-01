@@ -19,6 +19,7 @@ import {
 
 import { ProductForm, SectionForm, type ProductFormValues, type SaveResult } from './forms';
 import { ProductImageEditor } from './product-image';
+import { PublicationBar } from './publication-bar';
 
 /** Only ids: what is shown always comes from the current draft. */
 type Editing =
@@ -164,6 +165,11 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
           Estamos digitalizando tu carta. Podrás editarla en cuanto termine.
         </Notice>
       ) : null}
+      <PublicationBar
+        disabled={disabled}
+        onPublish={() => act('/api/carta/publicar', 'POST')}
+        publication={draft.publication}
+      />
       {notice ? <Notice tone="error">{notice}</Notice> : null}
 
       {draft.categories.length === 0 ? (

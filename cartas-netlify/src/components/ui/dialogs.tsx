@@ -93,6 +93,7 @@ export function ConfirmDialog({
   open,
   pending = false,
   title,
+  tone = 'danger',
 }: {
   children: ReactNode;
   confirmLabel: string;
@@ -101,6 +102,8 @@ export function ConfirmDialog({
   open: boolean;
   pending?: boolean;
   title: string;
+  /** `primary` for actions that are not destructive, such as publishing. */
+  tone?: 'danger' | 'primary';
 }) {
   const ref = useModal(open);
   const cancelRef = useRef<HTMLButtonElement>(null);
@@ -135,7 +138,7 @@ export function ConfirmDialog({
             <Button disabled={pending} onClick={onCancel} ref={cancelRef} variant="secondary">
               Cancelar
             </Button>
-            <Button disabled={pending} onClick={onConfirm} variant="danger">
+            <Button disabled={pending} onClick={onConfirm} variant={tone}>
               {confirmLabel}
             </Button>
           </div>
