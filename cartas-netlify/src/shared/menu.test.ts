@@ -126,6 +126,7 @@ describe('parseMenuDraft', () => {
       },
     ],
     digitizationInProgress: false,
+    publication: { hasUnpublishedChanges: true, publishedAt: null, slug: 'cevicheria-luna' },
   };
 
   it('acepta la respuesta de la API', () => {
@@ -172,7 +173,11 @@ describe('validatePricedItems', () => {
 describe('parseMenuDraft con opciones y adicionales', () => {
   it('rechaza un producto sin sus listas', () => {
     const product = { basePrice: '1.00', description: null, id: 'p', imageUrl: null, isAvailable: true, name: 'X' };
-    const draft = { categories: [{ id: 'c', layout: 'LIST', name: 'S', products: [product] }], digitizationInProgress: false };
+    const draft = {
+      categories: [{ id: 'c', layout: 'LIST', name: 'S', products: [product] }],
+      digitizationInProgress: false,
+      publication: { hasUnpublishedChanges: false, publishedAt: null, slug: 's' },
+    };
     expect(parseMenuDraft({ draft })).toBeNull();
   });
 });

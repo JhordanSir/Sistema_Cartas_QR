@@ -1,17 +1,24 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 
-import { getDb, type Transaction } from '../../db/index';
-import { categories, productExtras, products, productVariants } from '../../db/schema';
+import { getDb, type Executor, type Transaction } from '../../db/index';
+import { categories, productExtras, products, productVariants, restaurants } from '../../db/schema';
 import {
   moveItem,
   sortOrders,
   type CategoryLayout,
-  type DraftCategory,
   type MenuDraft,
   type MoveDirection,
   type PricedItem,
   type PricedItemValues,
 } from '../shared/menu';
+import {
+  hasAvailableProduct,
+  hasUnpublishedChanges,
+  parseMenuSnapshot,
+  type MenuSnapshot,
+  type SnapshotCategory,
+} from '../shared/menu-snapshot';
+import { resolveMenuStyle } from '../shared/menu-style';
 import { deleteBlobQuietly, mediaUrl } from './blobs';
 import { ApiError } from './http';
 import { hasActiveDigitization, withMenuEdit } from './menu-lock';
@@ -30,14 +37,33 @@ function productNotFound(): ApiError {
   return new ApiError(404, 'NOT_FOUND', PRODUCT_NOT_FOUND);
 }
 
-export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
-  const db = getDb();
-  const categoryRows = await db
+/** The draft as a snapshot (§E7): the same shape that gets published. */
+async function loadDraftSnapshot(
+  executor: Executor,
+  restaurantId: string,
+): Promise<{
+  snapshot: MenuSnapshot;
+  restaurant: { slug: string; publishedMenu: unknown; publishedAt: Date | null };
+}> {
+  const [restaurant] = await executor
+    .select({
+      menuTemplate: restaurants.menuTemplate,
+      publishedAt: restaurants.publishedAt,
+      publishedMenu: restaurants.publishedMenu,
+      slug: restaurants.slug,
+      sourceStyle: restaurants.sourceStyle,
+    })
+    .from(restaurants)
+    .where(eq(restaurants.id, restaurantId))
+    .limit(1);
+  if (!restaurant) throw new Error(`Restaurant ${restaurantId} does not exist.`);
+
+  const categoryRows = await executor
     .select({ id: categories.id, layout: categories.layout, name: categories.name })
     .from(categories)
     .where(eq(categories.restaurantId, restaurantId))
     .orderBy(asc(categories.sortOrder), asc(categories.createdAt));
-  const productRows = await db
+  const productRows = await executor
     .select({
       basePrice: products.basePrice,
       categoryId: products.categoryId,
@@ -50,32 +76,72 @@ export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
     .from(products)
     .where(eq(products.restaurantId, restaurantId))
     .orderBy(asc(products.sortOrder), asc(products.createdAt));
+  const variants = await pricedItemsByProduct(executor, productVariants, restaurantId);
+  const extras = await pricedItemsByProduct(executor, productExtras, restaurantId);
 
-  const variants = await pricedItemsByProduct(productVariants, restaurantId);
-  const extras = await pricedItemsByProduct(productExtras, restaurantId);
-
-  const byCategory = new Map<string, DraftCategory>(
+  const byCategory = new Map<string, SnapshotCategory>(
     categoryRows.map((category) => [category.id, { ...category, products: [] }]),
   );
-  for (const { categoryId, imageKey, ...product } of productRows) {
+  for (const { categoryId, ...product } of productRows) {
     byCategory.get(categoryId)?.products.push({
       ...product,
       extras: extras.get(product.id) ?? [],
-      imageUrl: imageKey ? mediaUrl(imageKey) : null,
       variants: variants.get(product.id) ?? [],
     });
   }
   return {
-    categories: [...byCategory.values()],
-    digitizationInProgress: await hasActiveDigitization(restaurantId),
+    restaurant,
+    snapshot: {
+      categories: [...byCategory.values()],
+      style: resolveMenuStyle(restaurant.menuTemplate, restaurant.sourceStyle),
+      template: restaurant.menuTemplate,
+    },
   };
 }
 
+export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
+  const { restaurant, snapshot } = await loadDraftSnapshot(getDb(), restaurantId);
+  return {
+    categories: snapshot.categories.map((category) => ({
+      ...category,
+      products: category.products.map(({ imageKey, ...product }) => ({
+        ...product,
+        imageUrl: imageKey ? mediaUrl(imageKey) : null,
+      })),
+    })),
+    digitizationInProgress: await hasActiveDigitization(restaurantId),
+    publication: {
+      hasUnpublishedChanges: hasUnpublishedChanges(snapshot, parseMenuSnapshot(restaurant.publishedMenu)),
+      publishedAt: restaurant.publishedAt?.toISOString() ?? null,
+      slug: restaurant.slug,
+    },
+  };
+}
+
+export const EMPTY_MENU_MESSAGE = 'Agrega al menos un producto disponible antes de publicar.';
+
+/**
+ * Publishes the draft (§E7): its snapshot replaces `published_menu` in a
+ * single UPDATE. Returns the slug, so the caller can invalidate `menu:{slug}`.
+ */
+export async function publishMenu(restaurantId: string): Promise<string> {
+  return withMenuEdit(restaurantId, async (tx) => {
+    const { restaurant, snapshot } = await loadDraftSnapshot(tx, restaurantId);
+    if (!hasAvailableProduct(snapshot)) throw new ApiError(400, 'EMPTY_MENU', EMPTY_MENU_MESSAGE);
+    await tx
+      .update(restaurants)
+      .set({ publishedAt: new Date(), publishedMenu: snapshot })
+      .where(eq(restaurants.id, restaurantId));
+    return restaurant.slug;
+  });
+}
+
 async function pricedItemsByProduct(
+  executor: Executor,
   table: typeof productVariants | typeof productExtras,
   restaurantId: string,
 ): Promise<Map<string, PricedItem[]>> {
-  const rows = await getDb()
+  const rows = await executor
     .select({ id: table.id, name: table.name, price: table.price, productId: table.productId })
     .from(table)
     .where(eq(table.restaurantId, restaurantId))

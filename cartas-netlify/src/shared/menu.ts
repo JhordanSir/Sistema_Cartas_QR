@@ -27,10 +27,19 @@ export type DraftCategory = {
   products: DraftProduct[];
 };
 
+/** Where the draft stands against the published menu (§E7). */
+export type MenuPublication = {
+  hasUnpublishedChanges: boolean;
+  /** ISO date of the last publication, or null if it was never published. */
+  publishedAt: string | null;
+  slug: string;
+};
+
 export type MenuDraft = {
   categories: DraftCategory[];
   /** While a digitization job is active every change answers 409 (§E7). */
   digitizationInProgress: boolean;
+  publication: MenuPublication;
 };
 
 export const SECTION_NAME_MAX_LENGTH = 160;
@@ -216,11 +225,20 @@ function isDraftCategory(value: unknown): value is DraftCategory {
   );
 }
 
+function isPublication(value: unknown): value is MenuPublication {
+  return (
+    isRecord(value) &&
+    typeof value.hasUnpublishedChanges === 'boolean' &&
+    (value.publishedAt === null || typeof value.publishedAt === 'string') &&
+    typeof value.slug === 'string'
+  );
+}
+
 /** The `draft` of an API response, or null if it does not have the expected shape. */
 export function parseMenuDraft(data: unknown): MenuDraft | null {
   if (!isRecord(data) || !isRecord(data.draft)) return null;
-  const { categories, digitizationInProgress } = data.draft;
+  const { categories, digitizationInProgress, publication } = data.draft;
   if (!Array.isArray(categories) || !categories.every(isDraftCategory)) return null;
-  if (typeof digitizationInProgress !== 'boolean') return null;
-  return { categories, digitizationInProgress };
+  if (typeof digitizationInProgress !== 'boolean' || !isPublication(publication)) return null;
+  return { categories, digitizationInProgress, publication };
 }
