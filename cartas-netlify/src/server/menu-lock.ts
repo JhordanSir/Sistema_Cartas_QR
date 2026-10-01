@@ -1,7 +1,8 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 
 import { getDb, type Executor, type Transaction } from '../../db/index';
 import { digitizationJobs, restaurants } from '../../db/schema';
+import { freshActiveJob } from './digitization/active';
 import { ApiError } from './http';
 
 export const DIGITIZATION_IN_PROGRESS_MESSAGE =
@@ -14,12 +15,7 @@ export async function hasActiveDigitization(
   const [job] = await executor
     .select({ id: digitizationJobs.id })
     .from(digitizationJobs)
-    .where(
-      and(
-        eq(digitizationJobs.restaurantId, restaurantId),
-        inArray(digitizationJobs.status, ['UPLOADING', 'PROCESSING']),
-      ),
-    )
+    .where(and(eq(digitizationJobs.restaurantId, restaurantId), freshActiveJob(new Date())))
     .limit(1);
   return Boolean(job);
 }
