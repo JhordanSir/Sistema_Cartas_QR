@@ -39,6 +39,8 @@ setup('la primera cuenta creada en /registro es la de administrador', async ({ p
   await page.getByLabel('Repite la contraseña').fill(ADMIN.password);
   await page.getByRole('button', { name: 'Crear cuenta' }).click();
 
-  await expect(page).toHaveURL(/\/admin$/);
+  // With a freshly started `netlify dev`, the first submit also compiles the
+  // registration route and the backoffice page.
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 30_000 });
   await expect(page.getByRole('heading', { level: 1, name: 'Backoffice' })).toBeVisible();
 });

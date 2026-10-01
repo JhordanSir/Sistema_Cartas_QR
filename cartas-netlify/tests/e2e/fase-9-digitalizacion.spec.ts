@@ -12,6 +12,13 @@ function origin(baseURL: string | undefined): { Origin: string } {
   return { Origin: new URL(baseURL ?? 'http://localhost:8888').origin };
 }
 
+/** Fails fast, saying why, when `netlify dev` runs without the simulated extractor. */
+async function expectDigitized(page: Page): Promise<void> {
+  const failure = page.getByText(/^Gemini /);
+  await expect(page.getByText(DONE).or(failure)).toBeVisible({ timeout: 30_000 });
+  await expect(failure, 'netlify dev debe correr con DIGITIZATION_FAKE=1 (extractor simulado)').toHaveCount(0);
+}
+
 async function choosePhotos(page: Page, count: number): Promise<void> {
   await page.getByRole('button', { name: 'Digitalizar desde fotos' }).first().click();
   const sheet = page.getByRole('dialog', { name: 'Digitalizar desde fotos' });
@@ -22,6 +29,9 @@ async function choosePhotos(page: Page, count: number): Promise<void> {
 }
 
 test.describe('digitalización', () => {
+  // The background function and the simulated extractor take about 10 s.
+  test.describe.configure({ timeout: 60_000 });
+
   test.beforeEach(async ({ baseURL, page }) => {
     await registerOwnerViaApi(page.request, newOwner('Cevichería Luna'), baseURL);
   });
@@ -49,7 +59,7 @@ test.describe('digitalización', () => {
 
     await expect(page.getByText(PROCESSING)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { exact: true, name: 'Nueva sección' })).toBeDisabled();
-    await expect(page.getByText(DONE)).toBeVisible({ timeout: 30_000 });
+    await expectDigitized(page);
 
     await expect(page.getByRole('region', { name: 'Entradas' }).getByText('Ceviche clásico')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Fondos' }).getByText('Arroz con mariscos')).toBeVisible();
@@ -75,7 +85,7 @@ test.describe('digitalización', () => {
     await page.reload();
     await expect(page.getByText(PROCESSING)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Digitalizar desde fotos' }).first()).toBeDisabled();
-    await expect(page.getByText(DONE)).toBeVisible({ timeout: 30_000 });
+    await expectDigitized(page);
     await expect(page.getByRole('region', { name: 'Entradas' })).toBeVisible();
   });
 
