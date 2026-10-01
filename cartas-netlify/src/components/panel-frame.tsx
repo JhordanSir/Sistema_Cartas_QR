@@ -9,15 +9,21 @@ export function PanelFrame({
   children,
   homeHref,
   items,
+  notice,
 }: {
   children: ReactNode;
   homeHref: string;
   items: readonly NavItem[];
+  /** Shown above every page, such as the paused-restaurant warning. */
+  notice?: ReactNode;
 }) {
   return (
     <div className={cn(shellFontClassName, 'min-h-dvh bg-paper font-sans text-ink')}>
       <AppHeader homeHref={homeHref} items={items} />
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {notice ? <div className="mb-6">{notice}</div> : null}
+        {children}
+      </main>
     </div>
   );
 }
