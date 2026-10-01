@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/*
+ * "Papel de bistró": the owner's panel reads like a printed menu — ivory paper,
+ * near-black ink and a wine accent. The public menu never uses these tokens: it is
+ * painted with the restaurant's own template colours.
+ */
+@theme {
+  --color-paper: #fbf7f0;
+  --color-raised: #fffdf9;
+  --color-control: #f2ece2;
+  /* At least 3:1 against every surface, so form controls stay visible. */
+  --color-control-border: #8e8170;
+  --color-line: #e7ded1;
+
+  --color-ink: #1f1b16;
+  --color-ink-soft: #4a4239;
+  --color-ink-muted: #6b6157;
+
+  --color-wine: #8c2f39;
+  --color-wine-hover: #74242e;
+  --color-wine-wash: #f4e4e2;
+
+  --color-danger: #a1260d;
+  --color-danger-wash: #fbe9e4;
+  --color-success: #2e6a3a;
+  --color-success-wash: #e6f0e3;
+  --color-warning: #8a5a0b;
+  --color-warning-wash: #f7ebd3;
+
+  --radius-control: 0.5rem;
+  --radius-card: 0.875rem;
+
+  --shadow-card: 0 1px 2px rgb(31 27 22 / 0.05), 0 12px 32px -18px rgb(31 27 22 / 0.18);
+}
+
+/*
+ * next/font defines --font-fraunces and --font-inter on the surface wrapper, not on
+ * :root. `inline` makes the utilities resolve those variables where they are used.
+ */
+@theme inline {
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-wine);
+    outline-offset: 2px;
+  }
+}
