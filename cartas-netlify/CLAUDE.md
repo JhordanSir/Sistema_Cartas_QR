@@ -13,17 +13,26 @@ Sistema de cartas digitales para restaurantes: un dueño se registra, edita su c
 ## Comandos (desde esta carpeta, con pnpm)
 
 - `pnpm dev:netlify` — app en http://localhost:8888 con la base de datos local, Blobs y funciones de Netlify. Requiere `.env` (copia de `.env.example`).
+- La CLI de Netlify, siempre con `pnpm cli:netlify <argumentos>` (por ejemplo `pnpm cli:netlify deploy --prod`), nunca con `pnpm exec netlify`. La CLI toma como raíz el `package.json` más alto, que aquí es el del monorepo: sin el envoltorio `scripts/netlify-cli.ts` inyecta el `.env` de la raíz (secretos de la app principal) y busca funciones y migraciones fuera de esta carpeta.
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest) · `pnpm test:e2e` (Playwright contra `netlify dev`, solo escritorio).
-- Migraciones: `pnpm db:generate --name <cambio>` las crea desde `db/schema.ts`; `pnpm db:local:apply` y `pnpm db:local:reset` actúan sobre la base local de `netlify dev` (que debe estar en marcha). No uses `netlify database migrations apply` ni `netlify database reset`: la CLI toma la raíz del repositorio como raíz del proyecto y apunta a otra carpeta y a otra base.
-- `pnpm test:e2e` reinicia la base local antes de cada corrida.
+- Migraciones: `pnpm db:generate --name <cambio>` las crea desde `db/schema.ts`; `pnpm db:local:apply` y `pnpm db:local:reset` actúan sobre la base local de `netlify dev` (que debe estar en marcha). Los subcomandos `netlify database …` siguen apuntando a la raíz del repositorio aun con el envoltorio: no los uses.
+- `pnpm test:e2e` reinicia la base local y crea al administrador de pruebas (`tests/e2e/support/cuentas.ts`) antes de cada corrida.
+- Bajo `netlify dev`, el proxy imita al CDN y reintenta toda respuesta 403 o 404 como archivo estático, así que un 403 de la API llega como 404. Para comprobar un 403 exacto en E2E, llama al servidor de Next directo (`NEXT_DIRECT_URL`). En Netlify no pasa.
 - Esta app tiene su propio `pnpm-workspace.yaml` y su propio lockfile: no forma parte del monorepo de la raíz.
+
+## Sesión y autorización (fase 3)
+
+- Route Handlers: `assertSameOrigin(request)` en toda modificación, luego `requireOwner(request)` o `requireAdmin(request)` de `src/server/next/route-auth.ts`, dentro de `handleApi(...)` (`src/server/http.ts`). Los errores para el usuario son `ApiError` con `{ code, message, fields? }`; cualquier otro error se registra sin parámetros SQL y responde el mensaje genérico.
+- Páginas: `requireOwnerPage()` / `requireAdminPage()` de `src/server/next/page-auth.ts` en el layout **y en cada página** (los layouts no se vuelven a ejecutar al navegar). `cache` deja una sola consulta por petición.
+- La sesión se renueva (base de datos y cookie) solo en los Route Handlers, porque los Server Components no pueden escribir cookies.
+- `src/server/next/*` usa `next/headers`; las funciones de `netlify/functions` usan `readSession` de `src/server/session.ts` directamente.
 
 ## Stack (no cambiar sin justificarlo en PROGRESS.md)
 
 - Next.js App Router, TypeScript strict, Tailwind CSS. Desplegado en Netlify con su adaptador oficial (no fijes su versión).
 - Netlify Database (Postgres) con `@netlify/database` y Drizzle 1.0 RC (`drizzle-orm@rc`, `drizzle-kit@rc`, adaptador `drizzle-orm/netlify-db`; la línea beta quedó obsoleta). Cliente en `db/index.ts` con `getDb()`.
 - Netlify Blobs (`@netlify/blobs`) para archivos. Netlify Functions (`@netlify/functions`) para la digitalización (background) y el mantenimiento (scheduled).
-- `@google/genai` (Gemini), `qrcode`, `@node-rs/argon2`, `zod`. Pruebas con Vitest y Playwright.
+- `@google/genai` (Gemini), `qrcode`, `zod`. Argon2id con `hash-wasm` (no `@node-rs/argon2`: ver PROGRESS.md). Pruebas con Vitest y Playwright; los nombres de las pruebas, unitarias y E2E, en español.
 - No añadas otras dependencias salvo que la fase lo pida o sea imprescindible (justifícalo en PROGRESS.md).
 
 ## Reglas de código

@@ -2,12 +2,13 @@
 
 ## Fase actual
 
-Fase 3 de 13 — Cuentas, registro e inicio de sesión.
+Fase 4 de 13 — Perfil del restaurante y QR.
 
 ## Fases completadas
 
 1. Esqueleto, reglas y diseño base.
 2. Base de datos: esquema Drizzle, migración inicial y `GET /api/salud`.
+3. Cuentas: registro, inicio y cierre de sesión, cambio de contraseña, y la barra superior del panel y del backoffice.
 
 ## Decisiones
 
@@ -54,6 +55,52 @@ Fase 3 de 13 — Cuentas, registro e inicio de sesión.
   - Se añadió `@netlify/database-dev` como devDependency por esto.
 - **E2E.** Un proyecto `base-local` de Playwright reinicia la base local una vez por corrida, después de levantar `netlify dev`. Se niega si `E2E_BASE_URL` no es local.
 
+### Cuentas y sesiones (fase 3)
+
+- **Argon2id con `hash-wasm` en lugar de `@node-rs/argon2`.** El despliegue será con la CLI desde esta máquina Windows. El paquete del servidor llevaría el binario nativo de win32, que no corre en las funciones Linux de Netlify. La especificación prevé esta alternativa.
+  - Mismos parámetros: m=19456 KiB, t=2, p=1.
+  - Los hashes son PHC estándar (`$argon2id$v=19$…`), compatibles con `@node-rs/argon2` si algún día se cambia.
+  - Cuesta unos 70 ms por hash o verificación, y no hace falta `serverExternalPackages`.
+- **Contraseñas en NFC** antes de hashear y verificar, para que «Ñandú2024» escrita con el acento compuesto o descompuesto sea la misma.
+- **Tiempo constante ante correos inexistentes.** El inicio de sesión verifica contra un hash señuelo, así el tiempo de respuesta no revela qué correos tienen cuenta. El error es siempre «Correo o contraseña incorrectos.».
+- **Registro.** Lleva un campo `mode` (`admin`/`owner`) que el formulario envía según lo que mostró.
+  - Si dos personas abren `/registro` con la base vacía, la segunda recibe 409 `ADMIN_ALREADY_EXISTS`, con un mensaje para recargar, en lugar de un error confuso por el nombre del restaurante.
+  - El hash se calcula antes de tomar el bloqueo consultivo, para no retener el bloqueo.
+  - La cuenta, el restaurante y la sesión se crean en la misma transacción.
+- **Validación compartida.** `src/shared/validation.ts` tiene las reglas de §E5 y `src/shared/account-forms.ts` las de cada formulario. Las usan el navegador al enviar y los Route Handlers con el cuerpo recibido. Las longitudes se cuentan en caracteres, no en unidades UTF-16.
+  - Una regla añadida: la contraseña nueva debe ser distinta de la actual. Si no, una contraseña temporal podría «cambiarse» por sí misma.
+- **Errores de formulario** (`useFormFields`):
+  - Aparecen al enviar, y el foco va al primer campo con error.
+  - Se quitan en cuanto el campo se corrige; nunca al salir del campo.
+  - Los errores que manda el servidor por campo (por ejemplo, el correo repetido) se quedan hasta que cambia ese campo.
+- **Sesión.**
+  - Token de 32 bytes en base64url; en la base solo su SHA-256.
+  - Cookie `sirio_session` HttpOnly, Secure, SameSite=Lax, de 7 días. Chrome acepta `Secure` en `http://localhost`.
+  - La renovación (quedan menos de 3 días → otros 7) ocurre en los Route Handlers, porque los Server Components no pueden escribir cookies. Las páginas solo leen.
+- **Autorización.**
+  - Los layouts de `/panel` y `/admin` exigen el rol, y cada página lo vuelve a comprobar. La guía de Next 16 advierte que los layouts no se ejecutan en cada navegación, y `cache` deja una consulta por petición.
+  - Un dueño que abre `/admin` termina en `/panel`, y al revés, pasando por `/entrar`.
+  - `/`, `/entrar` y `/registro` mandan a su panel a quien ya tiene sesión.
+- **`must_change_password`.**
+  - Las páginas redirigen a `/panel/cuenta` o `/admin/cuenta`, que muestran «Debes cambiar tu contraseña para continuar.».
+  - Las APIs responden 403 `MUST_CHANGE_PASSWORD`, salvo cambiar la contraseña y cerrar sesión.
+  - Se probará de punta a punta en la fase 12, con la contraseña temporal.
+- **Navegación.** Barra superior con una sola lista de enlaces: en línea desde 640 px y plegada tras «Menú» por debajo. El menú se cierra con Escape (el foco vuelve al botón) y al navegar. No se duplica el marcado.
+  - Cada sección se añade al menú en la fase que la construye: por ahora el dueño ve Perfil · Cuenta · Salir, y el administrador Restaurantes · Cuenta · Salir.
+- **Logs sin secretos.** Drizzle 1.0 adjunta la consulta y sus parámetros a sus errores (hashes, digests). `describeErrorForLog` registra solo el código, la restricción y el mensaje de Postgres.
+- **Slug con tope de 150 caracteres.** NFKD puede expandir un carácter en varios (U+FDFA da 18), y el slug con su sufijo debe caber en `varchar(160)`.
+- **`tsconfig` con `target: ES2022`.** El regex de contraseña usa los flags `s` y `u` (ES2018). Next compila con SWC, así que solo afecta a la verificación de tipos.
+- **Nombres de pruebas en español**, también en las unitarias, como en la fase 1.
+
+### Herramientas (fase 3)
+
+- **Envoltorio de la CLI (`scripts/netlify-cli.ts`).** Con la raíz del repositorio como proyecto, `netlify dev` inyectaba el `.env` del monorepo (secretos JWT, la clave de Gemini y `PUBLIC_APP_URL` de la app principal). Esas variables de proceso ganaban sobre el `.env` de esta carpeta.
+  - El flag `--cwd` de la CLI lo corrige, pero solo si el proceso arranca en otra carpeta. El envoltorio lanza la CLI desde la carpeta padre con `--cwd` hacia esta.
+  - `pnpm dev:netlify` y `pnpm cli:netlify` lo usan. Ahora `netlify dev` inyecta solo `PUBLIC_APP_URL`, `SIRIO_GEMINI_API_KEY`, `GEMINI_MODEL` y `VIEW_HASH_SECRET`, y guarda todo su estado en `cartas-netlify/.netlify`.
+  - Los subcomandos `netlify database …` ignoran `--cwd` y siguen usando la raíz, así que se mantiene `scripts/local-db.ts`.
+  - Se borró el `.netlify` que las pruebas habían dejado en la raíz del repositorio.
+- **403 → 404 bajo `netlify dev`.** Su proxy reintenta toda respuesta 403/404 del framework como archivo estático (`.html`, `.htm`, `/index.html`) y devuelve el último 404. La prueba del origen ajeno va directo al servidor de Next; en Netlify el 403 llega tal cual.
+
 ## Verificación
 
 ### Fase 1
@@ -78,10 +125,33 @@ Fase 3 de 13 — Cuentas, registro e inicio de sesión.
 
   Además, `28.5` se guardó como `28.50`, y al borrar la cuenta se borraron en cascada sus secciones.
 
-## Pendientes
+### Fase 3
 
-- Fase 3: cuentas, registro e inicio de sesión.
-- Fase 9: comprobar que `netlify dev` encuentra `netlify/functions` de esta carpeta, por el mismo problema de raíz de la CLI.
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde. El build también verifica los tipos de `tests/`.
+- `pnpm test`: 77 pruebas. Cubren:
+  - la validación de §E5: «Ñandú2024» válida; «clave» y «CLAVE2024» inválidas; «hola@turestaurante» inválido; «ana@mail.com» válido; conteo en caracteres;
+  - los formularios;
+  - el origen;
+  - el token, el digest, la cookie y la renovación;
+  - Argon2id (parámetros, sal, NFC, hash dañado);
+  - `sendJson` y `redirectTarget` (solo rutas del sitio);
+  - `homePathFor` y el tope del slug.
+- `pnpm test:e2e`: 23 de 23. El `setup` crea al administrador desde `/registro`. La fase 3 cubre:
+  - el registro del dueño;
+  - la validación al enviar y su corrección;
+  - el correo repetido (también en mayúsculas);
+  - el error genérico;
+  - la entrada del administrador;
+  - los atributos de la cookie;
+  - las redirecciones sin sesión, con sesión y por rol;
+  - «Salir»;
+  - el origen ajeno (403 directo a Next);
+  - el cambio de contraseña (la anterior deja de servir y la otra sesión se cierra), y la contraseña actual equivocada;
+  - el menú plegado a 390 px.
+
+## Pendientes
+- Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
+- Fase 12: probar de punta a punta `must_change_password` con la contraseña temporal.
 - Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 
 ## Cómo verificar
@@ -90,7 +160,7 @@ Fase 3 de 13 — Cuentas, registro e inicio de sesión.
 cd cartas-netlify
 pnpm install
 pnpm lint; pnpm typecheck; pnpm test
-pnpm dev:netlify     # http://localhost:8888 (en otra terminal)
+pnpm dev:netlify     # http://localhost:8888 (en otra terminal; usa scripts/netlify-cli.ts)
 pnpm db:local:apply  # aplica las migraciones a la base local
 pnpm test:e2e        # reinicia la base local y corre Playwright
 ```

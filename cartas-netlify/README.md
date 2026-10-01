@@ -20,6 +20,10 @@ pnpm dev:netlify   # http://localhost:8888
 
 `netlify dev` (la CLI va como dependencia de desarrollo) sirve Next.js junto con la base de datos local, Netlify Blobs y las funciones.
 
+Cualquier otro comando de la CLI se lanza con `pnpm cli:netlify <argumentos>`. El envoltorio hace que la CLI tome esta carpeta como raíz del proyecto; por su cuenta tomaría la del repositorio, con su `.env`.
+
+La primera cuenta que se registra en `/registro` es la del administrador; las siguientes son de dueños, cada una con su restaurante.
+
 ## Base de datos
 
 El esquema vive en `db/schema.ts` (Drizzle) y las migraciones SQL en `netlify/database/migrations/`. Netlify las aplica solo al desplegar.
