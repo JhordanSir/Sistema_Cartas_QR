@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Bundles that `netlify dev` writes for the functions.
+    ".netlify/**",
   ]),
 ]);
 
