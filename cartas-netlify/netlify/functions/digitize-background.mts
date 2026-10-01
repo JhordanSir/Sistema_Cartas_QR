@@ -1,7 +1,7 @@
 import type { Config } from '@netlify/functions';
 
 import { describeErrorForLog } from '../../src/server/db-errors';
-import { createFakeExtractor } from '../../src/server/digitization/fake-extractor';
+import { chooseExtractor } from '../../src/server/digitization/choose-extractor';
 import { runDigitizationJob } from '../../src/server/digitization/run';
 import { isSameOrigin, requestHost } from '../../src/server/origin';
 import { findRestaurantByOwner } from '../../src/server/restaurants';
@@ -38,7 +38,13 @@ export default async function digitizeBackground(request: Request): Promise<void
     const jobId = await readJobId(request);
     if (!restaurant || !jobId) return;
 
-    await runDigitizationJob({ extractor: createFakeExtractor(), jobId, restaurantId: restaurant.id });
+    const extractor = chooseExtractor({
+      apiKey: Netlify.env.get('SIRIO_GEMINI_API_KEY'),
+      fake: Netlify.env.get('DIGITIZATION_FAKE'),
+      local: Netlify.env.get('NETLIFY_DEV') === 'true',
+      model: Netlify.env.get('GEMINI_MODEL'),
+    });
+    await runDigitizationJob({ extractor, jobId, restaurantId: restaurant.id });
   } catch (error) {
     console.error('digitize-background failed', describeErrorForLog(error));
   }

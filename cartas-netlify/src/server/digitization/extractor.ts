@@ -1,7 +1,7 @@
 import type { ImageMimeType } from '../../shared/images';
 
-// The piece that turns photos into a menu (§E10) is swappable: phase 9 uses a
-// simulated extractor; phase 10 adds Gemini behind the same interface.
+// The piece that turns photos into a menu (§E10) is swappable: Gemini in
+// Netlify, and a simulated extractor for the local end-to-end tests.
 
 export type ExtractorPhoto = { data: Uint8Array; mimeType: ImageMimeType };
 

@@ -38,8 +38,8 @@ export const SAMPLE_EXTRACTED_MENU = {
 } as const;
 
 /**
- * Stands in for Gemini (§E10, phase 9 of the plan): waits and returns the
- * sample menu, which still goes through parseExtractedMenu.
+ * Stands in for Gemini in the local end-to-end tests (DIGITIZATION_FAKE=1):
+ * waits and returns the sample menu, which still goes through parseExtractedMenu.
  */
 export function createFakeExtractor({ delayMs = 5000 }: { delayMs?: number } = {}): MenuExtractor {
   return {
