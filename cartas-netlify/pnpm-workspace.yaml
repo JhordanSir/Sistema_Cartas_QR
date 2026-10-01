@@ -1,6 +1,8 @@
 allowBuilds:
+  '@google/genai': false
   esbuild: true
   netlify-cli: false
+  protobufjs: false
   sharp: false
   unix-dgram: false
   unrs-resolver: false
