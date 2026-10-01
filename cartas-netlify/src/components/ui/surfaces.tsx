@@ -11,14 +11,15 @@ export function Card({ children, className }: { children: ReactNode; className?:
   );
 }
 
-type NoticeTone = 'error' | 'success';
+type NoticeTone = 'error' | 'success' | 'warning';
 
 const NOTICE_TONES: Record<NoticeTone, string> = {
   error: 'border-danger/40 bg-danger-wash text-danger',
   success: 'border-success/30 bg-success-wash text-success',
+  warning: 'border-warning/30 bg-warning-wash text-warning',
 };
 
-/** Feedback after an action. Errors interrupt the screen reader; successes wait their turn. */
+/** Feedback after an action. Errors interrupt the screen reader; the rest wait their turn. */
 export function Notice({ children, tone }: { children: ReactNode; tone: NoticeTone }) {
   return (
     <div

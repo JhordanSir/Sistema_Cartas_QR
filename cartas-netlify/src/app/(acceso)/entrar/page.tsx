@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { Card } from '@/components/ui/surfaces';
+import { redirectIfSignedIn } from '@/server/next/page-auth';
 
 import { LoginForm } from './login-form';
 
 export const metadata: Metadata = { title: 'Entrar' };
 
-export default function SignInPage() {
+export default async function SignInPage() {
+  await redirectIfSignedIn();
   return (
     <Card className="grid gap-6 p-6 sm:p-8">
       <div className="grid gap-1.5">
