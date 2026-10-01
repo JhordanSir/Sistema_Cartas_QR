@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 5 de 13 — Editor: secciones y productos.
+Fase 6 de 13 — Editor: variantes, adicionales e imágenes de producto.
 
 ## Fases completadas
 
@@ -10,6 +10,7 @@ Fase 5 de 13 — Editor: secciones y productos.
 2. Base de datos: esquema Drizzle, migración inicial y `GET /api/salud`.
 3. Cuentas: registro, inicio y cierre de sesión, cambio de contraseña, y la barra superior del panel y del backoffice.
 4. Perfil del restaurante (logo en Netlify Blobs y `/media`) y código QR.
+5. Editor de la carta: secciones y productos, orden, disponibilidad y bloqueo por digitalización.
 
 ## Decisiones
 
@@ -131,6 +132,30 @@ Fase 5 de 13 — Editor: secciones y productos.
 - **Perfil.** El `<h1>` de `/panel` sigue siendo el nombre del restaurante, y la dirección pública aparece en solo lectura con «Ver carta pública».
   - Invalidar `menu:{slug}` al guardar queda para la fase 7, cuando exista esa caché.
 
+### Editor (fase 5)
+
+- **Toda modificación del borrador va en una transacción** (`withMenuEdit`). Primero bloquea la fila del restaurante (`FOR UPDATE`) y luego aplica §E7: con un trabajo de digitalización `UPLOADING` o `PROCESSING`, responde 409 `DIGITIZATION_IN_PROGRESS`.
+  - En la fase 9, crear un trabajo debe bloquear la misma fila. Así un trabajo nunca empieza a mitad de una edición.
+- **Cada mutación responde el borrador completo y actualizado.** El editor reemplaza su estado con esa respuesta: un solo viaje, y siempre la verdad del servidor.
+- **Orden.**
+  - Lo nuevo va al final (`max + 1`).
+  - «Subir» y «Bajar» renumeran 0, 1, 2… y solo escriben las filas cuyo valor guardado cambia. Tras borrar quedan huecos, y saltar filas por su posición en la lista desordenaba en algunos casos; se corrigió antes de que llegara a una prueba.
+  - En los extremos no cambia nada, y en la interfaz el botón está deshabilitado.
+- **Cambiar de sección** es parte del `PATCH` del producto (`categoryId`): el producto queda al final de la sección nueva.
+- **Ids.** Un id que no es UUID responde el mismo 404 que uno de otro restaurante, sin llegar a Postgres.
+- **Precios.** Se normalizan como texto, sin pasar por `float`: «18.5» → «18.50», «007» → «7.00». Se muestran con `Intl` `es-PE` en soles («S/ 18.50»).
+- **Diálogos propios sobre `<dialog>` nativo** (`src/components/ui/dialogs.tsx`):
+  - `Sheet`: pantalla completa en el celular y columna derecha desde 640 px, con «Cerrar» y Escape. Un clic en el fondo la cierra.
+  - `ConfirmDialog`: `role="alertdialog"`, y el foco empieza en «Cancelar».
+  - `showModal()` vuelve inerte el resto de la página. Mientras están abiertos, la página no se desplaza.
+- **Accesibilidad del editor.**
+  - «Subir», «Bajar», «Editar» y «Eliminar» llevan `aria-label` con el nombre del elemento, que contiene el texto visible.
+  - Después de mover, el foco vuelve al mismo botón; si llegó al extremo, al contrario.
+  - Las secciones son `region` con su `h2`, y los productos son `h3`.
+- **Eliminar.** Un producto se elimina desde su hoja de edición, tras confirmar. La sección avisa cuántos productos se borran («También se eliminarán sus 2 productos.»). Las imágenes de los productos borrados se eliminan de Blobs después del commit.
+- **404 → 405 bajo `netlify dev`.** Al reintentar un 404 de un POST como archivo estático, la última alternativa termina en 405. La prueba de aislamiento entre restaurantes va directo a Next: la cookie de `localhost` sirve en cualquier puerto.
+- **La E2E del bloqueo por digitalización queda para la fase 9**, cuando exista un trabajo real que crear desde la API.
+
 ## Verificación
 
 ### Fase 1
@@ -203,8 +228,31 @@ Fase 5 de 13 — Editor: secciones y productos.
   - el perfil sin sesión.
 - Capturas a 390 y 1280 px del perfil, el QR y el menú abierto, revisadas a mano.
 
+### Fase 5
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 153 pruebas. Las nuevas cubren:
+  - precios: «18.5» → «18.50»; «abc», «-1» y «18,50» inválidos;
+  - el formato «S/ 18.50»;
+  - los nombres de sección y producto, y la descripción;
+  - `moveItem`, con los extremos sin cambios y sin mutar la lista;
+  - la renumeración;
+  - `parseMenuDraft`.
+- `pnpm test:e2e`: 43 de 43. Los de la fase 5 cubren:
+  - el estado vacío;
+  - crear dos secciones y tres productos, reordenarlos, y el orden que sigue tras recargar;
+  - mover un producto a otra sección, editarlo y marcarlo «No disponible»;
+  - el precio «abc» con su error, y «18.5» guardado como «S/ 18.50»;
+  - eliminar una sección con su aviso de 2 productos y con «Cancelar»;
+  - eliminar un producto;
+  - «Subir» y «Bajar» con el teclado, conservando el foco;
+  - Escape;
+  - que otro dueño recibe 404 en cinco operaciones sobre la carta ajena.
+- Capturas a 390 y 1280 px del editor, la hoja del producto y la confirmación, revisadas a mano.
+
 ## Pendientes
 - Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
+- Fase 9: E2E del bloqueo de la carta (409 `DIGITIZATION_IN_PROGRESS`) con un trabajo real.
 - Fase 12: probar de punta a punta `must_change_password` con la contraseña temporal.
 - Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 
