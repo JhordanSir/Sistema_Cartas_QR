@@ -2,14 +2,25 @@
 
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from './button';
 
-export function CopyLinkButton({ url }: { url: string }) {
+/** Copies a text to the clipboard and says whether it worked. */
+export function CopyButton({
+  copiedMessage,
+  failedMessage,
+  label,
+  text,
+}: {
+  copiedMessage: string;
+  failedMessage: string;
+  label: string;
+  text: string;
+}) {
   const [status, setStatus] = useState<'copied' | 'failed' | null>(null);
 
   async function copy(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(text);
       setStatus('copied');
     } catch {
       setStatus('failed');
@@ -19,11 +30,11 @@ export function CopyLinkButton({ url }: { url: string }) {
   return (
     <div className="grid gap-1">
       <Button onClick={copy} variant="secondary">
-        Copiar enlace
+        {label}
       </Button>
       <p className="m-0 min-h-5 text-[13px] text-ink-soft" role="status">
-        {status === 'copied' ? 'Enlace copiado.' : null}
-        {status === 'failed' ? 'No pudimos copiar el enlace. Cópialo a mano.' : null}
+        {status === 'copied' ? copiedMessage : null}
+        {status === 'failed' ? failedMessage : null}
       </p>
     </div>
   );

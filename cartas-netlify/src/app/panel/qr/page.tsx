@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 
 import { buttonClasses, ButtonLink } from '@/components/ui/button';
+import { CopyButton } from '@/components/ui/copy-button';
 import { Card, Notice } from '@/components/ui/surfaces';
 import { requireOwnerPage } from '@/server/next/page-auth';
 import { ensureRestaurantQr } from '@/server/qr';
 import { QR_NOT_CONFIGURED_MESSAGE } from '@/shared/qr';
-
-import { CopyLinkButton } from './copy-link-button';
 
 export const metadata: Metadata = { title: 'Código QR' };
 
@@ -48,7 +47,12 @@ export default async function QrPage() {
               <a className={buttonClasses('secondary')} download href="/api/qr/svg">
                 Descargar SVG
               </a>
-              <CopyLinkButton url={qr.payload} />
+              <CopyButton
+                copiedMessage="Enlace copiado."
+                failedMessage="No pudimos copiar el enlace. Cópialo a mano."
+                label="Copiar enlace"
+                text={qr.payload}
+              />
               <ButtonLink href={`/${restaurant.slug}`} rel="noopener" target="_blank" variant="secondary">
                 Abrir carta pública
               </ButtonLink>

@@ -84,6 +84,43 @@ export function Sheet({
   );
 }
 
+/** A centred modal for a short task: a form to fill in, or something to read once. */
+export function Dialog({
+  children,
+  onClose,
+  open,
+  title,
+}: {
+  children: ReactNode;
+  onClose: () => void;
+  open: boolean;
+  title: string;
+}) {
+  const ref = useModal(open);
+  const titleId = useId();
+
+  return (
+    <dialog
+      aria-labelledby={titleId}
+      className={cn(
+        'm-auto w-[calc(100%-2rem)] max-w-md rounded-card border border-line bg-raised p-6 text-ink',
+        'shadow-card backdrop:bg-ink/40',
+      )}
+      onCancel={cancelInstead(onClose)}
+      ref={ref}
+    >
+      {open ? (
+        <div className="grid gap-4">
+          <h2 className="m-0 font-display text-xl font-semibold" id={titleId}>
+            {title}
+          </h2>
+          {children}
+        </div>
+      ) : null}
+    </dialog>
+  );
+}
+
 /** «¿Seguro?» before something that cannot be undone. The focus starts on «Cancelar». */
 export function ConfirmDialog({
   children,
