@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 11 de 13 — Estadísticas de visitas.
+Fase 12 de 13 — Backoffice.
 
 ## Fases completadas
 
@@ -16,6 +16,7 @@ Fase 11 de 13 — Estadísticas de visitas.
 8. Plantillas (Original detectado, Tradicional, Casual y Premium) y las 12 fuentes de la carta.
 9. Digitalización completa con el extractor simulado: subida, Background Function, seguimiento, bloqueo y mantenimiento.
 10. Digitalización con Gemini real (`@google/genai`), con reintentos y errores de §E10; el extractor simulado queda para las E2E locales.
+11. Estadísticas de visitas: registro con HMAC, `/panel/estadisticas` con barras en CSS y retención en el mantenimiento.
 
 ## Decisiones
 
@@ -309,6 +310,33 @@ Fase 11 de 13 — Estadísticas de visitas.
   - `pnpm-workspace.yaml` bloquea los scripts de instalación de `@google/genai` (un `preinstall` vacío) y de `protobufjs` (un aviso de versión).
   - Cortar la tarea que lanzó `netlify dev` no mata el proceso, y al matarlo a la fuerza la caché `.next/dev` puede quedar incompleta: rutas que existen respondían la página 404. Está anotado en CLAUDE.md.
 
+### Estadísticas (fase 11)
+
+- **Hora de Lima** (`src/shared/lima-time.ts`): UTC−5 fijo, fechas como texto `YYYY-MM-DD` y aritmética en UTC, así que la zona horaria del servidor no influye.
+- **`calculateViewStatistics`** (`src/shared/view-statistics.ts`) suma eventos y resúmenes como pide §E11, y además devuelve el **pico**:
+  - la hora con más visitas (todas cubren los mismos días); si empatan, la más temprana;
+  - el día de la semana con mayor promedio exacto, porque un día puede caer más veces que otro en el rango; si empatan, el primero desde el lunes;
+  - como en la app principal, la hora y el día se eligen por separado.
+- **Pantalla**:
+  - Las barras muestran el **promedio** (altura y cifra), y cada una lee a los lectores de pantalla «15:00: 12 visitas en total, 0.4 en promedio».
+  - Por hora: 24 barras en una región desplazable y enfocable con el teclado. En el celular abre centrada en la hora pico, para que lo primero no sea una fila vacía de madrugada.
+  - Por día de la semana: del lunes al domingo.
+  - Cifras con `es-PE` («1,033» y «1.5»), como los precios.
+  - Estado vacío con «Ver mi código QR».
+- **`POST /api/vistas/{slug}`**:
+  - Como toda escritura, exige el `Origin` propio (403). Pasado eso, siempre 204: exista o no la carta, esté pausada, sea repetida o falle la base.
+  - IP: `x-nf-client-connection-ip`, si no, la primera de `x-forwarded-for`, en minúsculas y sin `::ffff:`. Sin IP, cuenta como «unknown».
+  - Sin un `VIEW_HASH_SECRET` válido (64 caracteres hexadecimales) no se registra nada, y se anota un error en el registro.
+  - Una sola sentencia `INSERT … SELECT` con `status = 'ENABLED'` y `ON CONFLICT DO NOTHING`.
+  - El componente de cliente `ViewTracker` envía la visita al cargar la carta (con `keepalive` e ignorando errores), tanto en la carta publicada como en «Próximamente». La página sigue en caché.
+- **Retención** (`consolidateOldViews`, en `maintenance.mts`):
+  - Por lotes de 50 restaurante-día con eventos de más de 30 días (fecha anterior a hoy − 30).
+  - Una sola sentencia borra esos eventos y suma sus conteos por hora en `view_summaries`; si el resumen ya existe, se suma.
+  - Cada tarea del mantenimiento tiene su propio `try`: si una falla, la otra corre igual.
+- **E2E**:
+  - Playwright arranca `netlify dev` también con un `VIEW_HASH_SECRET` de prueba.
+  - El proxy de `netlify dev` reescribe `X-Forwarded-For` con la IP del socket. Para simular a otro visitante, la prueba va directo a Next con `x-nf-client-connection-ip`.
+
 ## Verificación
 
 ### Fase 1
@@ -501,7 +529,23 @@ Fase 11 de 13 — Estadísticas de visitas.
   - sin clave, el trabajo termina `FAILED` con `MODEL_CONFIGURATION_ERROR` en 6 s;
   - con una clave inválida a propósito, la función llega a Google, recibe 400 `API_KEY_INVALID` y termina con `MODEL_CONFIGURATION_ERROR`, sin reintentar.
 
+### Fase 11
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 250 pruebas. Las nuevas cubren:
+  - hora de Lima: las 23:30 cuentan para ese día; la medianoche; sumar días entre meses, años y bisiestos; el día de la semana; los días de un rango; las veces que cae un día de la semana;
+  - `calculateViewStatistics`: sin visitas; una visita a las 23:30; los bordes de 7 y 30 días; los promedios por hora y por día de la semana (el sábado gana por promedio aunque el jueves tenga más visitas); eventos y resúmenes de la misma hora; el redondeo; los empates del pico;
+  - la frase del pico, las horas y los promedios;
+  - la IP del visitante y su hash.
+- `pnpm test:e2e`: 75 de 75. Las de la fase 11 cubren:
+  - el estado vacío, al que se llega desde el menú del panel;
+  - la misma persona dos veces cuenta una, y otra IP suma otra: «Últimos 7 días», «Últimos 30 días» y «Desde el inicio» marcan 2, con la frase del pico y datos en la hora y el día de hoy en Lima;
+  - las APIs: 403 sin `Origin` propio, 204 con una carta que no existe, 401 sin sesión, y la forma de la respuesta.
+- Comprobación manual de la retención: cinco eventos viejos pasaron a resúmenes, y uno de exactamente 30 días se quedó. El total no cambió (11 antes y después), y un resumen existente se sumó (5 + 3 = 8).
+- Capturas a 1280 y 390 px, con 6 semanas de datos y con el estado vacío.
+
 ## Pendientes
+- Fase 12: comprobar en E2E que un restaurante pausado no suma visitas.
 - Fase 10: con la clave real en `.env`, digitalizar `apps/web/public/pdf/carta-prueba.jpg`. Hay que confirmar tres cosas:
   - que Gemini acepta `$ref`;
   - que la cuenta tiene acceso a `gemini-2.5-flash`;
