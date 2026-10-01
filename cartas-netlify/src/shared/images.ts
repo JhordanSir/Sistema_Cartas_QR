@@ -38,5 +38,8 @@ export function isImageMimeType(value: unknown): value is ImageMimeType {
 export const IMAGE_MESSAGES = {
   logoTooLarge: 'El logo debe pesar como máximo 2 MB.',
   logoType: 'El logo debe ser una imagen PNG, JPG o WebP.',
+  productImageMissing: 'Elige una imagen para el producto.',
+  productImageTooLarge: 'La imagen debe pesar como máximo 4 MB.',
+  productImageType: 'La imagen debe ser PNG, JPG o WebP.',
   unreadable: 'No pudimos leer esa imagen. Prueba con otra.',
 } as const;

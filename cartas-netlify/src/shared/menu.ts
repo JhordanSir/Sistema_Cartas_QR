@@ -5,6 +5,9 @@ import { collapseWhitespace } from './validation';
 
 export type CategoryLayout = 'LIST' | 'CARDS';
 
+/** A variant («Opciones») or an extra («Adicionales»): a name with its own price. */
+export type PricedItem = { id: string; name: string; price: string };
+
 export type DraftProduct = {
   id: string;
   name: string;
@@ -13,6 +16,8 @@ export type DraftProduct = {
   basePrice: string;
   imageUrl: string | null;
   isAvailable: boolean;
+  variants: PricedItem[];
+  extras: PricedItem[];
 };
 
 export type DraftCategory = {
@@ -34,11 +39,20 @@ export const DESCRIPTION_MAX_LENGTH = 2000;
 
 export const PRICE_PATTERN = /^\d{1,8}(?:\.\d{1,2})?$/;
 
+/** Variants and extras: up to 30 of each per product, names of 1 to 160 characters (§E5). */
+export const PRICED_ITEMS_MAX = 30;
+export const PRICED_ITEM_NAME_MAX_LENGTH = 160;
+
+export type PricedListKind = 'variants' | 'extras';
+
 export const MENU_MESSAGES = {
   description: 'La descripción puede tener hasta 2000 caracteres.',
   price: 'Escribe un precio válido, por ejemplo 18.50.',
+  pricedItemName: 'Escribe el nombre, de hasta 160 caracteres.',
   productName: 'Escribe el nombre del producto, de hasta 200 caracteres.',
   sectionName: 'Escribe el nombre de la sección, de hasta 160 caracteres.',
+  tooManyExtras: 'Puedes agregar hasta 30 adicionales.',
+  tooManyVariants: 'Puedes agregar hasta 30 opciones.',
 } as const;
 
 function characterCount(value: string): number {
@@ -96,6 +110,46 @@ export function normalizeProduct(values: ProductValues): {
   };
 }
 
+/** A row of the variants or extras editor, before it is stored. */
+export type PricedItemValues = { name: string; price: string };
+
+/** The key of one field of one row, as used in API errors and in the form: "variants.0.price". */
+export function pricedItemField(kind: PricedListKind, index: number, field: keyof PricedItemValues): string {
+  return `${kind}.${index}.${field}`;
+}
+
+/**
+ * Validates one list (§E5): at most 30 rows, each with a name of 1 to 160
+ * characters and a valid price. Errors are keyed like "variants.0.name"; a
+ * list that is too long is reported under its own kind ("variants").
+ */
+export function validatePricedItems(
+  kind: PricedListKind,
+  items: readonly PricedItemValues[],
+): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (items.length > PRICED_ITEMS_MAX) {
+    errors[kind] = kind === 'variants' ? MENU_MESSAGES.tooManyVariants : MENU_MESSAGES.tooManyExtras;
+  }
+  items.forEach((item, index) => {
+    const nameLength = characterCount(collapseWhitespace(item.name));
+    if (nameLength < 1 || nameLength > PRICED_ITEM_NAME_MAX_LENGTH) {
+      errors[pricedItemField(kind, index, 'name')] = MENU_MESSAGES.pricedItemName;
+    }
+    if (normalizePrice(item.price) === null) {
+      errors[pricedItemField(kind, index, 'price')] = MENU_MESSAGES.price;
+    }
+  });
+  return errors;
+}
+
+export function normalizePricedItems(items: readonly PricedItemValues[]): PricedItemValues[] {
+  return items.map((item) => ({
+    name: collapseWhitespace(item.name),
+    price: normalizePrice(item.price) ?? '0.00',
+  }));
+}
+
 export type MoveDirection = 'up' | 'down';
 
 /**
@@ -126,6 +180,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+function isPricedItem(value: unknown): value is PricedItem {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.price === 'string'
+  );
+}
+
 function isDraftProduct(value: unknown): value is DraftProduct {
   return (
     isRecord(value) &&
@@ -134,7 +197,11 @@ function isDraftProduct(value: unknown): value is DraftProduct {
     (value.description === null || typeof value.description === 'string') &&
     typeof value.basePrice === 'string' &&
     (value.imageUrl === null || typeof value.imageUrl === 'string') &&
-    typeof value.isAvailable === 'boolean'
+    typeof value.isAvailable === 'boolean' &&
+    Array.isArray(value.variants) &&
+    value.variants.every(isPricedItem) &&
+    Array.isArray(value.extras) &&
+    value.extras.every(isPricedItem)
   );
 }
 

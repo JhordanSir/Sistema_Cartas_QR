@@ -5,9 +5,12 @@ import {
   MENU_MESSAGES,
   moveItem,
   normalizePrice,
+  normalizePricedItems,
   normalizeProduct,
   parseMenuDraft,
+  PRICED_ITEMS_MAX,
   sortOrders,
+  validatePricedItems,
   validateProductForm,
   validateSectionName,
 } from './menu';
@@ -113,9 +116,11 @@ describe('parseMenuDraft', () => {
             basePrice: '28.00',
             description: null,
             id: 'p1',
+            extras: [{ id: 'e1', name: 'Choclo', price: '3.00' }],
             imageUrl: null,
             isAvailable: true,
             name: 'Ceviche',
+            variants: [{ id: 'v1', name: 'Personal', price: '28.00' }],
           },
         ],
       },
@@ -133,5 +138,41 @@ describe('parseMenuDraft', () => {
     expect(
       parseMenuDraft({ draft: { ...draft, categories: [{ ...draft.categories[0], layout: 'GRID' }] } }),
     ).toBeNull();
+  });
+});
+
+describe('validatePricedItems', () => {
+  const item = (name: string, price: string) => ({ name, price });
+
+  it('acepta hasta 30 elementos válidos', () => {
+    const items = Array.from({ length: PRICED_ITEMS_MAX }, (_, index) => item(`Opción ${index + 1}`, '5'));
+    expect(validatePricedItems('variants', items)).toEqual({});
+  });
+
+  it('rechaza 31 elementos', () => {
+    const items = Array.from({ length: PRICED_ITEMS_MAX + 1 }, (_, index) => item(`Extra ${index}`, '1'));
+    expect(validatePricedItems('extras', items)).toEqual({ extras: MENU_MESSAGES.tooManyExtras });
+    expect(validatePricedItems('variants', items)).toEqual({ variants: MENU_MESSAGES.tooManyVariants });
+  });
+
+  it('rechaza un nombre vacío y un precio inválido, fila por fila', () => {
+    expect(validatePricedItems('variants', [item('Personal', '28'), item('  ', 'abc')])).toEqual({
+      'variants.1.name': MENU_MESSAGES.pricedItemName,
+      'variants.1.price': MENU_MESSAGES.price,
+    });
+  });
+
+  it('normaliza nombres y precios', () => {
+    expect(normalizePricedItems([item('  Para   compartir ', '45.5')])).toEqual([
+      { name: 'Para compartir', price: '45.50' },
+    ]);
+  });
+});
+
+describe('parseMenuDraft con opciones y adicionales', () => {
+  it('rechaza un producto sin sus listas', () => {
+    const product = { basePrice: '1.00', description: null, id: 'p', imageUrl: null, isAvailable: true, name: 'X' };
+    const draft = { categories: [{ id: 'c', layout: 'LIST', name: 'S', products: [product] }], digitizationInProgress: false };
+    expect(parseMenuDraft({ draft })).toBeNull();
   });
 });

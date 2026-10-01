@@ -19,6 +19,10 @@ export function logoKey(restaurantId: string): string {
   return `restaurants/${restaurantId}/logo/${randomUUID()}`;
 }
 
+export function productImageKey(restaurantId: string, productId: string): string {
+  return `restaurants/${restaurantId}/products/${productId}/${randomUUID()}`;
+}
+
 /** Keys that /media may serve: logos and product images, nothing else. */
 export const PUBLIC_IMAGE_KEY_PATTERN =
   /^restaurants\/[0-9a-f-]{36}\/(?:logo|products\/[0-9a-f-]{36})\/[0-9a-f-]{36}$/;

@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 
 import { getDb, type Transaction } from '../../db/index';
-import { categories, products } from '../../db/schema';
+import { categories, productExtras, products, productVariants } from '../../db/schema';
 import {
   moveItem,
   sortOrders,
@@ -9,6 +9,8 @@ import {
   type DraftCategory,
   type MenuDraft,
   type MoveDirection,
+  type PricedItem,
+  type PricedItemValues,
 } from '../shared/menu';
 import { deleteBlobQuietly, mediaUrl } from './blobs';
 import { ApiError } from './http';
@@ -49,19 +51,64 @@ export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
     .where(eq(products.restaurantId, restaurantId))
     .orderBy(asc(products.sortOrder), asc(products.createdAt));
 
+  const variants = await pricedItemsByProduct(productVariants, restaurantId);
+  const extras = await pricedItemsByProduct(productExtras, restaurantId);
+
   const byCategory = new Map<string, DraftCategory>(
     categoryRows.map((category) => [category.id, { ...category, products: [] }]),
   );
   for (const { categoryId, imageKey, ...product } of productRows) {
     byCategory.get(categoryId)?.products.push({
       ...product,
+      extras: extras.get(product.id) ?? [],
       imageUrl: imageKey ? mediaUrl(imageKey) : null,
+      variants: variants.get(product.id) ?? [],
     });
   }
   return {
     categories: [...byCategory.values()],
     digitizationInProgress: await hasActiveDigitization(restaurantId),
   };
+}
+
+async function pricedItemsByProduct(
+  table: typeof productVariants | typeof productExtras,
+  restaurantId: string,
+): Promise<Map<string, PricedItem[]>> {
+  const rows = await getDb()
+    .select({ id: table.id, name: table.name, price: table.price, productId: table.productId })
+    .from(table)
+    .where(eq(table.restaurantId, restaurantId))
+    .orderBy(asc(table.sortOrder));
+  const byProduct = new Map<string, PricedItem[]>();
+  for (const { productId, ...item } of rows) {
+    const list = byProduct.get(productId) ?? [];
+    list.push(item);
+    byProduct.set(productId, list);
+  }
+  return byProduct;
+}
+
+/** Replaces both lists of a product inside the transaction of the edit. */
+async function replacePricedItems(
+  tx: Transaction,
+  restaurantId: string,
+  productId: string,
+  input: { variants: readonly PricedItemValues[]; extras: readonly PricedItemValues[] },
+): Promise<void> {
+  for (const [table, items] of [
+    [productVariants, input.variants],
+    [productExtras, input.extras],
+  ] as const) {
+    await tx
+      .delete(table)
+      .where(and(eq(table.productId, productId), eq(table.restaurantId, restaurantId)));
+    if (items.length > 0) {
+      await tx
+        .insert(table)
+        .values(items.map((item, sortOrder) => ({ ...item, productId, restaurantId, sortOrder })));
+    }
+  }
 }
 
 async function nextCategoryOrder(tx: Transaction, restaurantId: string): Promise<number> {
@@ -175,13 +222,23 @@ export type ProductInput = {
   description: string | null;
   basePrice: string;
   isAvailable: boolean;
+  variants: PricedItemValues[];
+  extras: PricedItemValues[];
 };
 
-export async function createProduct(restaurantId: string, input: ProductInput): Promise<void> {
-  await withMenuEdit(restaurantId, async (tx) => {
-    await assertOwnSection(tx, restaurantId, input.categoryId);
-    const sortOrder = await nextProductOrder(tx, restaurantId, input.categoryId);
-    await tx.insert(products).values({ ...input, restaurantId, sortOrder });
+/** Creates the product at the end of its section and returns its id. */
+export async function createProduct(restaurantId: string, input: ProductInput): Promise<string> {
+  return withMenuEdit(restaurantId, async (tx) => {
+    const { extras, variants, ...fields } = input;
+    await assertOwnSection(tx, restaurantId, fields.categoryId);
+    const sortOrder = await nextProductOrder(tx, restaurantId, fields.categoryId);
+    const [created] = await tx
+      .insert(products)
+      .values({ ...fields, restaurantId, sortOrder })
+      .returning({ id: products.id });
+    if (!created) throw new Error('The product insert returned no row.');
+    await replacePricedItems(tx, restaurantId, created.id, { extras, variants });
+    return created.id;
   });
 }
 
@@ -199,16 +256,54 @@ export async function updateProduct(
       .limit(1);
     if (!current) throw productNotFound();
 
+    const { extras, variants, ...fields } = input;
     let sortOrder: number | undefined;
-    if (input.categoryId !== current.categoryId) {
-      await assertOwnSection(tx, restaurantId, input.categoryId);
-      sortOrder = await nextProductOrder(tx, restaurantId, input.categoryId);
+    if (fields.categoryId !== current.categoryId) {
+      await assertOwnSection(tx, restaurantId, fields.categoryId);
+      sortOrder = await nextProductOrder(tx, restaurantId, fields.categoryId);
     }
+    // The composite foreign keys of the lists point at (id, restaurant_id), so
+    // moving the product to another section of the same restaurant keeps them valid.
     await tx
       .update(products)
-      .set({ ...input, ...(sortOrder === undefined ? {} : { sortOrder }) })
+      .set({ ...fields, ...(sortOrder === undefined ? {} : { sortOrder }) })
       .where(and(eq(products.id, productId), eq(products.restaurantId, restaurantId)));
+    await replacePricedItems(tx, restaurantId, productId, { extras, variants });
   });
+}
+
+/**
+ * Points the product at a new image (or none) and returns the previous key,
+ * which the caller deletes once this change is committed (§E6).
+ */
+export async function setProductImage(
+  restaurantId: string,
+  productId: string,
+  imageKey: string | null,
+): Promise<string | null> {
+  return withMenuEdit(restaurantId, async (tx) => {
+    const [current] = await tx
+      .select({ imageKey: products.imageKey })
+      .from(products)
+      .where(and(eq(products.id, productId), eq(products.restaurantId, restaurantId)))
+      .limit(1);
+    if (!current) throw productNotFound();
+    await tx
+      .update(products)
+      .set({ imageKey })
+      .where(and(eq(products.id, productId), eq(products.restaurantId, restaurantId)));
+    return current.imageKey;
+  });
+}
+
+/** 404 unless the product belongs to the restaurant; checked before uploading anything. */
+export async function assertOwnProduct(restaurantId: string, productId: string): Promise<void> {
+  const [product] = await getDb()
+    .select({ id: products.id })
+    .from(products)
+    .where(and(eq(products.id, productId), eq(products.restaurantId, restaurantId)))
+    .limit(1);
+  if (!product) throw productNotFound();
 }
 
 export async function deleteProduct(restaurantId: string, productId: string): Promise<void> {
