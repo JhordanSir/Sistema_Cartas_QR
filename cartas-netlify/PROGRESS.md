@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 9 de 13 — Digitalización I: subida y seguimiento (con extractor simulado).
+Fase 10 de 13 — Digitalización II: Gemini real.
 
 ## Fases completadas
 
@@ -14,6 +14,7 @@ Fase 9 de 13 — Digitalización I: subida y seguimiento (con extractor simulado
 6. Opciones (variantes), adicionales e imagen de cada producto.
 7. Publicación (snapshot) y carta pública `/{slug}` cacheada por etiqueta.
 8. Plantillas (Original detectado, Tradicional, Casual y Premium) y las 12 fuentes de la carta.
+9. Digitalización completa con el extractor simulado: subida, Background Function, seguimiento, bloqueo y mantenimiento.
 
 ## Decisiones
 
@@ -238,6 +239,44 @@ Fase 9 de 13 — Digitalización I: subida y seguimiento (con extractor simulado
   - La elección es optimista: se marca al instante y vuelve atrás si la API falla. Un radio controlado que esperaba al servidor parecía no responder al clic.
 - **Pruebas que cuentan `h2`.** El selector añadió el `h2` «Plantilla», así que la prueba de reordenar secciones lo excluye.
 
+### Digitalización I (fase 9)
+
+- **`parseExtractedMenu`** (`src/shared/parse-extracted-menu.ts`) aplica todas las reglas de §E10. Sigue el criterio de la app principal: si una regla de estructura falla, la respuesta se rechaza entera (`INVALID_MODEL_RESPONSE`), y solo el estilo cae a valores seguros.
+  - Excepción indulgente: una descripción vacía cuenta como `null`, como manda §E5.
+  - Acepta precios como número o como texto numérico.
+- **Extractor intercambiable** (`MenuExtractor`). En esta fase siempre es el simulado: espera 5 s y devuelve 2 secciones y 5 productos, uno con variantes, que pasan por `parseExtractedMenu`.
+- **Flujo de §E10.**
+  1. `POST /api/digitalizacion` crea el trabajo `UPLOADING`, con el mismo bloqueo de fila que las ediciones; 409 si hay otro.
+  2. `PUT …/fotos/{n}` guarda cada foto en Blobs (`digitization/{jobId}/{n}`), con su tamaño en los metadatos para controlar los 12 MB del total, y añade la clave en SQL (`photo_keys || …`), sin perder claves con subidas simultáneas.
+  3. El navegador invoca `/.netlify/functions/digitize-background`.
+- **La función de fondo** (`config.background = true`):
+  - Comprueba el Origin y la sesión del dueño.
+  - Reclama el trabajo con el `UPDATE` atómico.
+  - Reemplaza el borrador en una transacción (secciones LIST, productos disponibles sin imagen, `source_style`) y marca `SUCCEEDED` en la misma transacción.
+  - Borra después las imágenes viejas, y en un `finally` las fotos.
+  - Nunca lanza un error. Si algo falla, el trabajo queda `FAILED` con su código (`INTERNAL_ERROR` si no es del extractor).
+- **Trabajos caducados.** El índice único deja un solo trabajo activo por restaurante, y un trabajo abandonado bloquearía la carta hasta el mantenimiento diario.
+  - El candado y `/activa` solo cuentan trabajos frescos: `UPLOADING` de menos de 60 min y `PROCESSING` de menos de 20.
+  - Los caducados se marcan `FAILED` al consultarlos y al crear otro: `MODEL_TIMEOUT` si se procesaban y `UPLOAD_ABANDONED` si se subían.
+- **Seguimiento en el navegador.**
+  - Consulta el estado cada 3 s.
+  - La función responde 202 al instante, pero puede tardar en arrancar (en local, el empaquetado en frío): la E2E lo detectó al recargar, porque el trabajo seguía `UPLOADING` y la página lo tomaba por interrumpido.
+  - Tras recargar, un trabajo `UPLOADING` tiene 20 s para empezar antes de mostrarse «La subida de las fotos anteriores no terminó.».
+  - En el flujo normal, a los 30 s se reinvoca la función una vez (el reclamo atómico lo hace inofensivo), y a los 60 s se abandona con un mensaje.
+- **Añadido: `DELETE /api/digitalizacion/{id}`.** Descarta una subida interrumpida («Descartar y volver a empezar»), así el dueño no espera una hora con la carta bloqueada. Solo vale para `UPLOADING`.
+- **Interfaz.**
+  - «Digitalizar desde fotos» está en la cabecera y en el estado vacío.
+  - La hoja permite de 1 a 5 fotos, con miniaturas, tamaño, total y «Quitar». Las fotos se comprimen a 2000 px y ≤ 3 MB.
+  - Si el borrador tiene productos, pide confirmar el reemplazo con el texto de §E10.
+  - El estado muestra «Subiendo fotos… (1 de 2)» y «Leyendo tu carta con IA (puede tardar hasta 2 minutos)…».
+  - Al terminar, «Carta digitalizada. Revísala y publícala cuando esté lista.»; si falla, el mensaje de su código y «Volver a intentar».
+  - Mientras dura, el editor está deshabilitado.
+- **Mantenimiento** (`maintenance.mts`, `15 9 * * *`): caduca trabajos por lotes de 50, con un corte a los 20 s. Probado contra la base local: un trabajo `UPLOADING` de hace 2 h pasó a `FAILED` (`UPLOAD_ABANDONED`).
+- **Herramientas.**
+  - `netlify dev` solo registra funciones si `netlify/functions` existía al arrancar: hubo que reiniciarlo.
+  - ESLint ignora `.netlify/**`, donde `netlify dev` deja los paquetes de las funciones.
+  - Las funciones exportan por defecto funciones con nombre (`import/no-anonymous-default-export`).
+
 ## Verificación
 
 ### Fase 1
@@ -391,9 +430,25 @@ Fase 9 de 13 — Digitalización I: subida y seguimiento (con extractor simulado
   - una plantilla inválida, con 400.
 - Capturas del selector y de una carta Premium a 390 y 1280 px, revisadas a mano.
 
+### Fase 9
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 205 pruebas. Las nuevas cubren:
+  - `parseExtractedMenu`: válida; precio negativo; 51 secciones; más de 500 productos, más de 100 por sección y 31 variantes; secciones vacías; textos largos; descripción vacía; color inválido → por defecto; texto sin contraste → negro o blanco; fuente desconocida → Inter;
+  - los mensajes de error;
+  - el tamaño de archivo;
+  - `parseDigitizationJob`;
+  - la orquestación: sin reclamo no hace nada; con éxito borra las imágenes viejas y las fotos; con error marca el código y borra las fotos; nunca lanza.
+- `pnpm test:e2e`: 71 de 71. Los de la fase 9 cubren:
+  - el reemplazo tras confirmar, con la carta publicada intacta y cambios por publicar;
+  - el bloqueo (409 `DIGITIZATION_IN_PROGRESS`) y el seguimiento tras recargar;
+  - un archivo que no es imagen y una sexta foto;
+  - la subida interrumpida y descartada;
+  - la API: segundo trabajo 409, foto 6 y texto disfrazado 400, la función sin sesión no hace nada, y otro dueño recibe 404;
+  - el estado vacío con «Digitalizar desde fotos».
+- Comprobación manual del mantenimiento, y capturas de la hoja de fotos y del estado a 1280 y 390 px.
+
 ## Pendientes
-- Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
-- Fase 9: E2E del bloqueo de la carta (409 `DIGITIZATION_IN_PROGRESS`) con un trabajo real.
 - Fase 12: probar de punta a punta `must_change_password` con la contraseña temporal.
 - Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 

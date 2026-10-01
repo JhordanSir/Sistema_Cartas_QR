@@ -18,6 +18,7 @@ Sistema de cartas digitales para restaurantes: un dueño se registra, edita su c
 - Migraciones: `pnpm db:generate --name <cambio>` las crea desde `db/schema.ts`; `pnpm db:local:apply` y `pnpm db:local:reset` actúan sobre la base local de `netlify dev` (que debe estar en marcha). Los subcomandos `netlify database …` siguen apuntando a la raíz del repositorio aun con el envoltorio: no los uses.
 - `pnpm test:e2e` reinicia la base local y crea al administrador de pruebas (`tests/e2e/support/cuentas.ts`) antes de cada corrida.
 - Bajo `netlify dev`, el proxy imita al CDN y reintenta toda respuesta 403 o 404 como archivo estático, así que un 403 de la API llega como 404. Para comprobar un 403 exacto en E2E, llama al servidor de Next directo (`NEXT_DIRECT_URL`). En Netlify no pasa.
+- `netlify dev` solo registra las funciones de `netlify/functions` que existían al arrancar: reinícialo tras crear una.
 - Esta app tiene su propio `pnpm-workspace.yaml` y su propio lockfile: no forma parte del monorepo de la raíz.
 
 ## Sesión y autorización (fase 3)
