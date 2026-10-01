@@ -39,8 +39,10 @@
  * :root. `inline` makes the utilities resolve those variables where they are used.
  */
 @theme inline {
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  /* The fallback inside var() keeps the declaration valid where next/font did not
+     define the variable (the public menu loads none of the panel fonts). */
+  --font-display: var(--font-fraunces, Georgia), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter, system-ui), system-ui, sans-serif;
 }
 
 @layer base {
