@@ -18,7 +18,7 @@ import {
   type MenuSnapshot,
   type SnapshotCategory,
 } from '../shared/menu-snapshot';
-import { resolveMenuStyle } from '../shared/menu-style';
+import { detectedMenuStyle, resolveMenuStyle, type MenuTemplate } from '../shared/menu-style';
 import { deleteBlobQuietly, mediaUrl } from './blobs';
 import { ApiError } from './http';
 import { hasActiveDigitization, withMenuEdit } from './menu-lock';
@@ -43,7 +43,13 @@ async function loadDraftSnapshot(
   restaurantId: string,
 ): Promise<{
   snapshot: MenuSnapshot;
-  restaurant: { slug: string; publishedMenu: unknown; publishedAt: Date | null };
+  restaurant: {
+    slug: string;
+    publishedMenu: unknown;
+    publishedAt: Date | null;
+    menuTemplate: MenuTemplate;
+    sourceStyle: unknown;
+  };
 }> {
   const [restaurant] = await executor
     .select({
@@ -102,6 +108,10 @@ async function loadDraftSnapshot(
 export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
   const { restaurant, snapshot } = await loadDraftSnapshot(getDb(), restaurantId);
   return {
+    appearance: {
+      detectedStyle: detectedMenuStyle(restaurant.sourceStyle),
+      template: restaurant.menuTemplate,
+    },
     categories: snapshot.categories.map((category) => ({
       ...category,
       products: category.products.map(({ imageKey, ...product }) => ({
@@ -116,6 +126,16 @@ export async function getMenuDraft(restaurantId: string): Promise<MenuDraft> {
       slug: restaurant.slug,
     },
   };
+}
+
+/**
+ * Chooses the template (§E7). It is part of the snapshot, so the change shows
+ * up as «Tienes cambios por publicar» and reaches diners only when published.
+ */
+export async function setMenuTemplate(restaurantId: string, template: MenuTemplate): Promise<void> {
+  await withMenuEdit(restaurantId, async (tx) => {
+    await tx.update(restaurants).set({ menuTemplate: template }).where(eq(restaurants.id, restaurantId));
+  });
 }
 
 export const EMPTY_MENU_MESSAGE = 'Agrega al menos un producto disponible antes de publicar.';

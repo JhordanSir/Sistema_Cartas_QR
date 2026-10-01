@@ -125,6 +125,10 @@ describe('parseMenuDraft', () => {
         ],
       },
     ],
+    appearance: {
+      detectedStyle: { backgroundColor: '#ffffff', fontFamily: 'Inter', textColor: '#111827' },
+      template: 'ORIGINAL',
+    },
     digitizationInProgress: false,
     publication: { hasUnpublishedChanges: true, publishedAt: null, slug: 'cevicheria-luna' },
   };
@@ -135,6 +139,7 @@ describe('parseMenuDraft', () => {
 
   it('rechaza formas inesperadas', () => {
     expect(parseMenuDraft({})).toBeNull();
+    expect(parseMenuDraft({ draft: { ...draft, appearance: { ...draft.appearance, template: 'OTRA' } } })).toBeNull();
     expect(parseMenuDraft({ draft: { ...draft, digitizationInProgress: 'no' } })).toBeNull();
     expect(
       parseMenuDraft({ draft: { ...draft, categories: [{ ...draft.categories[0], layout: 'GRID' }] } }),
@@ -174,6 +179,10 @@ describe('parseMenuDraft con opciones y adicionales', () => {
   it('rechaza un producto sin sus listas', () => {
     const product = { basePrice: '1.00', description: null, id: 'p', imageUrl: null, isAvailable: true, name: 'X' };
     const draft = {
+      appearance: {
+        detectedStyle: { backgroundColor: '#ffffff', fontFamily: 'Inter', textColor: '#111827' },
+        template: 'ORIGINAL',
+      },
       categories: [{ id: 'c', layout: 'LIST', name: 'S', products: [product] }],
       digitizationInProgress: false,
       publication: { hasUnpublishedChanges: false, publishedAt: null, slug: 's' },

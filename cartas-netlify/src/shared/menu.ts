@@ -1,4 +1,5 @@
 import type { FieldErrors } from './account-forms';
+import { isMenuTemplate, parseMenuStyle, type MenuStyle, type MenuTemplate } from './menu-style';
 import { collapseWhitespace } from './validation';
 
 // Menu draft rules of §E5 and §E7, shared by the editor and the Route Handlers.
@@ -35,7 +36,14 @@ export type MenuPublication = {
   slug: string;
 };
 
+/** Template chosen for the menu and the style ORIGINAL would use (for the previews). */
+export type MenuAppearance = {
+  template: MenuTemplate;
+  detectedStyle: MenuStyle;
+};
+
 export type MenuDraft = {
+  appearance: MenuAppearance;
   categories: DraftCategory[];
   /** While a digitization job is active every change answers 409 (§E7). */
   digitizationInProgress: boolean;
@@ -234,11 +242,18 @@ function isPublication(value: unknown): value is MenuPublication {
   );
 }
 
+function parseAppearance(value: unknown): MenuAppearance | null {
+  if (!isRecord(value) || !isMenuTemplate(value.template)) return null;
+  const detectedStyle = parseMenuStyle(value.detectedStyle);
+  return detectedStyle ? { detectedStyle, template: value.template } : null;
+}
+
 /** The `draft` of an API response, or null if it does not have the expected shape. */
 export function parseMenuDraft(data: unknown): MenuDraft | null {
   if (!isRecord(data) || !isRecord(data.draft)) return null;
   const { categories, digitizationInProgress, publication } = data.draft;
+  const appearance = parseAppearance(data.draft.appearance);
   if (!Array.isArray(categories) || !categories.every(isDraftCategory)) return null;
-  if (typeof digitizationInProgress !== 'boolean' || !isPublication(publication)) return null;
-  return { categories, digitizationInProgress, publication };
+  if (typeof digitizationInProgress !== 'boolean' || !isPublication(publication) || !appearance) return null;
+  return { appearance, categories, digitizationInProgress, publication };
 }
