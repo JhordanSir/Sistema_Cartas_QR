@@ -7,6 +7,7 @@ import {
   readFormData,
   validationError,
 } from '@/server/http';
+import { invalidatePublicMenu } from '@/server/next/public-menu-cache';
 import { requireOwner } from '@/server/next/route-auth';
 import { assertSameOrigin } from '@/server/origin';
 import { getProfile, saveProfile, toProfileView } from '@/server/profile';
@@ -77,6 +78,8 @@ export function PATCH(request: Request): Promise<Response> {
     if (saved.previousLogoKey && saved.previousLogoKey !== saved.profile.logoKey) {
       await deleteBlobQuietly(saved.previousLogoKey);
     }
+    // Name, logo, address and contact appear on the public menu (§E2).
+    invalidatePublicMenu(restaurant.slug);
     return jsonResponse({ profile: toProfileView(saved.profile) });
   });
 }

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { registerAccount } from '@/server/accounts';
 import { handleApi, jsonResponse, readJsonBody, validationError } from '@/server/http';
+import { invalidatePublicMenu } from '@/server/next/public-menu-cache';
 import { setSessionCookie } from '@/server/next/route-auth';
 import { assertSameOrigin } from '@/server/origin';
 import { hashPassword } from '@/server/password';
@@ -33,6 +34,8 @@ export function POST(request: Request): Promise<Response> {
       restaurantName: collapseWhitespace(body.restaurantName),
     });
     await setSessionCookie(result.token, result.expiresAt);
+    // A visit before this registration may have cached a 404 for the new slug.
+    if (result.slug) invalidatePublicMenu(result.slug);
     return jsonResponse({ redirectTo: homePathFor(result.account) }, 201);
   });
 }

@@ -31,7 +31,11 @@ export type RegistrationInput = {
   restaurantName: string;
 };
 
-export type RegistrationResult = IssuedSession & { account: SessionAccount };
+export type RegistrationResult = IssuedSession & {
+  account: SessionAccount;
+  /** The new restaurant's slug; null for the administrator. */
+  slug: string | null;
+};
 
 /**
  * The first account is the administrator, without a restaurant; every later
@@ -73,8 +77,9 @@ export async function registerAccount(input: RegistrationInput): Promise<Registr
         .returning({ id: accounts.id });
       if (!account) throw new Error('The account insert returned no row.');
 
+      let slug: string | null = null;
       if (role === 'OWNER') {
-        const slug = await resolveUniqueSlug(input.restaurantName, async (candidate) => {
+        slug = await resolveUniqueSlug(input.restaurantName, async (candidate) => {
           const [taken] = await tx
             .select({ id: restaurants.id })
             .from(restaurants)
@@ -93,6 +98,7 @@ export async function registerAccount(input: RegistrationInput): Promise<Registr
       return {
         ...session,
         account: { email: input.email, id: account.id, mustChangePassword: false, role },
+        slug,
       };
     });
   } catch (error) {
