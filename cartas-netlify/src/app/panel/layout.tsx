@@ -8,6 +8,7 @@ const OWNER_NAVIGATION: readonly NavItem[] = [
   { href: '/panel', label: 'Perfil' },
   { href: '/panel/carta', label: 'Carta' },
   { href: '/panel/qr', label: 'QR' },
+  { href: '/panel/estadisticas', label: 'Estadísticas' },
   { href: '/panel/cuenta', label: 'Cuenta' },
 ];
 
