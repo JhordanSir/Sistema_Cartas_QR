@@ -90,6 +90,7 @@ export default async function PublicMenuPage(props: Props) {
   return (
     <div
       className="min-h-dvh bg-(--menu-background) font-(family-name:--menu-font) text-(--menu-foreground)"
+      data-public-menu
       style={menuVariables(style)}
     >
       <header className="mx-auto grid w-full max-w-3xl justify-items-center gap-3 px-4 pt-10 pb-6 text-center">

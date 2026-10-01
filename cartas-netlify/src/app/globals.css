@@ -58,4 +58,10 @@
     outline: 2px solid var(--color-wine);
     outline-offset: 2px;
   }
+
+  /* The public menu is painted with the owner's colors: its focus ring follows
+     the text color, which always contrasts with the background. */
+  [data-public-menu] :focus-visible {
+    outline-color: var(--menu-foreground);
+  }
 }
