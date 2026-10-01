@@ -2,13 +2,14 @@
 
 ## Fase actual
 
-Fase 4 de 13 — Perfil del restaurante y QR.
+Fase 5 de 13 — Editor: secciones y productos.
 
 ## Fases completadas
 
 1. Esqueleto, reglas y diseño base.
 2. Base de datos: esquema Drizzle, migración inicial y `GET /api/salud`.
 3. Cuentas: registro, inicio y cierre de sesión, cambio de contraseña, y la barra superior del panel y del backoffice.
+4. Perfil del restaurante (logo en Netlify Blobs y `/media`) y código QR.
 
 ## Decisiones
 
@@ -101,6 +102,35 @@ Fase 4 de 13 — Perfil del restaurante y QR.
   - Se borró el `.netlify` que las pruebas habían dejado en la raíz del repositorio.
 - **403 → 404 bajo `netlify dev`.** Su proxy reintenta toda respuesta 403/404 del framework como archivo estático (`.html`, `.htm`, `/index.html`) y devuelve el último 404. La prueba del origen ajeno va directo al servidor de Next; en Netlify el 403 llega tal cual.
 
+### Perfil y QR (fase 4)
+
+- **Blobs.** `@netlify/blobs` 11, store `uploads` con consistencia fuerte: un logo debe poder leerse justo después de subirlo.
+  - Claves con un UUID nuevo en cada subida (`restaurants/{id}/logo/{uuid}`). Por eso `/media` puede cachear un año con `immutable`.
+  - El tipo de contenido viaja en los metadatos del blob.
+- **Orden al reemplazar el logo.** Primero se sube el nuevo. Si falla la base de datos, se borra el nuevo; si no, el anterior se borra después del commit. Un borrado fallido solo deja un blob huérfano: se registra y no se lanza.
+- **Quitar el logo.** El formulario envía `removeLogo=1`. No estaba explícito en el plan, pero es la contraparte natural de subirlo.
+- **Compresión en el navegador solo cuando hace falta.** Un PNG, JPEG o WebP que ya cumple (≤ 2 MB y ≤ 1600 px) se sube tal cual, y así un logo pequeño conserva su transparencia.
+  - Lo demás se redibuja en JPEG 0,85, sobre fondo blanco y con la orientación EXIF aplicada.
+  - Si aun así supera el límite, no se envía.
+  - El servidor vuelve a validar el tamaño y la firma binaria.
+- **El guardado espera al logo.** Comprimir una foto grande toma un momento, y guardar antes la dejaba fuera. La E2E lo detectó. El botón queda deshabilitado («Preparando el logo…») mientras tanto.
+- **Selector de archivo en español.** El `<input type="file">` nativo muestra «Choose File» en el idioma del navegador. Queda oculto, y un botón «Elegir logo» / «Cambiar logo» lo abre. El botón recibe la ayuda y el error por `aria-describedby`, y el foco cuando hay error.
+- **Redes.** Además de §E5 (https y host exacto), se exige una ruta de perfil y se rechazan usuario, contraseña y puerto en la URL.
+- **`PUBLIC_APP_URL`.** Se normaliza (http/https, sin query ni hash, sin barra final). Si falta o no es válida, cuenta como no configurada.
+- **QR.**
+  - Se genera la primera vez que el dueño abre `/panel/qr` o llama a una de las tres APIs del QR.
+  - Usa un `UPDATE` condicionado a las tres columnas vacías, así dos primeras visitas simultáneas se quedan con el mismo QR.
+  - La página muestra el SVG guardado como `data:` URL.
+  - «Abrir carta pública» usa la ruta relativa `/{slug}`, para que funcione también en local, donde el QR apunta al dominio definitivo.
+- **`/media/[...key]`.**
+  - Patrón estricto de claves: UUIDs en minúscula, solo `logo` o `products/{uuid}`.
+  - `X-Content-Type-Options: nosniff`.
+  - El 404 va con `no-store`, para que un fallo no quede cacheado.
+- **El envoltorio de la CLI corre en el mismo proceso.** Antes lanzaba `netlify-cli` como proceso hijo. Al detener el envoltorio, el hijo seguía sirviendo el puerto 8888, y un nuevo `pnpm dev:netlify` fallaba. Ahora cambia de carpeta, ajusta `process.argv` en el mismo arreglo que lee la CLI e importa su punto de entrada.
+- **Next no admite exportaciones auxiliares en `route.ts`.** La parte común de las tres rutas del QR vive en `src/server/next/owner-qr.ts`.
+- **Perfil.** El `<h1>` de `/panel` sigue siendo el nombre del restaurante, y la dirección pública aparece en solo lectura con «Ver carta pública».
+  - Invalidar `menu:{slug}` al guardar queda para la fase 7, cuando exista esa caché.
+
 ## Verificación
 
 ### Fase 1
@@ -148,6 +178,30 @@ Fase 4 de 13 — Perfil del restaurante y QR.
   - el origen ajeno (403 directo a Next);
   - el cambio de contraseña (la anterior deja de servir y la otra sesión se cierra), y la contraseña actual equivocada;
   - el menú plegado a 390 px.
+
+### Fase 4
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 127 pruebas. Las nuevas cubren:
+  - firmas de imagen: PNG, JPEG, WebP, texto renombrado a .png, un RIFF que no es WebP y firmas incompletas;
+  - teléfono y WhatsApp;
+  - redes por host (`http://instagram.com/x` y `https://evil.com/instagram.com` se rechazan);
+  - el formulario de perfil y su normalización;
+  - `PUBLIC_APP_URL`;
+  - el patrón de claves de `/media`.
+- `pnpm test:e2e`: 34 de 34. Los de la fase 4 cubren:
+  - contacto y redes que siguen al recargar;
+  - las redes inválidas;
+  - el nombre que cambia sin tocar la dirección pública;
+  - el logo: se sube, `/media` lo sirve con caché inmutable, se quita y su blob devuelve 404;
+  - un PNG de 2400 px que llega como JPEG de 1600 px;
+  - el texto renombrado a .png, rechazado en el navegador y en la API;
+  - el QR: generado una vez y con las descargas `qr-{slug}.png` y `.svg`;
+  - «Copiar enlace»;
+  - el menú;
+  - `/media` sin claves ajenas;
+  - el perfil sin sesión.
+- Capturas a 390 y 1280 px del perfil, el QR y el menú abierto, revisadas a mano.
 
 ## Pendientes
 - Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
