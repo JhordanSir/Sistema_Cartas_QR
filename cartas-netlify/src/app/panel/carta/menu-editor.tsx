@@ -18,13 +18,23 @@ import {
 } from '@/shared/menu';
 
 import { ProductForm, SectionForm, type ProductFormValues, type SaveResult } from './forms';
+import { ProductImageEditor } from './product-image';
 
+/** Only ids: what is shown always comes from the current draft. */
 type Editing =
   | { kind: 'new-section' }
   | { kind: 'section'; section: DraftCategory }
   | { kind: 'new-product'; categoryId: string }
-  | { kind: 'product'; product: DraftProduct; categoryId: string }
+  | { kind: 'product'; productId: string }
   | null;
+
+function findProduct(draft: MenuDraft, productId: string): { product: DraftProduct; categoryId: string } | null {
+  for (const category of draft.categories) {
+    const product = category.products.find(({ id }) => id === productId);
+    if (product) return { categoryId: category.id, product };
+  }
+  return null;
+}
 
 type Deleting =
   | { kind: 'section'; section: DraftCategory }
@@ -107,7 +117,7 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
     if (editing?.kind !== 'new-product' && editing?.kind !== 'product') return { ok: false };
     const result =
       editing.kind === 'product'
-        ? await change(`/api/carta/productos/${editing.product.id}`, 'PATCH', values)
+        ? await change(`/api/carta/productos/${editing.productId}`, 'PATCH', values)
         : await change('/api/carta/productos', 'POST', values);
     if (result.ok) setEditing(null);
     return result;
@@ -123,6 +133,8 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
     setDeleting(null);
     if (ok && deleting.kind === 'product') setEditing(null);
   }
+
+  const editedProduct = editing?.kind === 'product' ? findProduct(draft, editing.productId) : null;
 
   const sheetTitle =
     editing?.kind === 'new-section'
@@ -228,24 +240,7 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
                       className="grid gap-3 border-b border-line px-5 py-4 last:border-b-0 sm:grid-cols-[1fr_auto] sm:items-center"
                       key={product.id}
                     >
-                      <div className="grid min-w-0 gap-1">
-                        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                          <h3
-                            className={cn('m-0 text-base font-semibold', !product.isAvailable && 'text-ink-muted')}
-                          >
-                            {product.name}
-                          </h3>
-                          <p className="m-0 font-semibold tabular-nums">{formatPrice(product.basePrice)}</p>
-                        </div>
-                        {product.description ? (
-                          <p className="m-0 line-clamp-2 text-sm text-ink-soft">{product.description}</p>
-                        ) : null}
-                        {product.isAvailable ? null : (
-                          <span>
-                            <StatusPill tone="neutral">No disponible</StatusPill>
-                          </span>
-                        )}
-                      </div>
+                      <ProductSummary product={product} />
                       <div className="flex flex-wrap gap-2">
                         <Button
                           aria-label={`Subir ${product.name}`}
@@ -271,7 +266,7 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
                           aria-label={`Editar ${product.name}`}
                           className={smallButton}
                           disabled={disabled}
-                          onClick={() => setEditing({ categoryId: section.id, kind: 'product', product })}
+                          onClick={() => setEditing({ kind: 'product', productId: product.id })}
                           variant="secondary"
                         >
                           Editar
@@ -317,29 +312,49 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
             submitLabel={editing.kind === 'section' ? 'Guardar sección' : 'Crear sección'}
           />
         ) : null}
-        {editing?.kind === 'new-product' || editing?.kind === 'product' ? (
-          <ProductForm
-            categories={draft.categories}
-            initial={
-              editing.kind === 'product'
-                ? {
-                    basePrice: editing.product.basePrice,
-                    categoryId: editing.categoryId,
-                    description: editing.product.description ?? '',
-                    isAvailable: editing.product.isAvailable,
-                    name: editing.product.name,
-                  }
-                : { basePrice: '', categoryId: editing.categoryId, description: '', isAvailable: true, name: '' }
-            }
-            onCancel={() => setEditing(null)}
-            onDelete={
-              editing.kind === 'product'
-                ? () => setDeleting({ kind: 'product', product: editing.product })
-                : undefined
-            }
-            onSave={saveProduct}
-            submitLabel={editing.kind === 'product' ? 'Guardar producto' : 'Agregar producto'}
-          />
+        {editing?.kind === 'new-product' ? (
+          <div className="grid gap-5">
+            <p className="m-0 border-b border-line pb-5 text-sm text-ink-muted">
+              Podrás agregar una foto después de crear el producto.
+            </p>
+            <ProductForm
+              categories={draft.categories}
+              initial={{
+                basePrice: '',
+                categoryId: editing.categoryId,
+                description: '',
+                extras: [],
+                isAvailable: true,
+                name: '',
+                variants: [],
+              }}
+              onCancel={() => setEditing(null)}
+              onSave={saveProduct}
+              submitLabel="Agregar producto"
+            />
+          </div>
+        ) : null}
+        {editing?.kind === 'product' && editedProduct ? (
+          <div className="grid gap-5">
+            <ProductImageEditor disabled={disabled} onDraft={setDraft} product={editedProduct.product} />
+            <ProductForm
+              categories={draft.categories}
+              initial={{
+                basePrice: editedProduct.product.basePrice,
+                categoryId: editedProduct.categoryId,
+                description: editedProduct.product.description ?? '',
+                extras: editedProduct.product.extras,
+                isAvailable: editedProduct.product.isAvailable,
+                name: editedProduct.product.name,
+                variants: editedProduct.product.variants,
+              }}
+              key={editedProduct.product.id}
+              onCancel={() => setEditing(null)}
+              onDelete={() => setDeleting({ kind: 'product', product: editedProduct.product })}
+              onSave={saveProduct}
+              submitLabel="Guardar producto"
+            />
+          </div>
         ) : null}
       </Sheet>
 
@@ -362,6 +377,49 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
           Esta acción no se puede deshacer.
         </p>
       </ConfirmDialog>
+    </div>
+  );
+}
+
+function countLabel(count: number, singular: string, plural: string): string | null {
+  if (count === 0) return null;
+  return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+}
+
+/** Name, price, description, how many options and extras, and availability. */
+function ProductSummary({ product }: { product: DraftProduct }) {
+  const lists = [
+    countLabel(product.variants.length, 'opción', 'opciones'),
+    countLabel(product.extras.length, 'adicional', 'adicionales'),
+  ].filter((label): label is string => label !== null);
+
+  return (
+    <div className="flex min-w-0 gap-3">
+      {product.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- /media URLs served by our own route
+        <img
+          alt=""
+          className="h-14 w-14 shrink-0 rounded-control border border-line object-cover"
+          src={product.imageUrl}
+        />
+      ) : null}
+      <div className="grid min-w-0 flex-1 gap-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <h3 className={cn('m-0 text-base font-semibold', !product.isAvailable && 'text-ink-muted')}>
+            {product.name}
+          </h3>
+          <p className="m-0 font-semibold tabular-nums">{formatPrice(product.basePrice)}</p>
+        </div>
+        {product.description ? (
+          <p className="m-0 line-clamp-2 text-sm text-ink-soft">{product.description}</p>
+        ) : null}
+        {lists.length > 0 ? <p className="m-0 text-[13px] text-ink-muted">{lists.join(' · ')}</p> : null}
+        {product.isAvailable ? null : (
+          <span>
+            <StatusPill tone="neutral">No disponible</StatusPill>
+          </span>
+        )}
+      </div>
     </div>
   );
 }

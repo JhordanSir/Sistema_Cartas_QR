@@ -31,7 +31,7 @@ export function Field({
   error?: string | null;
   hint?: ReactNode;
   id: string;
-  label: string;
+  label: ReactNode;
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
