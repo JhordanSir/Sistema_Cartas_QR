@@ -14,19 +14,28 @@
     "lint": "eslint --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:local:apply": "node scripts/local-db.ts apply",
+    "db:local:reset": "node scripts/local-db.ts reset"
   },
   "dependencies": {
+    "@netlify/database": "^2.0.1",
+    "drizzle-orm": "1.0.0-rc.4",
     "next": "16.3.8",
+    "pg": "^8.23.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@netlify/database-dev": "1.0.1",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "1.0.0-rc.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "netlify-cli": "^27.10.2",
