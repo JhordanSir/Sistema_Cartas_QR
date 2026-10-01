@@ -51,6 +51,21 @@ export async function handleApi(run: () => Promise<Response>): Promise<Response>
   }
 }
 
+/** Parses a multipart (or urlencoded) body; a malformed one is a 400 INVALID_INPUT. */
+export async function readFormData(request: Request): Promise<FormData> {
+  try {
+    return await request.formData();
+  } catch {
+    throw new ApiError(400, 'INVALID_INPUT', INVALID_INPUT_MESSAGE);
+  }
+}
+
+/** A text field of a form, or '' when it is missing or is a file. */
+export function formText(form: FormData, name: string): string {
+  const value = form.get(name);
+  return typeof value === 'string' ? value : '';
+}
+
 /** Parses the JSON body with a zod schema; any mismatch is a 400 INVALID_INPUT. */
 export async function readJsonBody<T>(request: Request, schema: z.ZodType<T>): Promise<T> {
   let body: unknown;
