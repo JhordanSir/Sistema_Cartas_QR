@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "dev:netlify": "netlify dev",
+    "dev:netlify": "node scripts/netlify-cli.ts dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint --max-warnings=0",
@@ -17,7 +17,8 @@
     "test:e2e": "playwright test",
     "db:generate": "drizzle-kit generate",
     "db:local:apply": "node scripts/local-db.ts apply",
-    "db:local:reset": "node scripts/local-db.ts reset"
+    "db:local:reset": "node scripts/local-db.ts reset",
+    "cli:netlify": "node scripts/netlify-cli.ts"
   },
   "dependencies": {
     "@netlify/database": "^2.0.1",
