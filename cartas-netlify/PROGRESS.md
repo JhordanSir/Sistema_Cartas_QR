@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 13 de 13 — Revisión final y apertura.
+Las 13 fases están terminadas. Falta desplegar en Netlify y la prueba real con Gemini (ver Pendientes).
 
 ## Fases completadas
 
@@ -18,6 +18,7 @@ Fase 13 de 13 — Revisión final y apertura.
 10. Digitalización con Gemini real (`@google/genai`), con reintentos y errores de §E10; el extractor simulado queda para las E2E locales.
 11. Estadísticas de visitas: registro con HMAC, `/panel/estadisticas` con barras en CSS y retención en el mantenimiento.
 12. Backoffice: búsqueda y paginación, pausar y reactivar, eliminar y contraseña temporal; aviso de carta pausada en el panel.
+13. Revisión final de seguridad, accesibilidad y rendimiento, y README.
 
 ## Decisiones
 
@@ -366,6 +367,60 @@ Fase 13 de 13 — Revisión final y apertura.
   - La búsqueda es un formulario GET (funciona sin JavaScript), y la paginación, enlaces.
 - **Reutilización**: el `CopyButton` de `src/components/ui` reemplaza al botón de copiar del QR, y `Dialog` se suma a los diálogos.
 
+### Revisión final (fase 13)
+
+**Seguridad.** Se revisaron todos los Route Handlers y las dos funciones. Además:
+
+- Toda API de dueño responde 403 `MUST_CHANGE_PASSWORD` mientras haya un cambio de contraseña pendiente, salvo cambiarla y cerrar sesión.
+- Toda escritura con un `Origin` ajeno responde 403.
+
+| Ruta | Métodos | Autenticación y rol | Restaurante | `Origin` |
+|---|---|---|---|---|
+| `/api/registro` | POST | Pública | Crea la cuenta | ✓ |
+| `/api/sesion` | POST, DELETE | Pública: abre o cierra la sesión propia | — | ✓ |
+| `/api/cuenta/contrasena` | POST | Sesión de cualquier rol, también con cambio pendiente | La cuenta propia | ✓ |
+| `/api/perfil` | GET, PATCH | Dueño | El de la sesión | ✓ en PATCH |
+| `/api/qr`, `/api/qr/png`, `/api/qr/svg` | GET | Dueño | El de la sesión | — |
+| `/api/carta` | GET | Dueño | El de la sesión | — |
+| `/api/carta/secciones`, `/{id}` y `/{id}/mover` | POST, PATCH, DELETE | Dueño | Filtro por `restaurant_id` (una ajena da 404) | ✓ |
+| `/api/carta/productos`, `/{id}`, `/{id}/mover` e `/{id}/imagen` | POST, PATCH, DELETE, PUT | Dueño | Filtro por `restaurant_id` | ✓ |
+| `/api/carta/plantilla` y `/api/carta/publicar` | PUT, POST | Dueño | El de la sesión | ✓ |
+| `/api/digitalizacion`, `/activa`, `/{id}` y `/{id}/fotos/{n}` | POST, GET, DELETE, PUT | Dueño | Filtro por `restaurant_id` | ✓ en las escrituras |
+| `/api/estadisticas` | GET | Dueño | El de la sesión | — |
+| `/api/vistas/{slug}` | POST | Pública (el comensal) | Por slug, solo si está `ENABLED` | ✓ |
+| `/api/admin/restaurantes`, `/{id}` y `/{id}/contrasena-temporal` | GET, PATCH, DELETE, POST | Administrador | Cualquiera: es el backoffice | ✓ en las escrituras |
+| `/api/salud` | GET | Pública | — | — |
+| `/media/{clave}` | GET | Pública | Solo imágenes `restaurants/{uuid}/…`, con UUID aleatorio | — |
+| Función `digitize-background` | POST | Sesión de dueño leída de la cookie, sin cambio de contraseña pendiente | El de la sesión; el reclamo atómico filtra por `restaurant_id` | ✓ |
+| Función `maintenance` | Programada | Netlify no la deja invocar por URL en producción | Todos: es una tarea del sistema | — |
+
+- **Corregido**: `failJob` y el paso a `SUCCEEDED` filtraban solo por el id del trabajo. Nunca recibían ids del cliente, porque llegan después del reclamo, que sí filtra, pero ahora filtran también por `restaurant_id`, como pide la regla.
+- **Por diseño**: `/media` sirve las imágenes de una carta pausada a quien ya tenga su dirección. Las claves llevan un UUID aleatorio, y al eliminar el restaurante se borran.
+- **Fuera del alcance, como recomendación**: cabeceras de seguridad (CSP y `frame-ancestors`) y las reglas de límite de peticiones de Netlify para el inicio de sesión y el registro.
+
+**Accesibilidad.**
+
+- axe-core 4.13 (WCAG 2.2 AA) en 28 pantallas a 1280 y 390 px, sin infracciones:
+  - el acceso y la 404;
+  - el perfil, la carta (también con la hoja de edición abierta), el QR, la cuenta y las estadísticas, vacías y con datos;
+  - la carta pública con las plantillas Original y Premium;
+  - el backoffice, con el diálogo de eliminar.
+- Revisión manual:
+  - todo control tiene su `<label>`;
+  - los errores de los campos y los avisos de error usan `role="alert"`;
+  - los controles miden al menos 44 px (`min-h-11`; los enlaces dentro del texto quedan exceptuados);
+  - los diálogos usan `<dialog>` nativo, con el foco atrapado y Escape;
+  - los tokens del panel superan AA (el texto tenue `#6b6157` sobre el papel `#fbf7f0` da 5,8:1).
+- **Corregido**: el anillo de foco vino apenas se veía sobre fondos oscuros de la carta pública (Premium, o colores detectados). Ahora, en la carta, usa `--menu-foreground`, que contrasta con el fondo por construcción.
+
+**Rendimiento.**
+
+- La carta pública es ISR (● en `next build`) con la etiqueta `menu:{slug}`, y se invalida al publicar, al guardar el perfil, al cambiar de plantilla, al pausar o reactivar y al eliminar. Lo cubren las E2E de las fases 7, 8 y 12; el contador de visitas es un componente de cliente que no la saca de la caché.
+- Las fuentes de las cartas solo se cargan en la carta pública y en la vista previa (E2E de la fase 8).
+- `/media` responde con `public, max-age=31536000, immutable` (E2E de la fase 4).
+
+**README**: qué es, variables de entorno, el registro (la primera cuenta es la del administrador), las contraseñas olvidadas (contraseña temporal desde el backoffice), los límites conocidos, el desarrollo local, las pruebas y el despliegue.
+
 ## Verificación
 
 ### Fase 1
@@ -592,6 +647,13 @@ Fase 13 de 13 — Revisión final y apertura.
     - después, la carta da 404, el logo se borra y el dueño ya no tiene sesión ni puede entrar;
   - los permisos: dueño 403, anónimo 401, sin `Origin` 403, id que no es UUID 404 y estado inválido 400.
 - Capturas a 1280 y 390 px de la lista, de los diálogos de eliminar y de contraseña temporal, y del aviso al dueño.
+
+### Fase 13
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 263 de 263.
+- `pnpm test:e2e`: 80 de 80.
+- axe-core: 28 pantallas sin infracciones.
 
 ## Pendientes
 - Fase 10: con la clave real en `.env`, digitalizar `apps/web/public/pdf/carta-prueba.jpg`. Hay que confirmar tres cosas:
