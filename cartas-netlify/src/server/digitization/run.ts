@@ -37,7 +37,7 @@ export async function runDigitizationJob({
   } catch (error) {
     console.error('Digitization job failed', jobId, describeErrorForLog(error));
     try {
-      await failJob(jobId, failureCode(error));
+      await failJob(restaurantId, jobId, failureCode(error));
     } catch (markError) {
       console.error('Could not mark the digitization job as failed', jobId, describeErrorForLog(markError));
     }

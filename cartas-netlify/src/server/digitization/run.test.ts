@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const jobs = vi.hoisted(() => ({
   claimJob: vi.fn<(restaurantId: string, jobId: string) => Promise<string[] | null>>(),
   completeJob: vi.fn<(restaurantId: string, jobId: string, menu: unknown) => Promise<string[] | null>>(),
-  failJob: vi.fn<(jobId: string, code: string) => Promise<void>>(),
+  failJob: vi.fn<(restaurantId: string, jobId: string, code: string) => Promise<void>>(),
   readPhotos: vi.fn<(keys: readonly string[]) => Promise<{ data: Uint8Array; mimeType: 'image/png' }[]>>(),
 }));
 const blobs = vi.hoisted(() => ({ deleteBlobQuietly: vi.fn<(key: string) => Promise<void>>() }));
@@ -59,7 +59,7 @@ describe('runDigitizationJob', () => {
 
     await runDigitizationJob({ extractor: failing, jobId: 'job', restaurantId: 'r' });
 
-    expect(jobs.failJob).toHaveBeenCalledWith('job', 'MODEL_TIMEOUT');
+    expect(jobs.failJob).toHaveBeenCalledWith('r', 'job', 'MODEL_TIMEOUT');
     expect(jobs.completeJob).not.toHaveBeenCalled();
     expect(blobs.deleteBlobQuietly.mock.calls.map(([key]) => key)).toEqual(photoKeys);
   });
@@ -67,7 +67,7 @@ describe('runDigitizationJob', () => {
   it('una carta inválida termina en INVALID_MODEL_RESPONSE', async () => {
     await runDigitizationJob({ extractor: extractor(async () => ({ categories: [] })), jobId: 'job', restaurantId: 'r' });
 
-    expect(jobs.failJob).toHaveBeenCalledWith('job', 'INVALID_MODEL_RESPONSE');
+    expect(jobs.failJob).toHaveBeenCalledWith('r', 'job', 'INVALID_MODEL_RESPONSE');
   });
 
   it('nunca lanza, aunque falle hasta marcar el error', async () => {

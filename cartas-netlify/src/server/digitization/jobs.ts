@@ -224,11 +224,17 @@ export async function readPhotos(keys: readonly string[]): Promise<{ data: Uint8
   );
 }
 
-export async function failJob(jobId: string, errorCode: string): Promise<void> {
+export async function failJob(restaurantId: string, jobId: string, errorCode: string): Promise<void> {
   await getDb()
     .update(digitizationJobs)
     .set({ errorCode, finishedAt: new Date(), status: 'FAILED' })
-    .where(and(eq(digitizationJobs.id, jobId), inArray(digitizationJobs.status, ['UPLOADING', 'PROCESSING'])));
+    .where(
+      and(
+        eq(digitizationJobs.id, jobId),
+        eq(digitizationJobs.restaurantId, restaurantId),
+        inArray(digitizationJobs.status, ['UPLOADING', 'PROCESSING']),
+      ),
+    );
 }
 
 /**
@@ -303,7 +309,7 @@ export async function completeJob(
     await tx
       .update(digitizationJobs)
       .set({ errorCode: null, finishedAt: new Date(), status: 'SUCCEEDED' })
-      .where(eq(digitizationJobs.id, jobId));
+      .where(and(eq(digitizationJobs.id, jobId), eq(digitizationJobs.restaurantId, restaurantId)));
     return oldImages.map(({ imageKey }) => imageKey).filter((key): key is string => key !== null);
   });
 }
