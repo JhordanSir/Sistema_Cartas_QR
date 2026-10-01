@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:8888';
+/** Only for the local suite: 64 hex characters, like the real one. */
+const E2E_VIEW_HASH_SECRET = '0123456789abcdef'.repeat(4);
 
 export default defineConfig({
   // `netlify dev` compiles each route on its first request (4–7 s with a cold
@@ -21,10 +23,11 @@ export default defineConfig({
   testDir: './tests/e2e',
   use: { baseURL, trace: 'retain-on-failure' },
   // `netlify dev` serves Next.js together with the local database, blobs and
-  // functions, with the simulated extractor instead of Gemini.
+  // functions, with the simulated extractor instead of Gemini and a test key
+  // for the visitor hashes.
   webServer: {
     command: 'pnpm dev:netlify',
-    env: { DIGITIZATION_FAKE: '1' },
+    env: { DIGITIZATION_FAKE: '1', VIEW_HASH_SECRET: E2E_VIEW_HASH_SECRET },
     reuseExistingServer: true,
     timeout: 180_000,
     url: `${baseURL}/entrar`,
