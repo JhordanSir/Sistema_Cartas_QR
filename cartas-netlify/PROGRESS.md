@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 12 de 13 — Backoffice.
+Fase 13 de 13 — Revisión final y apertura.
 
 ## Fases completadas
 
@@ -17,6 +17,7 @@ Fase 12 de 13 — Backoffice.
 9. Digitalización completa con el extractor simulado: subida, Background Function, seguimiento, bloqueo y mantenimiento.
 10. Digitalización con Gemini real (`@google/genai`), con reintentos y errores de §E10; el extractor simulado queda para las E2E locales.
 11. Estadísticas de visitas: registro con HMAC, `/panel/estadisticas` con barras en CSS y retención en el mantenimiento.
+12. Backoffice: búsqueda y paginación, pausar y reactivar, eliminar y contraseña temporal; aviso de carta pausada en el panel.
 
 ## Decisiones
 
@@ -337,6 +338,34 @@ Fase 12 de 13 — Backoffice.
   - Playwright arranca `netlify dev` también con un `VIEW_HASH_SECRET` de prueba.
   - El proxy de `netlify dev` reescribe `X-Forwarded-For` con la IP del socket. Para simular a otro visitante, la prueba va directo a Next con `x-nf-client-connection-ip`.
 
+### Backoffice (fase 12)
+
+- **APIs**, todas con `requireAdmin` y, las que escriben, con el `Origin` propio:
+  - `GET /api/admin/restaurantes`, con `q` y `page`;
+  - `PATCH` y `DELETE /api/admin/restaurantes/{id}`;
+  - `POST /api/admin/restaurantes/{id}/contrasena-temporal`.
+- **Lista**:
+  - Búsqueda `ILIKE` en nombre, slug y correo; los comodines `%`, `_` y `\` que escribe el administrador se buscan tal cual.
+  - 20 por página, de la más reciente a la más antigua. Una página mayor que la última se recorta a la última.
+  - El administrador no aparece, porque no tiene restaurante: no se le puede pausar ni eliminar.
+- **Pausar y reactivar** cambian `status` e invalidan `menu:{slug}`. La carta pausada da 404 y deja de sumar visitas. El dueño sigue entrando y ve el aviso de §E4 encima de cada página del panel (está en el layout).
+- **Eliminar** exige la frase exacta `ELIMINAR {slug}`, sin recortar espacios, y la casilla. Se comprueban en el cliente y en el servidor, que responde 400 con el mensaje de cada campo. El orden:
+  1. Los blobs del restaurante, por el prefijo `restaurants/{uuid}/`. Si alguno falla, el borrado se detiene sin tocar la cuenta y se puede reintentar.
+  2. Las fotos de sus digitalizaciones, que van por trabajo y no por restaurante.
+  3. La cuenta del dueño, que arrastra en cascada el restaurante, sus datos y sus sesiones.
+  4. La caché de la carta.
+- **Contraseña temporal**:
+  - `generateTemporaryPassword` (`src/shared`) recibe `randomInt` como parámetro para seguir siendo pura; el servidor le pasa `crypto.randomInt`.
+  - 12 caracteres, con al menos una minúscula, una mayúscula y un número, mezclados con Fisher–Yates. Sin caracteres que se confunden al dictarla (0 y O; 1, l e I).
+  - En una transacción se guarda su hash, se activa `must_change_password` y se revocan todas las sesiones del dueño.
+  - La respuesta lleva `Cache-Control: no-store`. El diálogo la muestra una sola vez, seleccionada y con «Copiar».
+- **Interfaz**:
+  - Tabla desde 1024 px y tarjetas en el celular, con un solo juego de diálogos.
+  - Cada botón nombra su restaurante («Pausar Pollería El Ñandú»).
+  - Las fechas de alta se formatean en el servidor, en hora de Lima.
+  - La búsqueda es un formulario GET (funciona sin JavaScript), y la paginación, enlaces.
+- **Reutilización**: el `CopyButton` de `src/components/ui` reemplaza al botón de copiar del QR, y `Dialog` se suma a los diálogos.
+
 ## Verificación
 
 ### Fase 1
@@ -544,13 +573,31 @@ Fase 12 de 13 — Backoffice.
 - Comprobación manual de la retención: cinco eventos viejos pasaron a resúmenes, y uno de exactamente 30 días se quedó. El total no cambió (11 antes y después), y un resumen existente se sumó (5 + 3 = 8).
 - Capturas a 1280 y 390 px, con 6 semanas de datos y con el estado vacío.
 
+### Fase 12
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 263 pruebas. Las nuevas cubren:
+  - la contraseña temporal: 1000 generaciones válidas y distintas, el azar mínimo y el máximo, y ningún carácter ambiguo;
+  - la frase para eliminar, la búsqueda y la página normalizadas, los enlaces de cada página y los comodines de la búsqueda.
+- `pnpm test:e2e`: 80 de 80. Los de la fase 12 cubren:
+  - el buscador (por nombre, por slug, por correo, sin resultados, y sin el administrador) y la paginación con 21 restaurantes;
+  - pausar: la carta da 404, no suma visitas y el dueño ve el aviso; reactivar la devuelve;
+  - la contraseña temporal:
+    - se copia y se muestra una sola vez;
+    - cierra las sesiones del dueño, y la contraseña anterior deja de servir;
+    - con la temporal, todo lleva a cambiarla, y las APIs responden 403 `MUST_CHANGE_PASSWORD`;
+    - al cambiarla, el dueño vuelve a entrar al panel;
+  - eliminar:
+    - pide la frase y la casilla, en la interfaz y en la API;
+    - después, la carta da 404, el logo se borra y el dueño ya no tiene sesión ni puede entrar;
+  - los permisos: dueño 403, anónimo 401, sin `Origin` 403, id que no es UUID 404 y estado inválido 400.
+- Capturas a 1280 y 390 px de la lista, de los diálogos de eliminar y de contraseña temporal, y del aviso al dueño.
+
 ## Pendientes
-- Fase 12: comprobar en E2E que un restaurante pausado no suma visitas.
 - Fase 10: con la clave real en `.env`, digitalizar `apps/web/public/pdf/carta-prueba.jpg`. Hay que confirmar tres cosas:
   - que Gemini acepta `$ref`;
   - que la cuenta tiene acceso a `gemini-2.5-flash`;
   - que no inventa productos.
-- Fase 12: probar de punta a punta `must_change_password` con la contraseña temporal.
 - Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 
 ## Cómo verificar
