@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 10 de 13 — Digitalización II: Gemini real.
+Fase 11 de 13 — Estadísticas de visitas.
 
 ## Fases completadas
 
@@ -15,6 +15,7 @@ Fase 10 de 13 — Digitalización II: Gemini real.
 7. Publicación (snapshot) y carta pública `/{slug}` cacheada por etiqueta.
 8. Plantillas (Original detectado, Tradicional, Casual y Premium) y las 12 fuentes de la carta.
 9. Digitalización completa con el extractor simulado: subida, Background Function, seguimiento, bloqueo y mantenimiento.
+10. Digitalización con Gemini real (`@google/genai`), con reintentos y errores de §E10; el extractor simulado queda para las E2E locales.
 
 ## Decisiones
 
@@ -277,6 +278,37 @@ Fase 10 de 13 — Digitalización II: Gemini real.
   - ESLint ignora `.netlify/**`, donde `netlify dev` deja los paquetes de las funciones.
   - Las funciones exportan por defecto funciones con nombre (`import/no-anonymous-default-export`).
 
+### Digitalización II: Gemini (fase 10)
+
+- **Extractor de Gemini** (`src/server/digitization/gemini-extractor.ts`), con `@google/genai` 2.25.
+  - Cliente con la `baseUrl` explícita de Google, `timeout` de 120 s por intento y `vertexai: false`, para que una variable `GOOGLE_GENAI_USE_VERTEXAI` del entorno no lo desvíe a Vertex.
+  - El prompt y el esquema de §E10, tal cual, en `gemini-prompt.ts`. La lista de fuentes sale de `MENU_FONTS`.
+  - Sin `retryOptions`, el SDK no reintenta: los reintentos son propios, hasta 2, con espera de 500 ms × 2^intento más hasta 250 ms.
+- **Errores**:
+
+  | Caso | Código | ¿Se reintenta? |
+  |---|---|---|
+  | Timeout, 408 o 504 | `MODEL_TIMEOUT` | Sí |
+  | 429 y el resto de 5xx | `MODEL_UNAVAILABLE` | Sí |
+  | Conexión caída («fetch failed») | `MODEL_UNAVAILABLE` | Sí (añadido: es tan pasajera como un 5xx) |
+  | Otros 4xx (clave, modelo o esquema inválidos) | `MODEL_CONFIGURATION_ERROR` | No |
+  | Sin clave | `MODEL_CONFIGURATION_ERROR` | No llama a Gemini |
+  | Respuesta sin texto (bloqueada o vacía), texto o cuerpo que no es JSON | `INVALID_MODEL_RESPONSE` | No |
+
+  El detalle (código HTTP y respuesta de Google, recortada) solo va al registro de la función; el dueño ve el texto de §E10.
+- **`$ref` se mantiene**: la documentación de Google incluye `$ref` y `$defs` entre lo que admite `responseJsonSchema`. Falta confirmarlo con la clave real (ver Pendientes). La app principal, en cambio, repite `pricedItem` en línea.
+- **Modelo**: por defecto `gemini-2.5-flash` (§E10). Google no lo retiró, pero desde 2026 solo lo sirve a cuentas que ya lo usaban, y para proyectos nuevos recomienda `gemini-3.8-flash`. Si la clave es de un proyecto nuevo, Gemini responderá 4xx y el dueño verá «Gemini no está configurado correctamente…»: se arregla con `GEMINI_MODEL`, como explica `.env.example`.
+- **Temperatura**: 0,1 para la línea 2.x, como pide §E10. Desde Gemini 3 se deja la de por defecto, porque Google recomienda no bajarla de 1,0 (puede entrar en bucles).
+- **Elección del extractor** (`choose-extractor.ts`): el simulado solo con `DIGITIZATION_FAKE=1` **y** bajo `netlify dev` (`NETLIFY_DEV=true`). En Netlify siempre es Gemini.
+  - Playwright arranca `netlify dev` con `DIGITIZATION_FAKE=1`.
+  - Si reutiliza uno arrancado sin la variable, la E2E de la fase 9 falla diciéndolo.
+- **E2E más tolerantes**:
+  - Con la caché de Turbopack fría, cada ruta tarda 4–7 s en su primer uso. Por eso `expect.timeout` sube a 10 s, y el primer registro de la preparación espera hasta 30 s.
+  - Las specs de digitalización pasan a 60 s por prueba: sus esperas internas (15 s + 30 s) ya superaban los 30 s por defecto.
+- **Herramientas**:
+  - `pnpm-workspace.yaml` bloquea los scripts de instalación de `@google/genai` (un `preinstall` vacío) y de `protobufjs` (un aviso de versión).
+  - Cortar la tarea que lanzó `netlify dev` no mata el proceso, y al matarlo a la fuerza la caché `.next/dev` puede quedar incompleta: rutas que existen respondían la página 404. Está anotado en CLAUDE.md.
+
 ## Verificación
 
 ### Fase 1
@@ -448,7 +480,32 @@ Fase 10 de 13 — Digitalización II: Gemini real.
   - el estado vacío con «Digitalizar desde fotos».
 - Comprobación manual del mantenimiento, y capturas de la hoja de fotos y del estado a 1280 y 390 px.
 
+### Fase 10
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 229 pruebas. Las nuevas usan un fetch simulado y cubren:
+  - la petición: URL de Google, clave en `x-goog-api-key`, prompt, fotos en base64, esquema y temperatura 0,1;
+  - `GEMINI_MODEL`, sin temperatura en Gemini 3;
+  - sin clave, no llama a Gemini;
+  - JSON inválido, respuesta bloqueada y cuerpo HTML → `INVALID_MODEL_RESPONSE`;
+  - 429 y luego 200 → éxito tras esperar 625 ms;
+  - 408, 429, 500, 503 y 504 tres veces → su código, tras esperar 625 y 1125 ms;
+  - 400, 401, 403 y 404 → `MODEL_CONFIGURATION_ERROR`, sin reintentar;
+  - tres timeouts → `MODEL_TIMEOUT`;
+  - conexión caída y luego 200 → éxito;
+  - la elección del extractor.
+- `pnpm test:e2e`: 72 de 72. La nueva simula una respuesta inválida de Gemini con `page.route`, y comprueba:
+  - se ve «Gemini no pudo interpretar una carta válida…» y el editor queda habilitado;
+  - «Volver a intentar» pide las fotos otra vez y digitaliza.
+- En `netlify dev` real, sin el extractor simulado:
+  - sin clave, el trabajo termina `FAILED` con `MODEL_CONFIGURATION_ERROR` en 6 s;
+  - con una clave inválida a propósito, la función llega a Google, recibe 400 `API_KEY_INVALID` y termina con `MODEL_CONFIGURATION_ERROR`, sin reintentar.
+
 ## Pendientes
+- Fase 10: con la clave real en `.env`, digitalizar `apps/web/public/pdf/carta-prueba.jpg`. Hay que confirmar tres cosas:
+  - que Gemini acepta `$ref`;
+  - que la cuenta tiene acceso a `gemini-2.5-flash`;
+  - que no inventa productos.
 - Fase 12: probar de punta a punta `must_change_password` con la contraseña temporal.
 - Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 

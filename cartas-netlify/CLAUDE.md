@@ -17,8 +17,10 @@ Sistema de cartas digitales para restaurantes: un dueño se registra, edita su c
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest) · `pnpm test:e2e` (Playwright contra `netlify dev`, solo escritorio).
 - Migraciones: `pnpm db:generate --name <cambio>` las crea desde `db/schema.ts`; `pnpm db:local:apply` y `pnpm db:local:reset` actúan sobre la base local de `netlify dev` (que debe estar en marcha). Los subcomandos `netlify database …` siguen apuntando a la raíz del repositorio aun con el envoltorio: no los uses.
 - `pnpm test:e2e` reinicia la base local y crea al administrador de pruebas (`tests/e2e/support/cuentas.ts`) antes de cada corrida.
+- `pnpm test:e2e` arranca `netlify dev` con `DIGITIZATION_FAKE=1`: la digitalización usa el extractor simulado, no Gemini. Si ya tienes un `netlify dev` en marcha sin esa variable, Playwright lo reutiliza; detenlo antes o arráncalo con `DIGITIZATION_FAKE=1 pnpm dev:netlify`.
 - Bajo `netlify dev`, el proxy imita al CDN y reintenta toda respuesta 403 o 404 como archivo estático, así que un 403 de la API llega como 404. Para comprobar un 403 exacto en E2E, llama al servidor de Next directo (`NEXT_DIRECT_URL`). En Netlify no pasa.
 - `netlify dev` solo registra las funciones de `netlify/functions` que existían al arrancar: reinícialo tras crear una.
+- Si cortas la tarea que lanzó `netlify dev`, `node scripts/netlify-cli.ts dev` y Next pueden seguir vivos: busca sus PID en los puertos 8888 y 3000. Al matarlos a la fuerza, la caché de Turbopack (`.next/dev`) puede quedar incompleta y rutas que existen responden la página 404: borra `.next/dev` antes de volver a arrancar.
 - Esta app tiene su propio `pnpm-workspace.yaml` y su propio lockfile: no forma parte del monorepo de la raíz.
 
 ## Sesión y autorización (fase 3)
