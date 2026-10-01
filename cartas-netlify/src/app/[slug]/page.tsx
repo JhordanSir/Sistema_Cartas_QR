@@ -18,6 +18,8 @@ import {
 import { DEFAULT_MENU_STYLE, type MenuStyle } from '@/shared/menu-style';
 import { normalizePublicAppUrl } from '@/shared/qr';
 
+import { ViewTracker } from './view-tracker';
+
 type Props = PageProps<'/[slug]'>;
 
 /**
@@ -80,6 +82,7 @@ function menuVariables(style: MenuStyle): CSSProperties {
 const line = 'border-[color-mix(in_srgb,var(--menu-foreground)_18%,transparent)]';
 
 export default async function PublicMenuPage(props: Props) {
+  const { slug } = await props.params;
   const { restaurant, snapshot } = await loadMenu(props);
   const style = snapshot?.style ?? DEFAULT_MENU_STYLE;
   const categories = snapshot ? publicCategories(snapshot) : [];
@@ -124,6 +127,7 @@ export default async function PublicMenuPage(props: Props) {
       <Contact restaurant={restaurant} />
 
       <footer className="px-4 pt-4 pb-10 text-center text-sm">Carta digital creada con Sirio</footer>
+      <ViewTracker slug={slug} />
     </div>
   );
 }
