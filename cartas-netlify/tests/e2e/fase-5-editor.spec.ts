@@ -27,6 +27,11 @@ async function addProduct(page: Page, section: string, name: string, price: stri
   await expect(sheet).toBeHidden();
 }
 
+/** The h2 of each menu section; the template selector below them has its own h2. */
+function sectionHeadings(page: Page): Locator {
+  return page.getByRole('heading', { level: 2 }).filter({ hasNotText: /^Plantilla$/ });
+}
+
 async function productNames(page: Page, section: string): Promise<string[]> {
   return sectionCard(page, section).getByRole('heading', { level: 3 }).allTextContents();
 }
@@ -55,10 +60,10 @@ test.describe('editor de la carta', () => {
     await page.getByRole('button', { name: 'Subir Causa' }).click();
     await expect.poll(() => productNames(page, 'Entradas')).toEqual(['Causa', 'Ceviche']);
     await page.getByRole('button', { name: 'Subir sección Fondos' }).click();
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Fondos', 'Entradas']);
+    await expect(sectionHeadings(page)).toHaveText(['Fondos', 'Entradas']);
 
     await page.reload();
-    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Fondos', 'Entradas']);
+    await expect(sectionHeadings(page)).toHaveText(['Fondos', 'Entradas']);
     expect(await productNames(page, 'Entradas')).toEqual(['Causa', 'Ceviche']);
     // At either end the button is disabled: nothing to move.
     await expect(page.getByRole('button', { name: 'Subir sección Fondos' })).toBeDisabled();
