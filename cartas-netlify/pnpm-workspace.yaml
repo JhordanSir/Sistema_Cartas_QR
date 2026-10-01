@@ -1,0 +1,6 @@
+allowBuilds:
+  esbuild: true
+  netlify-cli: false
+  sharp: false
+  unix-dgram: false
+  unrs-resolver: false

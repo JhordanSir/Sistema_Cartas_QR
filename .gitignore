@@ -59,4 +59,8 @@ Thumbs.db
 .agents/
 .gemini/
 CLAUDE.md
+!cartas-netlify/CLAUDE.md
 ads/
+
+# Local Netlify folder
+.netlify

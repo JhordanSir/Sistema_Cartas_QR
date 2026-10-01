@@ -1,0 +1,7 @@
+# Next.js deploys through Netlify's official adapter, detected automatically.
+[build]
+  command = "pnpm build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "24"
