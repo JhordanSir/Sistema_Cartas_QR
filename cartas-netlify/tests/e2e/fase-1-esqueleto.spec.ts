@@ -55,12 +55,13 @@ test.describe('esqueleto de Sirio Cartas', () => {
       .toMatch(/^Inter/);
   });
 
-  test('enviar el formulario provisional no navega ni expone la contraseña', async ({ page }) => {
+  test('enviar el acceso nunca pone la contraseña en la dirección', async ({ page }) => {
     await page.goto('/entrar');
     await page.getByLabel('Correo').fill('ana@mail.com');
     await page.getByLabel('Contraseña').fill('Secreta2026');
     await page.getByRole('button', { name: 'Entrar' }).click();
 
+    await expect(page.getByText('Correo o contraseña incorrectos.')).toBeVisible();
     await expect(page).toHaveURL(/\/entrar$/);
   });
 
