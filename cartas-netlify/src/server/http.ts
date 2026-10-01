@@ -51,6 +51,17 @@ export async function handleApi(run: () => Promise<Response>): Promise<Response>
   }
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * An id from the URL or the body. Anything that is not a UUID could never
+ * exist, so it gets the same 404 as an id of another restaurant.
+ */
+export function requireUuid(value: string, notFoundMessage: string): string {
+  if (!UUID_PATTERN.test(value)) throw new ApiError(404, 'NOT_FOUND', notFoundMessage);
+  return value.toLowerCase();
+}
+
 /** Parses a multipart (or urlencoded) body; a malformed one is a 400 INVALID_INPUT. */
 export async function readFormData(request: Request): Promise<FormData> {
   try {
