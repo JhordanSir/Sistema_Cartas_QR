@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 8 de 13 — Plantillas y fuentes.
+Fase 9 de 13 — Digitalización I: subida y seguimiento (con extractor simulado).
 
 ## Fases completadas
 
@@ -13,6 +13,7 @@ Fase 8 de 13 — Plantillas y fuentes.
 5. Editor de la carta: secciones y productos, orden, disponibilidad y bloqueo por digitalización.
 6. Opciones (variantes), adicionales e imagen de cada producto.
 7. Publicación (snapshot) y carta pública `/{slug}` cacheada por etiqueta.
+8. Plantillas (Original detectado, Tradicional, Casual y Premium) y las 12 fuentes de la carta.
 
 ## Decisiones
 
@@ -217,6 +218,26 @@ Fase 8 de 13 — Plantillas y fuentes.
   - La 404 global importaba las fuentes del panel, y como esa frontera está en el árbol de todas las páginas, la carta pública precargaba Fraunces e Inter. Ahora no usa `next/font`.
   - Los tokens `--font-display` y `--font-sans` llevan respaldo dentro de `var()`, para seguir siendo válidos donde `next/font` no definió la variable.
 
+### Plantillas y fuentes (fase 8)
+
+- **Tabla de §E7 en `src/shared/menu-style.ts`.** `resolveMenuStyle` devuelve el estilo fijo de TRADITIONAL, CASUAL o PREMIUM, o el detectado para ORIGINAL. Todas las plantillas fijas superan 11:1 de contraste.
+- **Contraste mínimo de 4,5 para ORIGINAL.** `ensureReadableText` cambia un texto ilegible por negro o blanco, el que contraste más, con la razón WCAG. La fase 10 lo reutiliza para la respuesta de Gemini.
+- **Las 12 fuentes con `next/font/google`** (`src/app/menu-fonts.ts`): una llamada literal por familia, `subsets: ['latin']` y `display: 'swap'`.
+  - Lato y Poppins no tienen eje variable: piden 400/700 y 400/600/700. Las demás usan su eje variable.
+  - `preload: false`: cada carta usa una sola familia, y precargar las 12 desperdiciaría ancho de banda. La familia en uso se descarga cuando su texto se pinta.
+  - `--menu-font` toma `style.fontFamily` de la familia elegida, con la familia de respaldo que genera `next/font`.
+- **Dónde se cargan.** Solo la carta pública y la vista previa de plantillas de `/panel/carta` importan ese módulo. Perfil, QR y Cuenta no tienen ninguna de esas familias en `document.fonts`, y una E2E lo vigila.
+- **`PUT /api/carta/plantilla`.**
+  - Pasa por el bloqueo de §E7.
+  - La plantilla forma parte del snapshot: elegirla marca «Tienes cambios por publicar.» y no llega a la carta hasta publicar.
+  - Invalida `menu:{slug}`, como pide §E2, aunque la carta solo cambie al publicar.
+- **El borrador informa su apariencia** (plantilla y estilo detectado), para que la vista previa de ORIGINAL muestre los colores y la letra detectados.
+- **Selector.**
+  - Cuatro tarjetas-radio con la etiqueta, la descripción, la letra y una muestra: fondo, color de texto y el nombre del restaurante en la letra de la plantilla.
+  - La elegida queda marcada con un anillo vino y la pastilla «Elegida».
+  - La elección es optimista: se marca al instante y vuelve atrás si la API falla. Un radio controlado que esperaba al servidor parecía no responder al clic.
+- **Pruebas que cuentan `h2`.** El selector añadió el `h2` «Plantilla», así que la prueba de reordenar secciones lo excluye.
+
 ## Verificación
 
 ### Fase 1
@@ -352,6 +373,23 @@ Fase 8 de 13 — Plantillas y fuentes.
   - que no se precargan fuentes del panel;
   - la 404 de la carta.
 - Comprobación manual de la caché con `next start` (arriba) y capturas a 390 y 1280 px de la carta y de la barra, revisadas a mano.
+
+### Fase 8
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde.
+- `pnpm test`: 187 pruebas. Las nuevas cubren:
+  - cada plantilla: ORIGINAL con el estilo detectado o por defecto, y las tres fijas ignorando lo detectado;
+  - el contraste de todas;
+  - la razón WCAG (21 y 4,48);
+  - el texto ilegible que pasa a negro o a blanco;
+  - el texto legible que no cambia.
+- `pnpm test:e2e`: 65 de 65. Los de la fase 8 cubren:
+  - Premium: cambios por publicar, la carta sin cambio antes de publicar, y oscura (#1d1815) con Playfair Display después;
+  - Tradicional, Casual y vuelta a Original, con sus colores y letras;
+  - que el panel no cambia de aspecto;
+  - que las letras de las cartas solo están en la carta y en la vista previa;
+  - una plantilla inválida, con 400.
+- Capturas del selector y de una carta Premium a 390 y 1280 px, revisadas a mano.
 
 ## Pendientes
 - Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
