@@ -2,7 +2,7 @@
 
 ## Fase actual
 
-Fase 7 de 13 — Publicación y carta pública.
+Fase 8 de 13 — Plantillas y fuentes.
 
 ## Fases completadas
 
@@ -12,6 +12,7 @@ Fase 7 de 13 — Publicación y carta pública.
 4. Perfil del restaurante (logo en Netlify Blobs y `/media`) y código QR.
 5. Editor de la carta: secciones y productos, orden, disponibilidad y bloqueo por digitalización.
 6. Opciones (variantes), adicionales e imagen de cada producto.
+7. Publicación (snapshot) y carta pública `/{slug}` cacheada por etiqueta.
 
 ## Decisiones
 
@@ -177,6 +178,45 @@ Fase 7 de 13 — Publicación y carta pública.
 - **La hoja de edición guarda solo ids.** El producto se toma del borrador vigente, así la foto recién subida se ve sin cerrar la hoja.
 - **El anunciador de rutas de Next.** Next deja un `role="alert"` vacío en `<body>`, así que las pruebas que comprueban «sin errores» miran solo dentro de `<main>`.
 
+### Publicación y carta pública (fase 7)
+
+- **Snapshot.** El servidor arma el snapshot del borrador con la forma de §E7 y con la clave de la imagen, no su URL. La plantilla y el estilo se resuelven en ese momento: por ahora ORIGINAL, con `source_style` o los valores por defecto.
+  - «Cambios por publicar» compara JSON con las claves ordenadas, en cualquier nivel, sin que importe el orden de las claves.
+  - El estado de publicación (cambios pendientes, fecha y slug) viaja en cada respuesta del borrador, así la barra se actualiza con cada edición.
+- **Publicar.**
+  - Pasa por el mismo bloqueo de §E7: no se publica mientras haya una digitalización activa.
+  - Exige un producto disponible (400 `EMPTY_MENU`). Guarda el snapshot en un solo `UPDATE`.
+  - Se confirma con el diálogo propio, en tono principal, porque no es destructivo.
+  - Sin publicar y sin cambios la barra dice «Tu carta aún no está publicada.»: §E13 no prevé ese estado.
+- **Caché de la carta pública (§E2).**
+  - `unstable_cache` con la etiqueta `menu:{slug}`. Cache Components obligaría a envolver en `<Suspense>` cada página que lee cookies o cabeceras, es decir, todo el panel; la especificación admite cualquiera de los dos.
+  - `/[slug]` declara `generateStaticParams` vacío: cada carta se genera en su primera visita y queda cacheada (ISR, ● en el build) hasta que se invalida.
+  - `invalidatePublicMenu(slug)` llama a `revalidateTag(tag, { expire: 0 })`: la siguiente visita trae la carta nueva. Con el perfil `max` recomendado, la primera visita tras publicar habría visto la vieja.
+  - También llama a `revalidatePath('/{slug}')`, que borra una 404 cacheada de ese slug.
+  - Se invalida al publicar, al guardar el perfil y al registrar un restaurante (por si alguien visitó antes ese slug). La plantilla, la pausa y la eliminación se suman en sus fases.
+  - Comprobado con `next start` sobre el build:
+    - tras publicar, la primera visita es MISS y la segunda HIT;
+    - un cambio del borrador sin publicar sigue siendo HIT, con el precio publicado;
+    - republicar y guardar el perfil dan MISS con lo nuevo;
+    - un slug inexistente da 404.
+- **Slug inválido.** Un slug que no está normalizado (mayúsculas, puntos…) responde la 404 sin consultar la base ni crear una entrada de caché.
+- **404 de la carta.** Un slug inexistente y un restaurante pausado se ven igual: «Esta carta no está disponible.», en el `not-found.tsx` del segmento.
+  - Bajo `netlify dev`, el último reintento estático (`/{slug}/index.htm`) tiene dos segmentos y termina en la 404 global. La prueba lo comprueba directo contra Next.
+- **Carta pública.**
+  - Solo servidor: no añade JavaScript propio.
+  - Cabecera con logo, nombre y dirección.
+  - Barra fija de chips desplazable con las secciones que tienen productos disponibles, con `scroll-mt` para no tapar el título.
+  - Lista o tarjetas: 1, 2 o 3 columnas.
+  - «Opciones» y «Adicionales» con su precio.
+  - Contacto: `tel:`, `wa.me/51…` y redes solo `https://`.
+  - Pie «Carta digital creada con Sirio».
+  - Metadatos «{nombre} · Carta digital», descripción, Open Graph `es_PE`, y `themeColor` con el fondo de la carta.
+  - Las fotos de producto llevan `alt=""`, porque el nombre está al lado.
+- **Fuentes.**
+  - `--menu-font` lleva por ahora la familia del snapshot con `system-ui` de respaldo; la fase 8 carga las 12 familias.
+  - La 404 global importaba las fuentes del panel, y como esa frontera está en el árbol de todas las páginas, la carta pública precargaba Fraunces e Inter. Ahora no usa `next/font`.
+  - Los tokens `--font-display` y `--font-sans` llevan respaldo dentro de `var()`, para seguir siendo válidos donde `next/font` no definió la variable.
+
 ## Verificación
 
 ### Fase 1
@@ -289,6 +329,29 @@ Fase 7 de 13 — Publicación y carta pública.
   - que borrar el producto o la sección borra la foto;
   - otro dueño, que recibe 404.
 - Capturas de la hoja del producto (foto, opciones y adicionales) a 1280 y 390 px, revisadas a mano.
+
+### Fase 7
+
+- `pnpm lint`, `pnpm typecheck` y `pnpm build` en verde. `/[slug]` aparece como ● (SSG bajo demanda).
+- `pnpm test`: 177 pruebas. Las nuevas cubren:
+  - `canonicalJson` y la comparación con las claves en otro orden;
+  - las listas cuyo orden sí cuenta;
+  - los cambios por publicar, publicada y sin publicar;
+  - la vista pública sin no disponibles ni secciones vacías;
+  - `parseMenuSnapshot`;
+  - WhatsApp: «987 654 321» → `wa.me/51987654321`, y 7 y 16 dígitos sin enlace;
+  - `tel:` y solo `https://`;
+  - el estilo ORIGINAL normalizado o por defecto.
+- `pnpm test:e2e`: 60 de 60. Los de la fase 7 cubren:
+  - «Próximamente» y el título;
+  - `EMPTY_MENU`;
+  - la carta publicada: índice solo con secciones disponibles, precios, opciones, adicionales, foto, sin productos ni secciones no disponibles, y el ancla del chip;
+  - que el borrador no llega a la carta hasta republicar;
+  - contacto, perfil, descripción y `og:locale`;
+  - tarjetas en una columna a 390 px y en fila a 1280 px;
+  - que no se precargan fuentes del panel;
+  - la 404 de la carta.
+- Comprobación manual de la caché con `next start` (arriba) y capturas a 390 y 1280 px de la carta y de la barra, revisadas a mano.
 
 ## Pendientes
 - Fase 9: confirmar que `netlify dev` (ya con el envoltorio) sirve `netlify/functions` de esta carpeta.
