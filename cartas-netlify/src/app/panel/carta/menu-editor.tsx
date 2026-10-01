@@ -20,6 +20,7 @@ import {
 import { ProductForm, SectionForm, type ProductFormValues, type SaveResult } from './forms';
 import { ProductImageEditor } from './product-image';
 import { PublicationBar } from './publication-bar';
+import { TemplateSelector } from './template-selector';
 
 /** Only ids: what is shown always comes from the current draft. */
 type Editing =
@@ -54,7 +55,13 @@ function productsWillBeDeleted(count: number): string {
   return `También se eliminarán sus ${count} productos.`;
 }
 
-export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
+export function MenuEditor({
+  initialDraft,
+  restaurantName,
+}: {
+  initialDraft: MenuDraft;
+  restaurantName: string;
+}) {
   const [draft, setDraft] = useState(initialDraft);
   const [editing, setEditing] = useState<Editing>(null);
   const [deleting, setDeleting] = useState<Deleting>(null);
@@ -81,7 +88,7 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
   /** Sends a change; on success the answer carries the whole updated draft. */
   async function change(
     url: string,
-    method: 'DELETE' | 'PATCH' | 'POST',
+    method: 'DELETE' | 'PATCH' | 'POST' | 'PUT',
     body?: unknown,
   ): Promise<SaveResult> {
     setBusy(true);
@@ -101,7 +108,7 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
   }
 
   /** For actions outside a form: the error goes to the notice above the menu. */
-  async function act(url: string, method: 'DELETE' | 'POST', body?: unknown): Promise<boolean> {
+  async function act(url: string, method: 'DELETE' | 'POST' | 'PUT', body?: unknown): Promise<boolean> {
     const result = await change(url, method, body);
     if (!result.ok) setNotice(result.message ?? GENERIC_ERROR_MESSAGE);
     return result.ok;
@@ -297,6 +304,13 @@ export function MenuEditor({ initialDraft }: { initialDraft: MenuDraft }) {
           </Card>
         ))
       )}
+
+      <TemplateSelector
+        appearance={draft.appearance}
+        disabled={disabled}
+        onChoose={(template) => act('/api/carta/plantilla', 'PUT', { template })}
+        restaurantName={restaurantName}
+      />
 
       <Sheet onClose={() => setEditing(null)} open={editing !== null} title={sheetTitle}>
         {editing?.kind === 'new-section' || editing?.kind === 'section' ? (

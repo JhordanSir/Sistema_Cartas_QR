@@ -10,5 +10,5 @@ export const metadata: Metadata = { title: 'Carta' };
 export default async function MenuPage() {
   const { restaurant } = await requireOwnerPage();
   const draft = await getMenuDraft(restaurant.id);
-  return <MenuEditor initialDraft={draft} />;
+  return <MenuEditor initialDraft={draft} restaurantName={restaurant.name} />;
 }
