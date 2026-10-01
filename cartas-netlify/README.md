@@ -20,6 +20,18 @@ pnpm dev:netlify   # http://localhost:8888
 
 `netlify dev` (la CLI va como dependencia de desarrollo) sirve Next.js junto con la base de datos local, Netlify Blobs y las funciones.
 
+## Base de datos
+
+El esquema vive en `db/schema.ts` (Drizzle) y las migraciones SQL en `netlify/database/migrations/`. Netlify las aplica solo al desplegar.
+
+```powershell
+pnpm db:generate --name <cambio>   # nueva migración a partir de db/schema.ts
+pnpm db:local:apply                # aplica las pendientes a la base local (con netlify dev en marcha)
+pnpm db:local:reset                # vacía la base local y aplica todas las migraciones
+```
+
+Los dos últimos solo actúan sobre la base local que levanta `netlify dev` y se niegan si la conexión no es `localhost`. Nunca uses `drizzle-kit push` ni `migrate`.
+
 ## Pruebas
 
 ```powershell
@@ -30,3 +42,5 @@ pnpm test:e2e    # Playwright (Chromium de escritorio) contra netlify dev
 ```
 
 La primera vez, Playwright necesita su navegador: `pnpm exec playwright install chromium`.
+
+Cada corrida de `pnpm test:e2e` empieza reiniciando la base local (proyecto `base-local` de Playwright), así que borra los datos que hayas creado a mano en `netlify dev`.

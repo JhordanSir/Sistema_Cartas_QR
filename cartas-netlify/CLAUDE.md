@@ -14,13 +14,14 @@ Sistema de cartas digitales para restaurantes: un dueño se registra, edita su c
 
 - `pnpm dev:netlify` — app en http://localhost:8888 con la base de datos local, Blobs y funciones de Netlify. Requiere `.env` (copia de `.env.example`).
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` (Vitest) · `pnpm test:e2e` (Playwright contra `netlify dev`, solo escritorio).
-- Migraciones locales: `pnpm exec netlify database migrations apply`.
+- Migraciones: `pnpm db:generate --name <cambio>` las crea desde `db/schema.ts`; `pnpm db:local:apply` y `pnpm db:local:reset` actúan sobre la base local de `netlify dev` (que debe estar en marcha). No uses `netlify database migrations apply` ni `netlify database reset`: la CLI toma la raíz del repositorio como raíz del proyecto y apunta a otra carpeta y a otra base.
+- `pnpm test:e2e` reinicia la base local antes de cada corrida.
 - Esta app tiene su propio `pnpm-workspace.yaml` y su propio lockfile: no forma parte del monorepo de la raíz.
 
 ## Stack (no cambiar sin justificarlo en PROGRESS.md)
 
 - Next.js App Router, TypeScript strict, Tailwind CSS. Desplegado en Netlify con su adaptador oficial (no fijes su versión).
-- Netlify Database (Postgres) con `@netlify/database` y Drizzle (`drizzle-orm@beta`, `drizzle-kit@beta`, adaptador `drizzle-orm/netlify-db`).
+- Netlify Database (Postgres) con `@netlify/database` y Drizzle 1.0 RC (`drizzle-orm@rc`, `drizzle-kit@rc`, adaptador `drizzle-orm/netlify-db`; la línea beta quedó obsoleta). Cliente en `db/index.ts` con `getDb()`.
 - Netlify Blobs (`@netlify/blobs`) para archivos. Netlify Functions (`@netlify/functions`) para la digitalización (background) y el mantenimiento (scheduled).
 - `@google/genai` (Gemini), `qrcode`, `@node-rs/argon2`, `zod`. Pruebas con Vitest y Playwright.
 - No añadas otras dependencias salvo que la fase lo pida o sea imprescindible (justifícalo en PROGRESS.md).
