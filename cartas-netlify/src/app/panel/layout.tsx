@@ -6,6 +6,7 @@ import { requireOwnerPage } from '@/server/next/page-auth';
 // joins the list in the phase that builds it.
 const OWNER_NAVIGATION: readonly NavItem[] = [
   { href: '/panel', label: 'Perfil' },
+  { href: '/panel/carta', label: 'Carta' },
   { href: '/panel/qr', label: 'QR' },
   { href: '/panel/cuenta', label: 'Cuenta' },
 ];
