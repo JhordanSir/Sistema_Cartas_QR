@@ -80,3 +80,15 @@ export async function deleteBlobQuietly(key: string): Promise<void> {
     console.error('Could not delete blob', key, describeErrorForLog(error));
   }
 }
+
+/**
+ * Every blob of a restaurant, its logo and its product images, before the
+ * restaurant itself is deleted (§E12). Unlike deleteBlobQuietly it throws: the
+ * deletion stops and can be retried, instead of leaving files nobody can find.
+ */
+export async function deleteRestaurantBlobs(restaurantId: string): Promise<number> {
+  const store = uploads();
+  const { blobs } = await store.list({ prefix: `restaurants/${restaurantId}/` });
+  await Promise.all(blobs.map(({ key }) => store.delete(key)));
+  return blobs.length;
+}
