@@ -17,6 +17,9 @@ import {
   type MoveDirection,
 } from '@/shared/menu';
 
+import type { DigitizationJobView } from '@/shared/digitization';
+
+import { DigitizationStatus, DigitizePhotos, useDigitization } from './digitization';
 import { ProductForm, SectionForm, type ProductFormValues, type SaveResult } from './forms';
 import { ProductImageEditor } from './product-image';
 import { PublicationBar } from './publication-bar';
@@ -24,6 +27,7 @@ import { TemplateSelector } from './template-selector';
 
 /** Only ids: what is shown always comes from the current draft. */
 type Editing =
+  | { kind: 'digitize' }
   | { kind: 'new-section' }
   | { kind: 'section'; section: DraftCategory }
   | { kind: 'new-product'; categoryId: string }
@@ -57,12 +61,16 @@ function productsWillBeDeleted(count: number): string {
 
 export function MenuEditor({
   initialDraft,
+  initialJob,
   restaurantName,
 }: {
   initialDraft: MenuDraft;
+  /** A digitization job still running when the page opened (§E10): it is resumed. */
+  initialJob: DigitizationJobView | null;
   restaurantName: string;
 }) {
   const [draft, setDraft] = useState(initialDraft);
+  const digitization = useDigitization({ initialJob, onDraft: setDraft });
   const [editing, setEditing] = useState<Editing>(null);
   const [deleting, setDeleting] = useState<Deleting>(null);
   const [busy, setBusy] = useState(false);
@@ -70,7 +78,7 @@ export function MenuEditor({
   // After «Subir» / «Bajar» the list re-renders; the focus goes back to that button.
   const focusAfterMove = useRef<{ id: string; direction: MoveDirection } | null>(null);
 
-  const locked = draft.digitizationInProgress;
+  const locked = draft.digitizationInProgress || digitization.running;
   const disabled = busy || locked;
 
   useEffect(() => {
@@ -145,7 +153,9 @@ export function MenuEditor({
   const editedProduct = editing?.kind === 'product' ? findProduct(draft, editing.productId) : null;
 
   const sheetTitle =
-    editing?.kind === 'new-section'
+    editing?.kind === 'digitize'
+      ? 'Digitalizar desde fotos'
+      : editing?.kind === 'new-section'
       ? 'Nueva sección'
       : editing?.kind === 'section'
         ? 'Editar sección'
@@ -162,12 +172,25 @@ export function MenuEditor({
             Organiza tus secciones y productos. Los cambios no se ven en tu carta pública hasta que la publiques.
           </p>
         </div>
-        <Button disabled={disabled} onClick={() => setEditing({ kind: 'new-section' })}>
-          Nueva sección
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={disabled} onClick={() => setEditing({ kind: 'digitize' })} variant="secondary">
+            Digitalizar desde fotos
+          </Button>
+          <Button disabled={disabled} onClick={() => setEditing({ kind: 'new-section' })}>
+            Nueva sección
+          </Button>
+        </div>
       </div>
 
-      {locked ? (
+      <DigitizationStatus
+        onDiscard={(jobId) => void digitization.discard(jobId)}
+        onRetry={() => {
+          digitization.reset();
+          setEditing({ kind: 'digitize' });
+        }}
+        phase={digitization.phase}
+      />
+      {draft.digitizationInProgress && digitization.phase.kind === 'idle' ? (
         <Notice tone="warning">
           Estamos digitalizando tu carta. Podrás editarla en cuanto termine.
         </Notice>
@@ -184,9 +207,14 @@ export function MenuEditor({
           <p className="m-0 text-[15px] text-ink-soft">
             Tu carta está vacía. Crea tu primera sección o digitaliza tu carta desde fotos.
           </p>
-          <Button disabled={disabled} onClick={() => setEditing({ kind: 'new-section' })} variant="secondary">
-            Crear la primera sección
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={disabled} onClick={() => setEditing({ kind: 'new-section' })} variant="secondary">
+              Crear la primera sección
+            </Button>
+            <Button disabled={disabled} onClick={() => setEditing({ kind: 'digitize' })} variant="secondary">
+              Digitalizar desde fotos
+            </Button>
+          </div>
         </Card>
       ) : (
         draft.categories.map((section, sectionIndex) => (
@@ -313,6 +341,16 @@ export function MenuEditor({
       />
 
       <Sheet onClose={() => setEditing(null)} open={editing !== null} title={sheetTitle}>
+        {editing?.kind === 'digitize' ? (
+          <DigitizePhotos
+            hasProducts={draft.categories.some((category) => category.products.length > 0)}
+            onCancel={() => setEditing(null)}
+            onStart={(photos) => {
+              setEditing(null);
+              void digitization.start(photos);
+            }}
+          />
+        ) : null}
         {editing?.kind === 'new-section' || editing?.kind === 'section' ? (
           <SectionForm
             initial={
