@@ -421,6 +421,13 @@ Las 13 fases están terminadas. Falta desplegar en Netlify y la prueba real con 
 
 **README**: qué es, variables de entorno, el registro (la primera cuenta es la del administrador), las contraseñas olvidadas (contraseña temporal desde el backoffice), los límites conocidos, el desarrollo local, las pruebas y el despliegue.
 
+### Despliegue (después de la fase 13)
+
+- El proyecto de Netlify se creó desde GitHub con «Other (configure manually)», porque la raíz del repositorio es otro monorepo: *Base directory* `cartas-netlify` y *Package directory* vacío.
+- En ese caso Netlify no aplica solo su adaptador de Next.js, y el primer despliegue publicó `.next` como archivos estáticos: todo daba 404. Por eso `netlify.toml` declara `@netlify/plugin-nextjs`, sin fijar su versión en `package.json`, así se actualiza en cada compilación.
+- `netlify.toml` también fija `functions = "netlify/functions"`, relativo a la carpeta. La interfaz guardaba la ruta con `cartas-netlify/` delante y las funciones no se publicaban.
+- `netlify build` en local falla en Windows: el adaptador recrea los enlaces de pnpm y choca (`EEXIST`). Las compilaciones se hacen en Netlify, sobre Linux; `netlify dev` no se ve afectado.
+
 ## Verificación
 
 ### Fase 1
@@ -660,7 +667,6 @@ Las 13 fases están terminadas. Falta desplegar en Netlify y la prueba real con 
   - que Gemini acepta `$ref`;
   - que la cuenta tiene acceso a `gemini-2.5-flash`;
   - que no inventa productos.
-- Despliegue: al enlazar el sitio, configurar el directorio base `cartas-netlify` para que la CLI y el build usen esta carpeta.
 
 ## Cómo verificar
 

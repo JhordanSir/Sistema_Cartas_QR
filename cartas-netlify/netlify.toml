@@ -1,7 +1,15 @@
-# Next.js deploys through Netlify's official adapter, detected automatically.
+# The project was created with "Other (configure manually)" because the
+# repository root is another monorepo, so Netlify does not apply its Next.js
+# adapter by itself: it is declared here. It is not pinned in package.json, so
+# every build still gets the latest version. The functions directory is set
+# here too, relative to this folder, so a wrong value in the UI cannot win.
 [build]
   command = "pnpm build"
   publish = ".next"
+  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "24"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
