@@ -1,4 +1,4 @@
-import { getDatabase } from '@netlify/database';
+import { getConnectionString } from '@netlify/database';
 import { drizzle } from 'drizzle-orm/netlify-db';
 import type { PgAsyncDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core';
 import pg from 'pg';
@@ -11,25 +11,28 @@ export type Executor = Database | Transaction;
 
 const globalCache = globalThis as typeof globalThis & { sirioDatabase?: Database };
 
+/**
+ * Always TCP through `pg`, with the connection string of @netlify/database, as
+ * Netlify documents for using your own driver:
+ * - In Netlify Functions, `getDatabase()` hands over its HTTP driver, which
+ *   drizzle-orm 1.0.0-rc.4 (netlify-db) calls as a plain function, and the
+ *   @neondatabase/serverless it brings only accepts tagged templates: every
+ *   query failed in production.
+ * - Under `netlify dev` it reaches a local PGlite that answers every socket from
+ *   a single session, so concurrent connections would interleave their
+ *   statements and transactions. One connection serializes them, and the
+ *   timeout turns a query issued on `db` inside a transaction into an error
+ *   instead of a hang. In a function, one request runs at a time per instance.
+ */
 function createDatabase(): Database {
-  const connection = getDatabase();
-  if (connection.driver === 'serverless') {
-    return drizzle({ client: connection });
-  }
-  // TCP driver. Under `netlify dev` it reaches a local PGlite that answers every
-  // socket from a single session, so concurrent connections would interleave
-  // their statements and transactions. One connection serializes them; the
-  // timeout turns a query issued on `db` inside a transaction into an error
-  // instead of a hang. The default pool was just created and never connected.
-  void connection.pool.end();
-  const pool = new pg.Pool({
-    connectionString: connection.connectionString,
-    max: 1,
-    connectionTimeoutMillis: 10_000,
+  const connectionString = getConnectionString();
+  const pool = new pg.Pool({ connectionString, max: 1, connectionTimeoutMillis: 10_000 });
+  // An idle connection can drop while the function sleeps between requests;
+  // without a listener that error would crash the instance. The pool reconnects.
+  pool.on('error', (error) => {
+    console.error('Idle database connection closed', error.message);
   });
-  return drizzle({
-    client: { driver: 'server', pool, connectionString: connection.connectionString },
-  });
+  return drizzle({ client: { driver: 'server', pool, connectionString } });
 }
 
 /**

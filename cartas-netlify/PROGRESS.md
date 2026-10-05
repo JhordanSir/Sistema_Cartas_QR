@@ -427,6 +427,10 @@ Las 13 fases están terminadas. Falta desplegar en Netlify y la prueba real con 
 - En ese caso Netlify no aplica solo su adaptador de Next.js, y el primer despliegue publicó `.next` como archivos estáticos: todo daba 404. Por eso `netlify.toml` declara `@netlify/plugin-nextjs`, sin fijar su versión en `package.json`, así se actualiza en cada compilación.
 - `netlify.toml` también fija `functions = "netlify/functions"`, relativo a la carpeta. La interfaz guardaba la ruta con `cartas-netlify/` delante y las funciones no se publicaban.
 - `netlify build` en local falla en Windows: el adaptador recrea los enlaces de pnpm y choca (`EEXIST`). Las compilaciones se hacen en Netlify, sobre Linux; `netlify dev` no se ve afectado.
+- **Base de datos en producción.** Dentro de las funciones, `@netlify/database` entrega su conector HTTP de Neon, y el adaptador `drizzle-orm/netlify-db` (1.0.0-rc.4) lo llama como una función normal. La versión de `@neondatabase/serverless` que trae `@netlify/database` 2.0.1 solo acepta *tagged templates*, así que toda consulta fallaba: `/api/salud` daba 503 y `/registro`, 500.
+  - `db/index.ts` conecta siempre por TCP con `pg` y `getConnectionString()`, como documenta Netlify para usar un driver propio. Es el mismo camino que ya usaba `netlify dev`.
+  - Lleva un manejador de `error` en el pool, porque una conexión inactiva puede cerrarse mientras la función duerme entre peticiones.
+- **Registros.** El error anterior mostró que `describeErrorForLog` podía registrar los parámetros de una consulta (correos, hashes) dentro del mensaje y la traza de `DrizzleQueryError`. Ahora los quita e incluye la causa real.
 
 ## Verificación
 
