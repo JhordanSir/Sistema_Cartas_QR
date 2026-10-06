@@ -4,3 +4,4 @@ export const DIGITIZE_MENU = Symbol('DIGITIZE_MENU');
 export const GET_OWNED_MENU = Symbol('GET_OWNED_MENU');
 export const PUBLISH_MENU = Symbol('PUBLISH_MENU');
 export const SET_MENU_TEMPLATE = Symbol('SET_MENU_TEMPLATE');
+export const DIGITIZATION_PROGRESS_REPORTER = Symbol('DIGITIZATION_PROGRESS_REPORTER');

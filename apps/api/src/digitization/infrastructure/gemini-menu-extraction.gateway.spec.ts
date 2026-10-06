@@ -61,6 +61,31 @@ describe('GeminiMenuExtractionGateway', () => {
     expect(sleep).toHaveBeenCalledWith(500);
   });
 
+  it('announces each attempt and each retry to the progress listener', async () => {
+    const fetchImplementation = jest
+      .fn()
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(geminiResponse({ categories: ['ok'] }));
+    const gateway = new GeminiMenuExtractionGateway({
+      apiKey: 'secret-key',
+      fetchImplementation,
+      maximumRetries: 2,
+      model: 'gemini-2.5-flash',
+      random: (): number => 0,
+      sleep: jest.fn().mockResolvedValue(undefined),
+      timeoutMilliseconds: 10_000,
+    });
+    const onProgress = jest.fn();
+
+    await gateway.extract([PHOTO], onProgress);
+
+    expect(onProgress.mock.calls).toEqual([
+      [{ attempt: 1, maximumAttempts: 3, stage: 'reading' }],
+      [{ attempt: 1, maximumAttempts: 3, stage: 'retrying' }],
+      [{ attempt: 2, maximumAttempts: 3, stage: 'reading' }],
+    ]);
+  });
+
   it('does not retry a permanent authentication failure', async () => {
     const fetchImplementation = jest.fn().mockResolvedValue(
       new Response('', { status: 401 }),

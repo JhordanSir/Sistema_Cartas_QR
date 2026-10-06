@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   Inject,
   Param,
   ParseUUIDPipe,
@@ -11,6 +12,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { DIGITIZATION_PROGRESS_HEADER } from '@sirio/shared';
+import { isUUID } from 'class-validator';
 
 import { AuthRole } from '../auth/domain/auth-role.js';
 import type { AuthPrincipal } from '../auth/domain/auth.types.js';
@@ -70,6 +73,7 @@ export class DigitizationController {
     @CurrentPrincipal() principal: AuthPrincipal,
     @Param('restaurantId', new ParseUUIDPipe({ version: '4' })) restaurantId: string,
     @UploadedFiles() photos: UploadedMenuPhoto[] = [],
+    @Headers(DIGITIZATION_PROGRESS_HEADER) progressId?: string,
   ): Promise<PublishedMenu> {
     try {
       return await this.digitizeMenu.execute({
@@ -79,6 +83,8 @@ export class DigitizationController {
           originalName: photo.originalname,
         })),
         principal,
+        // Progress is optional: a malformed id only means nobody gets live updates.
+        progressId: isUUID(progressId, 4) ? progressId : undefined,
         restaurantId,
       });
     } catch (error) {

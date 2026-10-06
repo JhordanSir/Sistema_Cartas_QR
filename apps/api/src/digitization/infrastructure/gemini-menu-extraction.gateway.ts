@@ -2,7 +2,10 @@ import {
   MENU_EXTRACTION_PROMPT,
   MENU_EXTRACTION_RESPONSE_SCHEMA,
 } from '../application/menu-extraction.prompt.js';
-import type { MenuExtractionGateway } from '../application/ports/menu-extraction.gateway.js';
+import type {
+  ExtractionProgress,
+  MenuExtractionGateway,
+} from '../application/ports/menu-extraction.gateway.js';
 import { MenuExtractionGatewayError } from '../domain/digitization.errors.js';
 import type { MenuPhoto } from '../domain/menu.types.js';
 
@@ -39,7 +42,10 @@ export class GeminiMenuExtractionGateway implements MenuExtractionGateway {
         new Promise((resolve) => setTimeout(resolve, milliseconds)));
   }
 
-  async extract(photos: MenuPhoto[]): Promise<unknown> {
+  async extract(
+    photos: MenuPhoto[],
+    onProgress?: (progress: ExtractionProgress) => void,
+  ): Promise<unknown> {
     if (Date.now() < this.circuitOpenUntil) {
       throw new MenuExtractionGatewayError(
         'UNAVAILABLE',
@@ -48,7 +54,7 @@ export class GeminiMenuExtractionGateway implements MenuExtractionGateway {
     }
 
     try {
-      const result = await this.executeWithRetries(photos);
+      const result = await this.executeWithRetries(photos, onProgress);
       this.circuitFailures = 0;
       this.circuitOpenUntil = 0;
       return result;
@@ -58,8 +64,13 @@ export class GeminiMenuExtractionGateway implements MenuExtractionGateway {
     }
   }
 
-  private async executeWithRetries(photos: MenuPhoto[]): Promise<unknown> {
+  private async executeWithRetries(
+    photos: MenuPhoto[],
+    onProgress?: (progress: ExtractionProgress) => void,
+  ): Promise<unknown> {
+    const maximumAttempts = this.options.maximumRetries + 1;
     for (let attempt = 0; attempt <= this.options.maximumRetries; attempt += 1) {
+      onProgress?.({ attempt: attempt + 1, maximumAttempts, stage: 'reading' });
       try {
         const response = await this.fetchImplementation(
           `${this.apiBaseUrl}/v1beta/models/${encodeURIComponent(this.options.model)}:generateContent`,
@@ -97,6 +108,7 @@ export class GeminiMenuExtractionGateway implements MenuExtractionGateway {
         if (!response.ok) {
           const retryable = isRetryableStatus(response.status);
           if (retryable && attempt < this.options.maximumRetries) {
+            onProgress?.({ attempt: attempt + 1, maximumAttempts, stage: 'retrying' });
             await this.waitBeforeRetry(attempt);
             continue;
           }
@@ -111,6 +123,7 @@ export class GeminiMenuExtractionGateway implements MenuExtractionGateway {
         if (error instanceof MenuExtractionGatewayError) throw error;
         const timeout = isTimeoutError(error);
         if (attempt < this.options.maximumRetries) {
+          onProgress?.({ attempt: attempt + 1, maximumAttempts, stage: 'retrying' });
           await this.waitBeforeRetry(attempt);
           continue;
         }
