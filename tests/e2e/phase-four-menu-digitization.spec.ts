@@ -116,10 +116,40 @@ test.describe.serial('digitalización de carta de la Fase 4', () => {
       mimeType: 'image/png',
       name: 'carta-fase-4.png',
     });
+    // Every stage the API publishes over /api/realtime, as the browser received it.
+    const progressFrames: Array<{ categoryCount?: number; productCount?: number; stage: string }> = [];
+    page.on('websocket', (socket) => {
+      if (!socket.url().endsWith('/api/realtime')) return;
+      socket.on('framereceived', ({ payload }) => {
+        const message = JSON.parse(String(payload)) as { data: (typeof progressFrames)[number]; event: string };
+        if (message.event === 'digitization.progress') progressFrames.push(message.data);
+      });
+    });
     await page.getByRole('button', { name: 'Digitalizar en borrador' }).click();
-    await expect(page.getByText('Carta digitalizada. Revísala y publícala cuando esté lista.')).toBeVisible({
+    // The bar only exists while real stages arrive; Gemini's reading lasts several seconds.
+    await expect(page.getByTestId('digitization-progress')).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /^Gemini está leyendo tu carta/ })).toBeVisible();
+    await expect(page.getByText(/^\d+ s transcurridos$/)).toBeVisible();
+    await expect(page.getByText(/^Carta digitalizada: .+\. Revísala y publícala cuando esté lista\.$/)).toBeVisible({
       timeout: 90_000,
     });
+
+    const stages = progressFrames.map(({ stage }) => stage).filter((stage) => stage !== 'retrying');
+    expect(stages.filter((stage, index) => stage !== stages[index - 1])).toEqual([
+      'received',
+      'reading',
+      'validating',
+      'saving',
+      'completed',
+    ]);
+    // The summary the owner reads matches what the API reported as completed.
+    const { categoryCount = 0, productCount = 0 } = progressFrames.at(-1) ?? {};
+    await expect(
+      page.getByText(
+        `Carta digitalizada: ${categoryCount} ${categoryCount === 1 ? 'sección' : 'secciones'} y ` +
+          `${productCount} ${productCount === 1 ? 'producto' : 'productos'}. Revísala y publícala cuando esté lista.`,
+      ),
+    ).toBeVisible();
     await expect(
       page.getByTestId('managed-category').locator('article').filter({ hasText: 'Lomo Salatado' }).getByText('Lomo Salatado'),
     ).toBeVisible();
