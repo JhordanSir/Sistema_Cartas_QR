@@ -20,7 +20,7 @@ interface OptionListCopy {
 interface OwnerMenuCopy {
   digitizer: {
     digitize: string;
-    digitized: string;
+    digitized: (sections: number, products: number) => string;
     digitizing: string;
     draft: {
       emptyBody: string;
@@ -48,7 +48,21 @@ interface OwnerMenuCopy {
       title: string;
     };
     privacy: string;
-    processing: { keepOpen: string; stages: readonly string[]; title: string };
+    /** Each line describes a stage the API reported over the realtime socket. */
+    processing: {
+      completed: (sections: number, products: number) => string;
+      elapsed: (seconds: number) => string;
+      /** Shown alone when the socket is unavailable: no stage is ever made up. */
+      generic: string;
+      keepOpen: string;
+      reading: (attempt: number, maximumAttempts: number) => string;
+      received: (photos: number) => string;
+      retrying: (nextAttempt: number, maximumAttempts: number) => string;
+      saving: string;
+      sending: string;
+      title: string;
+      validating: string;
+    };
     published: string;
     templateApplied: string;
     title: string;
@@ -139,11 +153,18 @@ interface OwnerMenuCopy {
   };
 }
 
+function menuSize(sections: number, products: number, locale: Locale): string {
+  return locale === 'es'
+    ? `${formatCount(sections, 'es', { one: 'sección', other: 'secciones' })} y ${formatCount(products, 'es', { one: 'producto', other: 'productos' })}`
+    : `${formatCount(sections, 'en', { one: 'section', other: 'sections' })} and ${formatCount(products, 'en', { one: 'product', other: 'products' })}`;
+}
+
 export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
   en: {
     digitizer: {
       digitize: 'Digitize into draft',
-      digitized: "Menu digitized. Review it and publish it when it's ready.",
+      digitized: (sections, products) =>
+        `Menu digitized: ${menuSize(sections, products, 'en')}. Review it and publish it when it's ready.`,
       digitizing: 'Digitizing…',
       draft: {
         emptyBody: 'Your menu will appear here once you digitize it.',
@@ -176,14 +197,22 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
       },
       privacy: 'Photos are sent to Gemini to read them and are not stored by Sirio.',
       processing: {
+        completed: (sections, products) => `Draft ready: ${menuSize(sections, products, 'en')}.`,
+        elapsed: (seconds) => `${seconds} s elapsed`,
+        generic: 'Gemini is reading your menu…',
         keepOpen: "Keep this window open. You can review the draft when it's done.",
-        stages: [
-          'Reading the pages of your menu…',
-          'Recognizing sections, dishes and prices…',
-          'Working out variants and add-ons…',
-          'Preparing the draft for your review…',
-        ],
+        reading: (attempt, maximumAttempts) =>
+          attempt === 1
+            ? 'Gemini is reading your menu…'
+            : `Gemini is reading your menu (attempt ${attempt} of ${maximumAttempts})…`,
+        received: (photos) =>
+          photos === 1 ? 'Photo received and checked.' : `${photos} photos received and checked.`,
+        retrying: (nextAttempt, maximumAttempts) =>
+          `Gemini didn't respond. Retrying (attempt ${nextAttempt} of ${maximumAttempts})…`,
+        saving: 'Saving the draft…',
+        sending: 'Sending your photos…',
         title: 'Gemini is reading your menu',
+        validating: 'Checking sections, dishes and prices…',
       },
       published: 'Your public menu is updated. The QR code stays the same.',
       templateApplied: "Template applied to the draft. Publish it when you're happy with it.",
@@ -322,7 +351,8 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
   es: {
     digitizer: {
       digitize: 'Digitalizar en borrador',
-      digitized: 'Carta digitalizada. Revísala y publícala cuando esté lista.',
+      digitized: (sections, products) =>
+        `Carta digitalizada: ${menuSize(sections, products, 'es')}. Revísala y publícala cuando esté lista.`,
       digitizing: 'Digitalizando…',
       draft: {
         emptyBody: 'Aquí aparecerá tu carta después de digitalizarla.',
@@ -355,14 +385,22 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
       },
       privacy: 'Las fotos se envían a Gemini para interpretarlas y no se almacenan en Sirio.',
       processing: {
+        completed: (sections, products) => `Borrador listo: ${menuSize(sections, products, 'es')}.`,
+        elapsed: (seconds) => `${seconds} s transcurridos`,
+        generic: 'Gemini está leyendo tu carta…',
         keepOpen: 'No cierres esta ventana. Podrás revisar el borrador al terminar.',
-        stages: [
-          'Leyendo las páginas de tu carta…',
-          'Reconociendo categorías, platos y precios…',
-          'Interpretando variantes y adicionales…',
-          'Preparando el borrador para tu revisión…',
-        ],
+        reading: (attempt, maximumAttempts) =>
+          attempt === 1
+            ? 'Gemini está leyendo tu carta…'
+            : `Gemini está leyendo tu carta (intento ${attempt} de ${maximumAttempts})…`,
+        received: (photos) =>
+          photos === 1 ? 'Foto recibida y validada.' : `${photos} fotos recibidas y validadas.`,
+        retrying: (nextAttempt, maximumAttempts) =>
+          `Gemini no respondió. Reintentando (intento ${nextAttempt} de ${maximumAttempts})…`,
+        saving: 'Guardando el borrador…',
+        sending: 'Enviando tus fotos…',
         title: 'Gemini está interpretando tu carta',
+        validating: 'Validando secciones, platos y precios…',
       },
       published: 'La carta pública se actualizó. El QR sigue siendo el mismo.',
       templateApplied: 'Plantilla aplicada al borrador. Publícala cuando estés conforme.',

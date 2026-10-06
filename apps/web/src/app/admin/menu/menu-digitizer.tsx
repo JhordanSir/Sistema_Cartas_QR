@@ -1,6 +1,11 @@
 'use client';
 
-import { ACCEPTED_IMAGE_TYPES, UPLOAD_LIMITS } from '@sirio/shared';
+import {
+  ACCEPTED_IMAGE_TYPES,
+  DIGITIZATION_PROGRESS_HEADER,
+  type DigitizationProgress,
+  UPLOAD_LIMITS,
+} from '@sirio/shared';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,6 +32,7 @@ import { OwnerNavigation } from '../owner-navigation';
 
 import { MenuManager } from './menu-manager';
 import { MenuPublicationControls } from './menu-publication-controls';
+import { useDigitizationProgress } from './use-digitization-progress';
 
 const {
   maximumBytesPerPhoto: MAX_PHOTO_BYTES,
@@ -41,7 +47,7 @@ export function MenuDigitizer() {
   const latestCopy = useCopyRef(ownerMenuCopy);
   const panelCopy = useCopy(ownerPanelCopy);
   const errorCopy = useCopy(apiErrorCopy);
-  const stageCount = copy.processing.stages.length;
+  const progressChannel = useDigitizationProgress();
   const [restaurants, setRestaurants] = useState<RestaurantProfile[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [menu, setMenu] = useState<PublishedMenu | null>(null);
@@ -50,7 +56,7 @@ export function MenuDigitizer() {
   const [digitizing, setDigitizing] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
-  const [processingStage, setProcessingStage] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const previews = useMemo(
@@ -110,12 +116,13 @@ export function MenuDigitizer() {
 
   useEffect(() => {
     if (!digitizing) return;
+    const startedAt = Date.now();
     const interval = window.setInterval(
-      () => setProcessingStage((current) => Math.min(current + 1, stageCount - 1)),
-      5_000,
+      () => setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1_000)),
+      1_000,
     );
     return () => window.clearInterval(interval);
-  }, [digitizing, stageCount]);
+  }, [digitizing]);
 
   async function switchRestaurant(event: ChangeEvent<HTMLSelectElement>) {
     const restaurantId = event.target.value;
@@ -150,24 +157,36 @@ export function MenuDigitizer() {
   async function digitize() {
     if (!selected || files.length === 0) return;
     setDigitizing(true);
-    setProcessingStage(0);
+    setElapsedSeconds(0);
     setError(null);
     setNotice(null);
     const body = new FormData();
     files.forEach((file) => body.append('photos', file));
-    const response = await fetch(`/api/owner/restaurants/${selected.id}/menu/digitize`, {
-      body,
-      method: 'POST',
-    });
-    if (!response.ok) {
-      setError(await readApiError(response, errorCopy));
+    // Subscribing first means no stage is published before the page listens for it.
+    const progressId = await progressChannel.start(selected.id);
+    try {
+      const response = await fetch(`/api/owner/restaurants/${selected.id}/menu/digitize`, {
+        body,
+        headers: progressId ? { [DIGITIZATION_PROGRESS_HEADER]: progressId } : undefined,
+        method: 'POST',
+      });
+      if (!response.ok) {
+        setError(await readApiError(response, errorCopy));
+        return;
+      }
+      const digitized = (await response.json()) as PublishedMenu;
+      setMenu(digitized);
+      setFiles([]);
+      setNotice(
+        copy.digitized(
+          digitized.categories.length,
+          digitized.categories.reduce((total, category) => total + category.products.length, 0),
+        ),
+      );
+    } finally {
+      progressChannel.stop();
       setDigitizing(false);
-      return;
     }
-    setMenu((await response.json()) as PublishedMenu);
-    setFiles([]);
-    setNotice(copy.digitized);
-    setDigitizing(false);
   }
 
   async function publishMenu() {
@@ -345,7 +364,13 @@ export function MenuDigitizer() {
                         : copy.draft.status.none}
                   </p>
                 </div>
-                {digitizing ? <ProcessingState stage={processingStage} /> : null}
+                {digitizing ? (
+                  <ProcessingState
+                    elapsedSeconds={elapsedSeconds}
+                    live={progressChannel.live}
+                    progress={progressChannel.progress}
+                  />
+                ) : null}
                 {!digitizing && menu ? (
                   <>
                     <div className="flex justify-end px-5 pb-1 sm:px-8">
@@ -378,14 +403,67 @@ export function MenuDigitizer() {
   );
 }
 
-function ProcessingState({ stage }: { stage: number }) {
+type ProcessingCopy = (typeof ownerMenuCopy)['es']['digitizer']['processing'];
+
+/** The four bar segments: photos received, Gemini reading, validation, saving. */
+const PROGRESS_SEGMENTS = 4;
+
+function progressSegment(progress: DigitizationProgress | null): number {
+  switch (progress?.stage) {
+    case undefined:
+      return -1;
+    case 'received':
+      return 0;
+    case 'reading':
+    case 'retrying':
+    case 'failed':
+      return 1;
+    case 'validating':
+      return 2;
+    case 'saving':
+    case 'completed':
+      return 3;
+  }
+}
+
+function describeProgress(progress: DigitizationProgress | null, copy: ProcessingCopy): string {
+  switch (progress?.stage) {
+    case undefined:
+      return copy.sending;
+    case 'received':
+      return copy.received(progress.photoCount);
+    case 'reading':
+      return copy.reading(progress.attempt, progress.maximumAttempts);
+    case 'retrying':
+      return copy.retrying(progress.attempt + 1, progress.maximumAttempts);
+    case 'validating':
+      return copy.validating;
+    case 'saving':
+      return copy.saving;
+    case 'completed':
+      return copy.completed(progress.categoryCount, progress.productCount);
+    case 'failed':
+      return copy.generic;
+  }
+}
+
+/**
+ * With the socket, every line and segment is a stage the API reported; without it the
+ * panel shows one generic line rather than inventing stages.
+ */
+function ProcessingState({
+  elapsedSeconds,
+  live,
+  progress,
+}: {
+  elapsedSeconds: number;
+  live: boolean;
+  progress: DigitizationProgress | null;
+}) {
   const copy = useCopy(ownerMenuCopy).digitizer.processing;
+  const segment = progressSegment(progress);
   return (
-    <div
-      aria-live="polite"
-      className="grid min-h-[29rem] content-center justify-items-center p-10 text-center"
-      role="status"
-    >
+    <div className="grid min-h-[29rem] content-center justify-items-center p-10 text-center">
       <span
         aria-hidden="true"
         className="relative block size-18 rounded-full border border-line-strong after:absolute after:inset-5 after:rounded-full after:bg-olive after:content-['']"
@@ -399,15 +477,21 @@ function ProcessingState({ stage }: { stage: number }) {
         ))}
       </span>
       <h3 className="mt-7 mb-2 font-display text-2xl tracking-[-0.025em]">{copy.title}</h3>
-      <p className="m-0 text-[13px] text-ink-soft">{copy.stages[stage]}</p>
-      <div className="my-6 flex w-full max-w-70 gap-1.5">
-        {copy.stages.map((_, index) => (
-          <span
-            className={`h-1.5 flex-1 rounded-full ${index <= stage ? 'bg-copper' : 'bg-control'}`}
-            key={index}
-          />
-        ))}
-      </div>
+      {/* Only the stage line is live: the seconds counter would be announced every second. */}
+      <p aria-live="polite" className="m-0 text-[13px] text-ink-soft" role="status">
+        {live ? describeProgress(progress, copy) : copy.generic}
+      </p>
+      {live ? (
+        <div aria-hidden="true" className="mt-6 flex w-full max-w-70 gap-1.5" data-testid="digitization-progress">
+          {Array.from({ length: PROGRESS_SEGMENTS }, (_, index) => (
+            <span
+              className={`h-1.5 flex-1 rounded-full ${index <= segment ? 'bg-copper' : 'bg-control'}`}
+              key={index}
+            />
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-4 mb-6 text-[11px] text-ink-muted tabular-nums">{copy.elapsed(elapsedSeconds)}</p>
       <small className="text-[10px] text-ink-muted">{copy.keepOpen}</small>
     </div>
   );
