@@ -7,6 +7,7 @@ import { DigitizationModule } from './digitization/digitization.module.js';
 import { HealthModule } from './health/health.module.js';
 import { MenuManagementModule } from './menu-management/menu-management.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { RealtimeModule } from './realtime/realtime.module.js';
 import { RestaurantsModule } from './restaurants/restaurants.module.js';
 import { ViewStatisticsModule } from './analytics/view-statistics.module.js';
 
@@ -25,6 +26,7 @@ import { ViewStatisticsModule } from './analytics/view-statistics.module.js';
     DigitizationModule,
     MenuManagementModule,
     ViewStatisticsModule,
+    RealtimeModule,
     HealthModule,
   ],
 })

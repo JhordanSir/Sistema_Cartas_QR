@@ -3,6 +3,7 @@ import 'reflect-metadata';
 import { RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { WsAdapter } from '@nestjs/platform-ws';
 
 import { AppModule } from './app.module.js';
 import { parseCorsOrigins } from './config/cors.js';
@@ -28,6 +29,7 @@ async function bootstrap(): Promise<void> {
       { method: RequestMethod.GET, path: 'health/ready' },
     ],
   });
+  app.useWebSocketAdapter(new WsAdapter(app));
   app.enableShutdownHooks();
 
   await app.listen(
