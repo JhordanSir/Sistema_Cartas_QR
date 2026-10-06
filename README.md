@@ -197,6 +197,20 @@ La API expone un WebSocket en `/api/realtime` (`@nestjs/platform-ws`, protocolo 
 
 Las suscripciones viven en memoria del proceso de la API, que en Compose es una sola réplica.
 
+**Progreso de la digitalización.** Al pulsar «Digitalizar», `/admin/menu` genera un `progressId`, abre el socket, se suscribe y solo entonces envía las fotos con la cabecera `x-digitization-progress-id`, que el BFF reenvía a Nest. `DigitizeMenu` publica cada etapa real como `{ "event": "digitization.progress", "data": { "progressId", "stage", … } }`:
+
+| `stage` | Cuándo | Datos extra |
+|---|---|---|
+| `received` | Fotos validadas y restaurante del dueño | `photoCount` |
+| `reading` | Empieza un intento contra Gemini | `attempt`, `maximumAttempts` |
+| `retrying` | Ese intento falló y se reintenta | `attempt`, `maximumAttempts` |
+| `validating` | Gemini respondió; se valida la carta | — |
+| `saving` | Se guarda el borrador en PostgreSQL | — |
+| `completed` | Borrador guardado | `categoryCount`, `productCount` |
+| `failed` | Falló tras recibir las fotos | `code` (el mismo de la respuesta HTTP) |
+
+La respuesta HTTP sigue decidiendo el resultado. Si el socket no conecta (por ejemplo, sesión caducada que no se pudo renovar), la pantalla muestra una sola línea genérica y nunca etapas inventadas.
+
 ## Gestión de la carta
 
 Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada sección elige además cómo se presenta en la carta pública: `LIST` (filas compactas, el valor por defecto) o `CARDS` (una tarjeta por plato, con la foto como protagonista). El estilo viaja en el borrador y en el snapshot publicado, así que cambiarlo marca la carta como pendiente de publicar y no llega al comensal hasta confirmarlo. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
