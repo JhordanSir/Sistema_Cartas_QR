@@ -211,6 +211,8 @@ Las suscripciones viven en memoria del proceso de la API, que en Compose es una 
 
 La respuesta HTTP sigue decidiendo el resultado. Si el socket no conecta (por ejemplo, sesión caducada que no se pudo renovar), la pantalla muestra una sola línea genérica y nunca etapas inventadas.
 
+El informe [docs/websocket.md](docs/websocket.md) (también en [Word](docs/websocket.docx)) explica dónde se agregó cada pieza y reúne las capturas y los frames de una digitalización real como evidencia.
+
 ## Gestión de la carta
 
 Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada sección elige además cómo se presenta en la carta pública: `LIST` (filas compactas, el valor por defecto) o `CARDS` (una tarjeta por plato, con la foto como protagonista). El estilo viaja en el borrador y en el snapshot publicado, así que cambiarlo marca la carta como pendiente de publicar y no llega al comensal hasta confirmarlo. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
