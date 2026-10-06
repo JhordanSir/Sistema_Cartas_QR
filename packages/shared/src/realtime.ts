@@ -27,6 +27,23 @@ export interface DigitizationSubscription {
   topic: "digitization";
 }
 
+/**
+ * Carries the browser's progress id on the digitization request, so the API publishes
+ * each stage to the socket that subscribed to it.
+ */
+export const DIGITIZATION_PROGRESS_HEADER = "x-digitization-progress-id";
+
+/** What actually happens on the server, in order; `retrying` reports the attempt that failed. */
+export type DigitizationProgress =
+  | { photoCount: number; stage: "received" }
+  | { attempt: number; maximumAttempts: number; stage: "reading" }
+  | { attempt: number; maximumAttempts: number; stage: "retrying" }
+  | { stage: "validating" }
+  | { stage: "saving" }
+  | { categoryCount: number; productCount: number; stage: "completed" }
+  | { code: string; stage: "failed" };
+
 export type RealtimeServerMessage =
   | { data: { progressId: string }; event: "subscribed" }
-  | { data: { code: RealtimeErrorCode }; event: "error" };
+  | { data: { code: RealtimeErrorCode }; event: "error" }
+  | { data: DigitizationProgress & { progressId: string }; event: "digitization.progress" };

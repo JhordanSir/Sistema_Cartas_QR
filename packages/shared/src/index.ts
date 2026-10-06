@@ -11,9 +11,15 @@ export {
   meetsPasswordPolicy
 } from "./credentials-policy.js";
 
-export { ACCESS_TOKEN_COOKIE, REALTIME_CLOSE_CODES, REALTIME_PATH } from "./realtime.js";
+export {
+  ACCESS_TOKEN_COOKIE,
+  DIGITIZATION_PROGRESS_HEADER,
+  REALTIME_CLOSE_CODES,
+  REALTIME_PATH
+} from "./realtime.js";
 
 export type {
+  DigitizationProgress,
   DigitizationSubscription,
   RealtimeErrorCode,
   RealtimeServerMessage
