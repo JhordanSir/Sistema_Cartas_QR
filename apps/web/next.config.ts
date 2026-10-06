@@ -35,6 +35,12 @@ const nextConfig: NextConfig = {
         source: "/api/auth/:path*",
         destination: `${apiInternalUrl}/api/auth/:path*`,
       },
+      // Route Handlers cannot hold a WebSocket, but an external rewrite proxies the
+      // upgrade (router-server's upgradeHandler), in `next dev` and in standalone alike.
+      {
+        source: "/api/realtime",
+        destination: `${apiInternalUrl}/api/realtime`,
+      },
     ];
   },
 };
