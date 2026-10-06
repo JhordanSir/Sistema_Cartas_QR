@@ -187,6 +187,16 @@ Endpoints del propietario:
 
 `GEMINI_TIMEOUT_MS` controla el timeout por intento y `GEMINI_MAX_RETRIES` limita los reintentos. Solo se reintentan fallos transitorios (408, 429, 5xx, timeout o red), con backoff exponencial y jitter. Tras fallos repetidos se abre temporalmente el circuito para proteger la API y entregar un mensaje claro al dueño.
 
+### Canal en tiempo real (WebSocket)
+
+La API expone un WebSocket en `/api/realtime` (`@nestjs/platform-ws`, protocolo `ws` puro). El navegador lo abre sobre el origen de la web y Next.js reenvía el upgrade a Nest mediante un `rewrite`, igual que `/api/auth/*`; en Compose, Nginx conserva las cabeceras `Upgrade` y `Connection`.
+
+- **Handshake:** exige un `Origin` permitido (`CORS_ORIGINS`, `PUBLIC_APP_URL` o el host que el navegador visitó), la cookie `sirio_access` y una sesión activa de rol `OWNER`. Si falla, el socket se cierra con `4403` (origen) o `4401` (sesión).
+- **Suscripción:** `{ "event": "subscribe", "data": { "topic": "digitization", "restaurantId": "<uuid>", "progressId": "<uuid>" } }`. La API comprueba que el restaurante pertenezca al dueño y responde `subscribed` o `error` con `ACCESS_DENIED`, `INVALID_MESSAGE`, `SESSION_EXPIRED` o `TOO_MANY_SUBSCRIPTIONS` (máximo 4 por conexión).
+- **Vida de la conexión:** ping cada 20 s, cierre del socket que no contesta y cierre con `4408` a los 5 minutos. Los mensajes del cliente no pueden superar 4 KB.
+
+Las suscripciones viven en memoria del proceso de la API, que en Compose es una sola réplica.
+
 ## Gestión de la carta
 
 Desde `/admin/menu`, el dueño puede crear, renombrar, reordenar y eliminar secciones; también puede crear, mover, editar y eliminar productos. Cada sección elige además cómo se presenta en la carta pública: `LIST` (filas compactas, el valor por defecto) o `CARDS` (una tarjeta por plato, con la foto como protagonista). El estilo viaja en el borrador y en el snapshot publicado, así que cambiarlo marca la carta como pendiente de publicar y no llega al comensal hasta confirmarlo. Cada producto admite precio base, descripción, variantes y adicionales con precios propios, además de una imagen opcional PNG, JPG o WebP de hasta 4 MB validada por firma binaria.
