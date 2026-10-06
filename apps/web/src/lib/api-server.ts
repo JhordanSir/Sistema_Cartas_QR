@@ -1,7 +1,8 @@
-import type { ApiProblem } from '@sirio/shared';
+import { ACCESS_TOKEN_COOKIE, type ApiProblem } from '@sirio/shared';
 import { cookies } from 'next/headers';
 
-const ACCESS_COOKIE = 'sirio_access';
+// Shared with the API: its WebSocket gateway reads this cookie from the handshake.
+const ACCESS_COOKIE = ACCESS_TOKEN_COOKIE;
 const REFRESH_COOKIE = 'sirio_refresh';
 const ROLE_COOKIE = 'sirio_role';
 type SessionRole = 'ADMIN' | 'OWNER';

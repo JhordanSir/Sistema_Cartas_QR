@@ -11,6 +11,14 @@ export {
   meetsPasswordPolicy
 } from "./credentials-policy.js";
 
+export { ACCESS_TOKEN_COOKIE, REALTIME_CLOSE_CODES, REALTIME_PATH } from "./realtime.js";
+
+export type {
+  DigitizationSubscription,
+  RealtimeErrorCode,
+  RealtimeServerMessage
+} from "./realtime.js";
+
 export {
   RESERVED_SLUGS,
   isReservedSlug,
