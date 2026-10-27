@@ -155,6 +155,24 @@ export async function proxyApiResponse(response: Response): Promise<Response> {
   });
 }
 
+/**
+ * Like proxyApiResponse, but hands the body on chunk by chunk instead of
+ * reading it whole, so a streamed answer is still streamed past the BFF. Errors
+ * are small JSON documents and go through proxyApiResponse.
+ */
+export async function proxyApiStream(response: Response): Promise<Response> {
+  if (!response.ok || !response.body) return proxyApiResponse(response);
+  const headers = new Headers({
+    // Same reasons as in the API: no compression holding chunks back, and no
+    // buffering in the Nginx gateway.
+    'cache-control': 'no-store, no-transform',
+    'x-accel-buffering': 'no',
+  });
+  const contentType = response.headers.get('content-type');
+  if (contentType) headers.set('content-type', contentType);
+  return new Response(response.body, { headers, status: response.status });
+}
+
 async function apiFetch(
   path: string,
   accessToken: string,

@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { type ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AppShell, PageTitle, SupportingCopy, Workspace, WorkspaceHeader } from '@/components/app-shell';
-import { Button } from '@/components/button';
+import { Button, ButtonLink } from '@/components/button';
 import { RestaurantSwitcher } from '@/components/restaurant-switcher';
 import {
   Card,
@@ -234,11 +234,16 @@ export function MenuDigitizer() {
       <Workspace className="max-w-[94rem]">
         <WorkspaceHeader
           actions={
-            <RestaurantSwitcher
-              onChange={(event) => void switchRestaurant(event)}
-              restaurants={restaurants}
-              selectedId={selected?.id}
-            />
+            <>
+              <ButtonLink href="/admin/stream" tone="quiet">
+                {copy.streamLink}
+              </ButtonLink>
+              <RestaurantSwitcher
+                onChange={(event) => void switchRestaurant(event)}
+                restaurants={restaurants}
+                selectedId={selected?.id}
+              />
+            </>
           }
         >
           <Kicker>{copy.kicker}</Kicker>

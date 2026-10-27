@@ -64,6 +64,8 @@ interface OwnerMenuCopy {
       validating: string;
     };
     published: string;
+    /** Link to the page that receives the products as a stream of objects. */
+    streamLink: string;
     templateApplied: string;
     title: string;
   };
@@ -215,6 +217,7 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
         validating: 'Checking sections, dishes and prices…',
       },
       published: 'Your public menu is updated. The QR code stays the same.',
+      streamLink: 'Watch products stream in',
       templateApplied: "Template applied to the draft. Publish it when you're happy with it.",
       title: 'Get the next version of your menu ready.',
     },
@@ -403,6 +406,7 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
         validating: 'Validando secciones, platos y precios…',
       },
       published: 'La carta pública se actualizó. El QR sigue siendo el mismo.',
+      streamLink: 'Ver productos en streaming',
       templateApplied: 'Plantilla aplicada al borrador. Publícala cuando estés conforme.',
       title: 'Prepara la próxima versión de tu carta.',
     },

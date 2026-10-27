@@ -6,6 +6,7 @@ import { ownerMenuCopy } from './messages/owner-menu';
 import { ownerPanelCopy } from './messages/owner-panel';
 import { ownerProfileCopy } from './messages/owner-profile';
 import { ownerQrCopy } from './messages/owner-qr';
+import { ownerStreamCopy } from './messages/owner-stream';
 import { ownerWeatherCopy } from './messages/owner-weather';
 import { publicMenuCopy } from './messages/public-menu';
 import { shellCopy } from './messages/shell';
@@ -20,6 +21,7 @@ const TABLES = {
   ownerPanel: ownerPanelCopy,
   ownerProfile: ownerProfileCopy,
   ownerQr: ownerQrCopy,
+  ownerStream: ownerStreamCopy,
   ownerWeather: ownerWeatherCopy,
   publicMenu: publicMenuCopy,
   shell: shellCopy,

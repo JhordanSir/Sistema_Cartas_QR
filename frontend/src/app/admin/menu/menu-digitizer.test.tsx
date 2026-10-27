@@ -212,6 +212,15 @@ describe('MenuDigitizer', () => {
     expect(screen.getByText('Hay cambios en borrador. La carta pública conserva su versión anterior.')).toBeVisible();
   });
 
+  it('links to the page that streams the products one at a time', async () => {
+    render(<MenuDigitizer />);
+
+    expect(await screen.findByRole('link', { name: 'Ver productos en streaming' })).toHaveAttribute(
+      'href',
+      '/admin/stream',
+    );
+  });
+
   it('creates the first section from an empty menu', async () => {
     (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
