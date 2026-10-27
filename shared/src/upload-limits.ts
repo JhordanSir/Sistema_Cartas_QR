@@ -14,7 +14,9 @@ export const UPLOAD_LIMITS = {
     maximumPhotoCount: 5,
     maximumTotalBytes: 12 * BYTES_PER_MEGABYTE
   },
-  productImage: { maximumBytes: 4 * BYTES_PER_MEGABYTE }
+  productImage: { maximumBytes: 4 * BYTES_PER_MEGABYTE },
+  /** The CSV an owner keeps from /admin/csv: only the last one is stored. */
+  csvFile: { maximumBytes: 20 * BYTES_PER_MEGABYTE }
 } as const;
 
 /** Bytes as the megabytes quoted in error messages. */

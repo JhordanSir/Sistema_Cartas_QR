@@ -12,6 +12,10 @@ export interface ApiErrorParamMap {
   ACCOUNT_NOT_FOUND: undefined;
   CATEGORY_LAYOUT_INVALID: undefined;
   CATEGORY_NOT_FOUND: undefined;
+  CSV_FILE_INVALID: undefined;
+  CSV_FILE_NOT_FOUND: undefined;
+  CSV_FILE_REQUIRED: undefined;
+  CSV_FILE_TOO_LARGE: { maxMb: number };
   CURRENT_PASSWORD_INVALID: undefined;
   DELETION_CONFIRMATION_MISMATCH: { slug: string };
   FIELD_INVALID: {
@@ -86,6 +90,10 @@ const API_ERROR_CODES: Record<ApiErrorCode, true> = {
   ACCOUNT_NOT_FOUND: true,
   CATEGORY_LAYOUT_INVALID: true,
   CATEGORY_NOT_FOUND: true,
+  CSV_FILE_INVALID: true,
+  CSV_FILE_NOT_FOUND: true,
+  CSV_FILE_REQUIRED: true,
+  CSV_FILE_TOO_LARGE: true,
   CURRENT_PASSWORD_INVALID: true,
   DELETION_CONFIRMATION_MISMATCH: true,
   FIELD_INVALID: true,

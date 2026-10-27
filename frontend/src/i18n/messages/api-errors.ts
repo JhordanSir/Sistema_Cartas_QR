@@ -119,6 +119,10 @@ export const apiErrorCopy: Record<Locale, ApiErrorCopy> = {
       ACCOUNT_NOT_FOUND: "We couldn't find that account.",
       CATEGORY_LAYOUT_INVALID: 'Choose list or cards for the section.',
       CATEGORY_NOT_FOUND: "We couldn't find that section.",
+      CSV_FILE_INVALID: 'The file must be a text CSV (.csv, .tsv or .txt).',
+      CSV_FILE_NOT_FOUND: "There's no saved CSV yet.",
+      CSV_FILE_REQUIRED: 'Choose a CSV file.',
+      CSV_FILE_TOO_LARGE: ({ maxMb }) => `The CSV can weigh up to ${maxMb} MB.`,
       CURRENT_PASSWORD_INVALID: 'Your current password is incorrect.',
       DELETION_CONFIRMATION_MISMATCH: ({ slug }) =>
         `Type ${deletionConfirmationPhrase(slug, 'en')} and confirm that the deletion is permanent.`,
@@ -188,6 +192,10 @@ export const apiErrorCopy: Record<Locale, ApiErrorCopy> = {
       ACCOUNT_NOT_FOUND: 'No encontramos esa cuenta.',
       CATEGORY_LAYOUT_INVALID: 'Elige lista o tarjetas para la sección.',
       CATEGORY_NOT_FOUND: 'No encontramos esa sección.',
+      CSV_FILE_INVALID: 'El archivo debe ser un CSV de texto (.csv, .tsv o .txt).',
+      CSV_FILE_NOT_FOUND: 'Todavía no hay un CSV guardado.',
+      CSV_FILE_REQUIRED: 'Elige un archivo CSV.',
+      CSV_FILE_TOO_LARGE: ({ maxMb }) => `El CSV puede pesar hasta ${maxMb} MB.`,
       CURRENT_PASSWORD_INVALID: 'La contraseña actual no es correcta.',
       DELETION_CONFIRMATION_MISMATCH: ({ slug }) =>
         `Escribe ${deletionConfirmationPhrase(slug, 'es')} y confirma que la eliminación es definitiva.`,
