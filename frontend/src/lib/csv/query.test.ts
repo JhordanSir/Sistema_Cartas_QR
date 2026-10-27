@@ -47,6 +47,19 @@ describe('createCsvIndex', () => {
     expect(page.matchCount).toBe(1);
   });
 
+  it('sorts only the rows the search kept, and texts that read the same keep their file order', () => {
+    const cafes = [row(2, 'cafe', '3'), row(3, 'arroz', '1'), row(4, 'Café', '2'), row(5, 'CAFE', '1')];
+    const index = createCsvIndex(cafes);
+    const lines = (sort: { column: number; direction: 'asc' | 'desc' }) =>
+      index.query({ page: 1, pageSize: 10, search: 'caf', sort }).rows.map(({ line }) => line);
+
+    expect(lines({ column: 1, direction: 'asc' })).toEqual([5, 4, 2]);
+    expect(lines({ column: 0, direction: 'asc' })).toEqual([2, 4, 5]);
+    expect(lines({ column: 0, direction: 'desc' })).toEqual([2, 4, 5]);
+    const everyRow = index.query({ page: 1, pageSize: 10, search: '', sort: { column: 0, direction: 'desc' } });
+    expect(everyRow.rows.map(({ line }) => line)).toEqual([2, 4, 5, 3]);
+  });
+
   it('sorts and pages, clamping a page past the end to the last one', () => {
     const index = createCsvIndex(rows);
     const byPrice = { column: 1, direction: 'asc' as const };
