@@ -1,0 +1,5 @@
+export const CSV_FILE_REPOSITORY = Symbol('CSV_FILE_REPOSITORY');
+export const CSV_FILE_STORAGE = Symbol('CSV_FILE_STORAGE');
+export const SAVE_RESTAURANT_CSV = Symbol('SAVE_RESTAURANT_CSV');
+export const GET_RESTAURANT_CSV = Symbol('GET_RESTAURANT_CSV');
+export const OPEN_RESTAURANT_CSV = Symbol('OPEN_RESTAURANT_CSV');

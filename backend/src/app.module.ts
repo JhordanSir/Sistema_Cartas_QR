@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from './auth/auth.module.js';
 import { ROOT_ENV_FILE, validateEnvironment } from './config/environment.js';
+import { CsvFilesModule } from './csv-files/csv-files.module.js';
 import { DigitizationModule } from './digitization/digitization.module.js';
 import { HealthModule } from './health/health.module.js';
 import { MenuManagementModule } from './menu-management/menu-management.module.js';
@@ -26,6 +27,7 @@ import { ViewStatisticsModule } from './analytics/view-statistics.module.js';
     DigitizationModule,
     MenuManagementModule,
     ViewStatisticsModule,
+    CsvFilesModule,
     RealtimeModule,
     HealthModule,
   ],

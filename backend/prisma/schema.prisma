@@ -64,8 +64,22 @@ model Restaurant {
   productExtras   ProductExtra[]
   viewEvents      ViewEvent[]
   viewSummaries   ViewSummary[]
+  csvFile         RestaurantCsvFile?
 
   @@index([status])
+}
+
+/// The last CSV the owner saved from /admin/csv: saving again replaces it. The bytes
+/// live on the storage volume under restaurants/<id>/csv/, so deleting the restaurant
+/// removes them with the rest of its files.
+model RestaurantCsvFile {
+  restaurantId String   @id @db.Uuid
+  originalName String   @db.VarChar(255)
+  relativePath String   @unique @db.VarChar(512)
+  sizeBytes    Int
+  uploadedAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 }
 
 model AssetDeletionJob {
