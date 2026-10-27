@@ -66,7 +66,7 @@ Se considera legado cualquier restaurante que todavía tenga los tres campos `qr
 6. Pega las variables anteriores en **Environment** y revisa **Preview Compose**. No debe aparecer ningún secreto en el servicio `web`.
 7. Ejecuta el primer despliegue.
 
-El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma migrate deploy`, crea de forma idempotente el administrador inicial y después inicia `apps/api/dist/main.js`. Si una migración o el seed falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
+El contenedor `api` espera a que PostgreSQL esté saludable, ejecuta `prisma migrate deploy`, crea de forma idempotente el administrador inicial y después inicia `backend/dist/main.js`. Si una migración o el seed falla, la API no arranca y el despliegue debe investigarse antes de reintentarlo.
 
 ## Dominio y HTTPS
 

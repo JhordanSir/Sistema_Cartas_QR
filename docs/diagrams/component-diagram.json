@@ -94,11 +94,11 @@
       ],
       "sources": [
         {
-          "path": "apps/web/src/lib/weather.ts",
+          "path": "frontend/src/lib/weather.ts",
           "label": "cliente de Open-Meteo"
         },
         {
-          "path": "apps/web/src/app/admin/restaurant-weather.tsx",
+          "path": "frontend/src/app/admin/restaurant-weather.tsx",
           "label": "tarjeta Clima ahora"
         }
       ]
@@ -118,11 +118,11 @@
       ],
       "sources": [
         {
-          "path": "apps/web/src/app/api/session/login/route.ts",
+          "path": "frontend/src/app/api/session/login/route.ts",
           "label": "Route Handler (BFF)"
         },
         {
-          "path": "apps/web/next.config.ts",
+          "path": "frontend/next.config.ts",
           "label": "rewrites /api/health, /api/auth"
         }
       ]
@@ -142,7 +142,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/auth/auth.module.ts"
+          "path": "backend/src/auth/auth.module.ts"
         }
       ]
     },
@@ -161,7 +161,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/analytics/view-statistics.module.ts"
+          "path": "backend/src/analytics/view-statistics.module.ts"
         }
       ]
     },
@@ -180,7 +180,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/restaurants/restaurants.module.ts"
+          "path": "backend/src/restaurants/restaurants.module.ts"
         }
       ]
     },
@@ -218,7 +218,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/menu-management/menu-management.module.ts"
+          "path": "backend/src/menu-management/menu-management.module.ts"
         }
       ]
     },
@@ -237,7 +237,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/health/health.module.ts"
+          "path": "backend/src/health/health.module.ts"
         }
       ]
     },
@@ -256,7 +256,7 @@
       ],
       "sources": [
         {
-          "path": "apps/api/src/digitization/digitization.module.ts"
+          "path": "backend/src/digitization/digitization.module.ts"
         }
       ]
     },
@@ -275,7 +275,7 @@
       ],
       "sources": [
         {
-          "path": "prisma/schema.prisma"
+          "path": "backend/prisma/schema.prisma"
         }
       ]
     },

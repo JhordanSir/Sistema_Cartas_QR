@@ -16,19 +16,19 @@ El WebSocket solo informa. La petición HTTP sigue decidiendo el resultado: si e
 
 | Capa | Archivo | Qué hace |
 |---|---|---|
-| Protocolo compartido | [`packages/shared/src/realtime.ts`](../packages/shared/src/realtime.ts#L5) | Ruta `/api/realtime`, códigos de cierre, mensajes y el tipo [`DigitizationProgress`](../packages/shared/src/realtime.ts#L37); lo usan la API y la web |
-| API · gateway | [`realtime.gateway.ts`](../apps/api/src/realtime/presentation/realtime.gateway.ts#L53) | Servidor WebSocket: valida el handshake ([L76](../apps/api/src/realtime/presentation/realtime.gateway.ts#L76)), atiende `subscribe` ([L100](../apps/api/src/realtime/presentation/realtime.gateway.ts#L100)) y hace ping o cierra conexiones ([L136](../apps/api/src/realtime/presentation/realtime.gateway.ts#L136)) |
-| API · reglas del handshake | [`realtime-protocol.ts`](../apps/api/src/realtime/presentation/realtime-protocol.ts#L27) | Lectura de la cookie, verificación del `Origin` y validación de la suscripción |
-| API · suscripciones | [`subscription-hub.ts`](../apps/api/src/realtime/application/subscription-hub.ts#L16) | Registro en memoria de qué socket escucha qué digitalización |
-| API · arranque | [`main.ts`](../apps/api/src/main.ts#L32) y [`realtime.module.ts`](../apps/api/src/realtime/realtime.module.ts#L31) | Activa el adaptador `ws` de NestJS y registra el módulo |
-| API · caso de uso | [`digitize-menu.ts`](../apps/api/src/digitization/application/use-cases/digitize-menu.ts#L38) | Publica cada etapa a través del puerto [`DigitizationProgressReporter`](../apps/api/src/digitization/application/ports/digitization-progress.reporter.ts#L9) |
-| API · Gemini | [`gemini-menu-extraction.gateway.ts`](../apps/api/src/digitization/infrastructure/gemini-menu-extraction.gateway.ts#L73) | Avisa al empezar cada intento y antes de cada reintento |
-| API · adaptador | [`realtime-progress.reporter.ts`](../apps/api/src/digitization/infrastructure/realtime-progress.reporter.ts#L11) | Implementa el puerto enviando las etapas por el WebSocket |
-| API · controlador | [`digitization.controller.ts`](../apps/api/src/digitization/digitization.controller.ts#L76) | Lee la cabecera `x-digitization-progress-id` que une la petición con la suscripción |
-| Web · proxy | [`next.config.ts`](../apps/web/next.config.ts#L41) | `rewrite` de `/api/realtime` hacia NestJS: Next.js reenvía el upgrade del WebSocket |
-| Web · BFF | [`digitize/route.ts`](../apps/web/src/app/api/owner/restaurants/[restaurantId]/menu/digitize/route.ts#L42) | Reenvía la cabecera de progreso a la API |
-| Web · cliente | [`use-digitization-progress.ts`](../apps/web/src/app/admin/menu/use-digitization-progress.ts#L30) | Hook que abre el socket ([L46](../apps/web/src/app/admin/menu/use-digitization-progress.ts#L46)), se suscribe y entrega las etapas |
-| Web · pantalla | [`menu-digitizer.tsx`](../apps/web/src/app/admin/menu/menu-digitizer.tsx#L166) | Se suscribe antes de enviar las fotos y pinta el panel [`ProcessingState`](../apps/web/src/app/admin/menu/menu-digitizer.tsx#L454) |
+| Protocolo compartido | [`shared/src/realtime.ts`](../shared/src/realtime.ts#L5) | Ruta `/api/realtime`, códigos de cierre, mensajes y el tipo [`DigitizationProgress`](../shared/src/realtime.ts#L37); lo usan la API y la web |
+| API · gateway | [`realtime.gateway.ts`](../backend/src/realtime/presentation/realtime.gateway.ts#L53) | Servidor WebSocket: valida el handshake ([L76](../backend/src/realtime/presentation/realtime.gateway.ts#L76)), atiende `subscribe` ([L100](../backend/src/realtime/presentation/realtime.gateway.ts#L100)) y hace ping o cierra conexiones ([L136](../backend/src/realtime/presentation/realtime.gateway.ts#L136)) |
+| API · reglas del handshake | [`realtime-protocol.ts`](../backend/src/realtime/presentation/realtime-protocol.ts#L27) | Lectura de la cookie, verificación del `Origin` y validación de la suscripción |
+| API · suscripciones | [`subscription-hub.ts`](../backend/src/realtime/application/subscription-hub.ts#L16) | Registro en memoria de qué socket escucha qué digitalización |
+| API · arranque | [`main.ts`](../backend/src/main.ts#L32) y [`realtime.module.ts`](../backend/src/realtime/realtime.module.ts#L31) | Activa el adaptador `ws` de NestJS y registra el módulo |
+| API · caso de uso | [`digitize-menu.ts`](../backend/src/digitization/application/use-cases/digitize-menu.ts#L38) | Publica cada etapa a través del puerto [`DigitizationProgressReporter`](../backend/src/digitization/application/ports/digitization-progress.reporter.ts#L9) |
+| API · Gemini | [`gemini-menu-extraction.gateway.ts`](../backend/src/digitization/infrastructure/gemini-menu-extraction.gateway.ts#L73) | Avisa al empezar cada intento y antes de cada reintento |
+| API · adaptador | [`realtime-progress.reporter.ts`](../backend/src/digitization/infrastructure/realtime-progress.reporter.ts#L11) | Implementa el puerto enviando las etapas por el WebSocket |
+| API · controlador | [`digitization.controller.ts`](../backend/src/digitization/digitization.controller.ts#L76) | Lee la cabecera `x-digitization-progress-id` que une la petición con la suscripción |
+| Web · proxy | [`next.config.ts`](../frontend/next.config.ts#L41) | `rewrite` de `/api/realtime` hacia NestJS: Next.js reenvía el upgrade del WebSocket |
+| Web · BFF | [`digitize/route.ts`](../frontend/src/app/api/owner/restaurants/[restaurantId]/menu/digitize/route.ts#L42) | Reenvía la cabecera de progreso a la API |
+| Web · cliente | [`use-digitization-progress.ts`](../frontend/src/app/admin/menu/use-digitization-progress.ts#L30) | Hook que abre el socket ([L46](../frontend/src/app/admin/menu/use-digitization-progress.ts#L46)), se suscribe y entrega las etapas |
+| Web · pantalla | [`menu-digitizer.tsx`](../frontend/src/app/admin/menu/menu-digitizer.tsx#L166) | Se suscribe antes de enviar las fotos y pinta el panel [`ProcessingState`](../frontend/src/app/admin/menu/menu-digitizer.tsx#L454) |
 | Infraestructura | [`docker/nginx.conf`](../docker/nginx.conf#L8) | Conserva las cabeceras `Upgrade` y `Connection` ([L40](../docker/nginx.conf#L40)) |
 
 El módulo de digitalización sigue la arquitectura hexagonal del resto de la API: el caso de uso solo conoce el puerto `DigitizationProgressReporter`, y es el adaptador el que sabe que existe un WebSocket. Por eso el caso de uso se prueba sin levantar NestJS ni abrir sockets.
@@ -91,10 +91,10 @@ Las capturas se tomaron con un script de Playwright contra el stack completo de 
 
 | Prueba | Qué verifica |
 |---|---|
-| [`realtime.gateway.spec.ts`](../apps/api/src/realtime/presentation/realtime.gateway.spec.ts) | Rechazo por origen, sin cookie, token inválido o rol administrador; suscripción a un restaurante propio y ajeno; límite de suscripciones; ping y cierre por antigüedad |
-| [`realtime-protocol.spec.ts`](../apps/api/src/realtime/presentation/realtime-protocol.spec.ts) y [`subscription-hub.spec.ts`](../apps/api/src/realtime/application/subscription-hub.spec.ts) | Lectura de la cookie, `Origin` permitido, mensajes válidos y entrega solo a quien está suscrito |
-| [`digitize-menu.spec.ts`](../apps/api/src/digitization/application/use-cases/digitize-menu.spec.ts) | Orden de las etapas con un reintento, etapa `failed` con el código HTTP y ningún evento si nadie se suscribió |
-| [`menu-digitizer.test.tsx`](../apps/web/src/app/admin/menu/menu-digitizer.test.tsx) | La pantalla muestra cada etapa recibida, ignora las de otra digitalización, cae a la línea genérica sin socket y renueva una sesión caducada |
+| [`realtime.gateway.spec.ts`](../backend/src/realtime/presentation/realtime.gateway.spec.ts) | Rechazo por origen, sin cookie, token inválido o rol administrador; suscripción a un restaurante propio y ajeno; límite de suscripciones; ping y cierre por antigüedad |
+| [`realtime-protocol.spec.ts`](../backend/src/realtime/presentation/realtime-protocol.spec.ts) y [`subscription-hub.spec.ts`](../backend/src/realtime/application/subscription-hub.spec.ts) | Lectura de la cookie, `Origin` permitido, mensajes válidos y entrega solo a quien está suscrito |
+| [`digitize-menu.spec.ts`](../backend/src/digitization/application/use-cases/digitize-menu.spec.ts) | Orden de las etapas con un reintento, etapa `failed` con el código HTTP y ningún evento si nadie se suscribió |
+| [`menu-digitizer.test.tsx`](../frontend/src/app/admin/menu/menu-digitizer.test.tsx) | La pantalla muestra cada etapa recibida, ignora las de otra digitalización, cae a la línea genérica sin socket y renueva una sesión caducada |
 | [`realtime-websocket.spec.ts`](../tests/e2e/realtime-websocket.spec.ts#L89) (E2E) | Contra el stack real: el socket pasa por Next.js, se suscribe, rechaza el restaurante ajeno y cierra con `4401` y `4403` |
 | [`phase-four-menu-digitization.spec.ts`](../tests/e2e/phase-four-menu-digitization.spec.ts#L120) (E2E) | Con Gemini real: los frames llegan en orden `received → reading → validating → saving → completed` y el resumen coincide con lo reportado |
 

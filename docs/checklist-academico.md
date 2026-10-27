@@ -5,11 +5,11 @@ Este documento muestra dónde cumple el proyecto cada uno de los seis requisitos
 | # | Requisito | Dónde se cumple |
 |---|---|---|
 | 1 | Arquitectura en n capas | Sistema en 4 capas (navegador → Next.js BFF → API NestJS → PostgreSQL) y, dentro de la API, cada módulo en `domain` / `application` / `infrastructure` / `presentation` |
-| 2 | Dos componentes *stateful* | [`LoginForm`](../apps/web/src/app/login/login-form.tsx#L15) y [`PasswordField`](../apps/web/src/components/password-field.tsx#L20) |
-| 3 | Dos componentes *stateless* | [`Card`](../apps/web/src/components/surfaces.tsx#L20) y [`StatusPill`](../apps/web/src/components/surfaces.tsx#L77) |
-| 4 | Menú desplegable de idioma | [`LanguageSwitcher`](../apps/web/src/components/language-switcher.tsx#L24): español e inglés en toda la aplicación |
-| 5 | Formulario validado con expresiones regulares | Los dos formularios de acceso, con [`EMAIL_PATTERN` y `PASSWORD_POLICY_PATTERN`](../packages/shared/src/credentials-policy.ts#L1) |
-| 6 | Consumo de un servicio externo desde el frontend | La tarjeta «Clima ahora» del perfil llama a Open-Meteo desde el navegador con [`lookUpWeather`](../apps/web/src/lib/weather.ts#L149) |
+| 2 | Dos componentes *stateful* | [`LoginForm`](../frontend/src/app/login/login-form.tsx#L15) y [`PasswordField`](../frontend/src/components/password-field.tsx#L20) |
+| 3 | Dos componentes *stateless* | [`Card`](../frontend/src/components/surfaces.tsx#L20) y [`StatusPill`](../frontend/src/components/surfaces.tsx#L77) |
+| 4 | Menú desplegable de idioma | [`LanguageSwitcher`](../frontend/src/components/language-switcher.tsx#L24): español e inglés en toda la aplicación |
+| 5 | Formulario validado con expresiones regulares | Los dos formularios de acceso, con [`EMAIL_PATTERN` y `PASSWORD_POLICY_PATTERN`](../shared/src/credentials-policy.ts#L1) |
+| 6 | Consumo de un servicio externo desde el frontend | La tarjeta «Clima ahora» del perfil llama a Open-Meteo desde el navegador con [`lookUpWeather`](../frontend/src/lib/weather.ts#L149) |
 
 ---
 
@@ -44,12 +44,12 @@ flowchart LR
 
 | Capa | Responsabilidad | Código |
 |---|---|---|
-| Presentación | Pantallas y formularios que ve la persona | [`apps/web/src/app`](../apps/web/src/app), [`apps/web/src/components`](../apps/web/src/components) |
-| Servidor web / BFF | Guarda la sesión en cookies, valida el origen y reenvía a la API con el rol correcto | [`apps/web/src/app/api`](../apps/web/src/app/api), [`apps/web/src/lib/api-server.ts`](../apps/web/src/lib/api-server.ts) |
-| Lógica de negocio | Casos de uso, validaciones de dominio y autorización | [`apps/api/src`](../apps/api/src) |
-| Datos | Persistencia relacional y archivos | [`prisma/schema.prisma`](../prisma/schema.prisma), adaptadores en `apps/api/src/*/infrastructure` |
+| Presentación | Pantallas y formularios que ve la persona | [`frontend/src/app`](../frontend/src/app), [`frontend/src/components`](../frontend/src/components) |
+| Servidor web / BFF | Guarda la sesión en cookies, valida el origen y reenvía a la API con el rol correcto | [`frontend/src/app/api`](../frontend/src/app/api), [`frontend/src/lib/api-server.ts`](../frontend/src/lib/api-server.ts) |
+| Lógica de negocio | Casos de uso, validaciones de dominio y autorización | [`backend/src`](../backend/src) |
+| Datos | Persistencia relacional y archivos | [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma), adaptadores en `backend/src/*/infrastructure` |
 
-Un ejemplo concreto es la ruta que guarda el perfil de un restaurante, [`app/api/owner/restaurants/[restaurantId]/profile/route.ts:23`](../apps/web/src/app/api/owner/restaurants/[restaurantId]/profile/route.ts#L23). Primero valida el origen de la petición (`isSameOrigin`, línea 27). Después reenvía a la API con la sesión del dueño (`authenticatedApiFetch`, línea 36) y devuelve la respuesta sin exponer los tokens al navegador (`proxyApiResponse`, línea 35).
+Un ejemplo concreto es la ruta que guarda el perfil de un restaurante, [`app/api/owner/restaurants/[restaurantId]/profile/route.ts:23`](../frontend/src/app/api/owner/restaurants/[restaurantId]/profile/route.ts#L23). Primero valida el origen de la petición (`isSameOrigin`, línea 27). Después reenvía a la API con la sesión del dueño (`authenticatedApiFetch`, línea 36) y devuelve la respuesta sin exponer los tokens al navegador (`proxyApiResponse`, línea 35).
 
 ### 1.2 Capas dentro de cada módulo de la API
 
@@ -80,17 +80,17 @@ flowchart TB
   E --> ER
 ```
 
-Recorrido de «actualizar el perfil» en el módulo [`restaurants`](../apps/api/src/restaurants):
+Recorrido de «actualizar el perfil» en el módulo [`restaurants`](../backend/src/restaurants):
 
 | Capa | Archivo | Qué hace |
 |---|---|---|
-| presentation | [`restaurants.controller.ts:132`](../apps/api/src/restaurants/restaurants.controller.ts#L132) | Recibe el `PATCH`, valida el DTO y llama al caso de uso; traduce los errores con `throwRestaurantHttpError` (línea 149) |
-| application | [`use-cases/update-restaurant-profile.ts:22`](../apps/api/src/restaurants/application/use-cases/update-restaurant-profile.ts#L22) | Clase sin decoradores de NestJS que aplica las reglas y depende solo de puertos |
-| application (puerto) | [`ports/restaurant-profile.repository.ts:13`](../apps/api/src/restaurants/application/ports/restaurant-profile.repository.ts#L13) | Interfaz de lo que el caso de uso necesita de la persistencia |
-| domain | [`domain/restaurant.errors.ts:13`](../apps/api/src/restaurants/domain/restaurant.errors.ts#L13) | Errores y tipos de negocio, sin dependencias de framework |
-| infrastructure | [`infrastructure/prisma-restaurant.repository.ts:37`](../apps/api/src/restaurants/infrastructure/prisma-restaurant.repository.ts#L37) | Implementa el puerto con Prisma y PostgreSQL |
+| presentation | [`restaurants.controller.ts:132`](../backend/src/restaurants/restaurants.controller.ts#L132) | Recibe el `PATCH`, valida el DTO y llama al caso de uso; traduce los errores con `throwRestaurantHttpError` (línea 149) |
+| application | [`use-cases/update-restaurant-profile.ts:22`](../backend/src/restaurants/application/use-cases/update-restaurant-profile.ts#L22) | Clase sin decoradores de NestJS que aplica las reglas y depende solo de puertos |
+| application (puerto) | [`ports/restaurant-profile.repository.ts:13`](../backend/src/restaurants/application/ports/restaurant-profile.repository.ts#L13) | Interfaz de lo que el caso de uso necesita de la persistencia |
+| domain | [`domain/restaurant.errors.ts:13`](../backend/src/restaurants/domain/restaurant.errors.ts#L13) | Errores y tipos de negocio, sin dependencias de framework |
+| infrastructure | [`infrastructure/prisma-restaurant.repository.ts:37`](../backend/src/restaurants/infrastructure/prisma-restaurant.repository.ts#L37) | Implementa el puerto con Prisma y PostgreSQL |
 
-Las capas se conectan en [`restaurants.module.ts:164`](../apps/api/src/restaurants/restaurants.module.ts#L164): el módulo inyecta el repositorio de Prisma en el caso de uso mediante `useFactory`. Gracias a eso las pruebas unitarias crean el caso de uso con un repositorio simulado, sin levantar NestJS.
+Las capas se conectan en [`restaurants.module.ts:164`](../backend/src/restaurants/restaurants.module.ts#L164): el módulo inyecta el repositorio de Prisma en el caso de uso mediante `useFactory`. Gracias a eso las pruebas unitarias crean el caso de uso con un repositorio simulado, sin levantar NestJS.
 
 ### 1.3 Diagrama de componentes
 
@@ -98,16 +98,16 @@ Las capas se conectan en [`restaurants.module.ts:164`](../apps/api/src/restauran
 
 | Componente | Archivo citado |
 |---|---|
-| Next.js (BFF) | [`app/api/session/login/route.ts`](../apps/web/src/app/api/session/login/route.ts), [`next.config.ts`](../apps/web/next.config.ts) |
-| `auth` | [`auth.module.ts`](../apps/api/src/auth/auth.module.ts) |
-| `analytics` | [`view-statistics.module.ts`](../apps/api/src/analytics/view-statistics.module.ts) |
-| `restaurants` | [`restaurants.module.ts`](../apps/api/src/restaurants/restaurants.module.ts) |
-| `menu-management` | [`menu-management.module.ts`](../apps/api/src/menu-management/menu-management.module.ts) |
-| `health` | [`health.module.ts`](../apps/api/src/health/health.module.ts) |
-| `digitization` | [`digitization.module.ts`](../apps/api/src/digitization/digitization.module.ts) |
+| Next.js (BFF) | [`app/api/session/login/route.ts`](../frontend/src/app/api/session/login/route.ts), [`next.config.ts`](../frontend/next.config.ts) |
+| `auth` | [`auth.module.ts`](../backend/src/auth/auth.module.ts) |
+| `analytics` | [`view-statistics.module.ts`](../backend/src/analytics/view-statistics.module.ts) |
+| `restaurants` | [`restaurants.module.ts`](../backend/src/restaurants/restaurants.module.ts) |
+| `menu-management` | [`menu-management.module.ts`](../backend/src/menu-management/menu-management.module.ts) |
+| `health` | [`health.module.ts`](../backend/src/health/health.module.ts) |
+| `digitization` | [`digitization.module.ts`](../backend/src/digitization/digitization.module.ts) |
 | Volumen `uploads_data` | [`compose.yml`](../compose.yml) |
-| PostgreSQL | [`prisma/schema.prisma`](../prisma/schema.prisma) |
-| Open-Meteo | [`lib/weather.ts`](../apps/web/src/lib/weather.ts), [`restaurant-weather.tsx`](../apps/web/src/app/admin/restaurant-weather.tsx) |
+| PostgreSQL | [`backend/prisma/schema.prisma`](../backend/prisma/schema.prisma) |
+| Open-Meteo | [`lib/weather.ts`](../frontend/src/lib/weather.ts), [`restaurant-weather.tsx`](../frontend/src/app/admin/restaurant-weather.tsx) |
 
 ---
 
@@ -117,7 +117,7 @@ Un componente es *stateful* cuando guarda estado propio que cambia con la intera
 
 ### 2.1 `LoginForm` — formulario de acceso del administrador
 
-[`apps/web/src/app/login/login-form.tsx:15`](../apps/web/src/app/login/login-form.tsx#L15)
+[`frontend/src/app/login/login-form.tsx:15`](../frontend/src/app/login/login-form.tsx#L15)
 
 ```tsx
 export function LoginForm() {
@@ -130,11 +130,11 @@ export function LoginForm() {
 - `failure` recuerda si el último intento falló por credenciales erróneas o por un fallo del servicio, y muestra el mensaje correspondiente.
 - `submitting` desactiva el botón y cambia su texto a «Ingresando…» mientras la petición está en curso.
 
-[`OwnerLoginForm`](../apps/web/src/app/admin/login/owner-login-form.tsx#L15), el acceso del dueño, sigue el mismo patrón.
+[`OwnerLoginForm`](../frontend/src/app/admin/login/owner-login-form.tsx#L15), el acceso del dueño, sigue el mismo patrón.
 
 ### 2.2 `PasswordField` — campo de contraseña con botón «Mostrar»
 
-[`apps/web/src/components/password-field.tsx:20`](../apps/web/src/components/password-field.tsx#L20)
+[`frontend/src/components/password-field.tsx:20`](../frontend/src/components/password-field.tsx#L20)
 
 ```tsx
 const [revealed, setRevealed] = useState(false);            // línea 33
@@ -146,7 +146,7 @@ onClick={() => setRevealed((current) => !current)}
 
 `revealed` alterna entre ocultar y mostrar la contraseña escrita. El mismo estado cambia el tipo del `<input>`, el texto del botón («Mostrar» / «Ocultar») y su `aria-pressed`.
 
-**Verificación:** [`login-form.test.tsx`](../apps/web/src/app/login/login-form.test.tsx) y [`owner-login-form.test.tsx`](../apps/web/src/app/admin/login/owner-login-form.test.tsx) cubren los estados de error y la acción de mostrar y ocultar.
+**Verificación:** [`login-form.test.tsx`](../frontend/src/app/login/login-form.test.tsx) y [`owner-login-form.test.tsx`](../frontend/src/app/admin/login/owner-login-form.test.tsx) cubren los estados de error y la acción de mostrar y ocultar.
 
 ---
 
@@ -156,7 +156,7 @@ Un componente es *stateless* cuando no guarda estado: con las mismas *props* dib
 
 ### 3.1 `Card` — superficie de los paneles
 
-[`apps/web/src/components/surfaces.tsx:20`](../apps/web/src/components/surfaces.tsx#L20)
+[`frontend/src/components/surfaces.tsx:20`](../frontend/src/components/surfaces.tsx#L20)
 
 ```tsx
 export function Card({ accent, children, className }: CardProps) {
@@ -178,7 +178,7 @@ Transforma sus props (`accent`, `className`, `children`) en marcado, sin guardar
 
 ### 3.2 `StatusPill` — etiqueta de estado
 
-[`apps/web/src/components/surfaces.tsx:77`](../apps/web/src/components/surfaces.tsx#L77)
+[`frontend/src/components/surfaces.tsx:77`](../frontend/src/components/surfaces.tsx#L77)
 
 ```tsx
 export function StatusPill({ children, tone }: { children: ReactNode; tone: 'draft' | 'muted' | 'positive' }) {
@@ -204,11 +204,11 @@ Traduce el tono recibido a colores. Se usa, por ejemplo, para «Habilitado» / �
 
 ### 4.1 El componente
 
-[`apps/web/src/components/language-switcher.tsx:24`](../apps/web/src/components/language-switcher.tsx#L24)
+[`frontend/src/components/language-switcher.tsx:24`](../frontend/src/components/language-switcher.tsx#L24)
 
 - **Menú desplegable real:** un `<select>` nativo (línea 57) con una opción por idioma (línea 68). Cada idioma aparece escrito en sí mismo («Español», «English») y lleva su atributo `lang`. Al ser nativo, el teclado, los lectores de pantalla y el selector del teléfono funcionan sin código extra.
-- **Guardar la elección:** al cambiar de opción, el componente envía `POST /api/session/locale`. Esa ruta ([`route.ts:12`](../apps/web/src/app/api/session/locale/route.ts#L12)) valida el origen y escribe la cookie `sirio-locale` (línea 27). Luego `router.refresh()` vuelve a pintar la página en el idioma nuevo sin perder lo que la persona ya escribió en formularios.
-- **Dónde aparece:** en la landing ([`app/page.tsx:40`](../apps/web/src/app/page.tsx#L40)), en los dos accesos ([`login-shell.tsx:40`](../apps/web/src/components/login-shell.tsx#L40)) y en la navegación del panel del dueño y del backoffice ([`side-rail.tsx:61`](../apps/web/src/components/side-rail.tsx#L61)).
+- **Guardar la elección:** al cambiar de opción, el componente envía `POST /api/session/locale`. Esa ruta ([`route.ts:12`](../frontend/src/app/api/session/locale/route.ts#L12)) valida el origen y escribe la cookie `sirio-locale` (línea 27). Luego `router.refresh()` vuelve a pintar la página en el idioma nuevo sin perder lo que la persona ya escribió en formularios.
+- **Dónde aparece:** en la landing ([`app/page.tsx:40`](../frontend/src/app/page.tsx#L40)), en los dos accesos ([`login-shell.tsx:40`](../frontend/src/components/login-shell.tsx#L40)) y en la navegación del panel del dueño y del backoffice ([`side-rail.tsx:61`](../frontend/src/components/side-rail.tsx#L61)).
 
 ### 4.2 Cómo se traduce la aplicación
 
@@ -225,16 +225,16 @@ flowchart LR
 
 | Pieza | Código |
 |---|---|
-| Lectura del idioma en el servidor | [`i18n/server.ts:9`](../apps/web/src/i18n/server.ts#L9) |
-| `<html lang>` según el idioma | [`app/layout.tsx:34`](../apps/web/src/app/layout.tsx#L34) |
-| Contexto para los componentes cliente | [`i18n/locale-provider.tsx:12`](../apps/web/src/i18n/locale-provider.tsx#L12) y `useCopy` en la línea 21 |
-| Diccionarios tipados `{ es, en }` | [`apps/web/src/i18n/messages`](../apps/web/src/i18n/messages): landing, accesos, panel del dueño, backoffice, carta pública y errores de la API |
-| Formato de moneda, números y fechas | [`i18n/format.ts`](../apps/web/src/i18n/format.ts): `S/ 32.00` en español y `PEN 32.00` en inglés |
+| Lectura del idioma en el servidor | [`i18n/server.ts:9`](../frontend/src/i18n/server.ts#L9) |
+| `<html lang>` según el idioma | [`app/layout.tsx:34`](../frontend/src/app/layout.tsx#L34) |
+| Contexto para los componentes cliente | [`i18n/locale-provider.tsx:12`](../frontend/src/i18n/locale-provider.tsx#L12) y `useCopy` en la línea 21 |
+| Diccionarios tipados `{ es, en }` | [`frontend/src/i18n/messages`](../frontend/src/i18n/messages): landing, accesos, panel del dueño, backoffice, carta pública y errores de la API |
+| Formato de moneda, números y fechas | [`i18n/format.ts`](../frontend/src/i18n/format.ts): `S/ 32.00` en español y `PEN 32.00` en inglés |
 
 La traducción cubre toda la interfaz. Los errores de la API llegan con un código y se traducen en el navegador. El contenido que escribe el dueño (nombre del restaurante, platos, descripciones, dirección) nunca se traduce.
 
 **Verificación:**
-- [`i18n/messages.test.ts`](../apps/web/src/i18n/messages.test.ts) comprueba que cada diccionario tiene las mismas entradas en ambos idiomas y que ninguna quedó sin traducir.
+- [`i18n/messages.test.ts`](../frontend/src/i18n/messages.test.ts) comprueba que cada diccionario tiene las mismas entradas en ambos idiomas y que ninguna quedó sin traducir.
 - Los E2E [`i18n-switch.spec.ts`](../tests/e2e/i18n-switch.spec.ts), [`i18n-owner-panel.spec.ts`](../tests/e2e/i18n-owner-panel.spec.ts), [`i18n-backoffice.spec.ts`](../tests/e2e/i18n-backoffice.spec.ts), [`i18n-public-menu.spec.ts`](../tests/e2e/i18n-public-menu.spec.ts) e [`i18n-api-errors.spec.ts`](../tests/e2e/i18n-api-errors.spec.ts) recorren cada superficie en inglés, en escritorio, Android e iPhone.
 
 ---
@@ -243,7 +243,7 @@ La traducción cubre toda la interfaz. Los errores de la API llegan con un códi
 
 ### 5.1 Las expresiones regulares
 
-[`packages/shared/src/credentials-policy.ts`](../packages/shared/src/credentials-policy.ts#L1)
+[`shared/src/credentials-policy.ts`](../shared/src/credentials-policy.ts#L1)
 
 ```ts
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;                      // línea 1
@@ -264,7 +264,7 @@ const PASSWORD_POLICY_PATTERN = /^(?=.*\p{Ll})(?=.*\p{Lu})(?=.*\p{Nd})/su; // l�
 
 ### 5.2 El formulario que las usa
 
-Se validan los dos formularios de acceso: el del administrador ([`login-form.tsx`](../apps/web/src/app/login/login-form.tsx)) y el del dueño ([`owner-login-form.tsx`](../apps/web/src/app/admin/login/owner-login-form.tsx)).
+Se validan los dos formularios de acceso: el del administrador ([`login-form.tsx`](../frontend/src/app/login/login-form.tsx)) y el del dueño ([`owner-login-form.tsx`](../frontend/src/app/admin/login/owner-login-form.tsx)).
 
 ```mermaid
 sequenceDiagram
@@ -286,18 +286,18 @@ sequenceDiagram
   end
 ```
 
-1. [`login-form.tsx:28`](../apps/web/src/app/login/login-form.tsx#L28) llama a `approveSubmission` antes de enviar. El formulario usa `noValidate` (línea 52) para que la validación por regex sea la única fuente de mensajes.
-2. [`use-credentials-validation.ts:50`](../apps/web/src/lib/use-credentials-validation.ts#L50) decide si se envía:
+1. [`login-form.tsx:28`](../frontend/src/app/login/login-form.tsx#L28) llama a `approveSubmission` antes de enviar. El formulario usa `noValidate` (línea 52) para que la validación por regex sea la única fuente de mensajes.
+2. [`use-credentials-validation.ts:50`](../frontend/src/lib/use-credentials-validation.ts#L50) decide si se envía:
    - **Correo con formato inválido:** bloquea el envío.
    - **Contraseña que no cumple la regla:** muestra una advertencia la primera vez y permite continuar si la persona vuelve a pulsar. Así las cuentas creadas antes de la regla pueden seguir entrando.
-3. [`credentials-feedback.ts:10`](../apps/web/src/lib/credentials-feedback.ts#L10) conecta las expresiones regulares con los mensajes, que llegan traducidos al idioma elegido.
+3. [`credentials-feedback.ts:10`](../frontend/src/lib/credentials-feedback.ts#L10) conecta las expresiones regulares con los mensajes, que llegan traducidos al idioma elegido.
 4. La API usa las mismas funciones al fijar una contraseña, así que cliente y servidor nunca discrepan:
-   - Alta de restaurante: [`restaurant.validation.ts:30`](../apps/api/src/restaurants/application/restaurant.validation.ts#L30) (correo) y la línea 48 (contraseña).
-   - Cambio y reseteo: [`auth.utils.ts:24`](../apps/api/src/auth/application/auth.utils.ts#L24).
+   - Alta de restaurante: [`restaurant.validation.ts:30`](../backend/src/restaurants/application/restaurant.validation.ts#L30) (correo) y la línea 48 (contraseña).
+   - Cambio y reseteo: [`auth.utils.ts:24`](../backend/src/auth/application/auth.utils.ts#L24).
 
 **Verificación:**
-- [`packages/shared/tests/credentials-policy.test.ts`](../packages/shared/tests/credentials-policy.test.ts) prueba correos y contraseñas válidos e inválidos, incluidas letras con tilde.
-- [`login-form.test.tsx`](../apps/web/src/app/login/login-form.test.tsx) y [`owner-login-form.test.tsx`](../apps/web/src/app/admin/login/owner-login-form.test.tsx) prueban el comportamiento del formulario.
+- [`shared/tests/credentials-policy.test.ts`](../shared/tests/credentials-policy.test.ts) prueba correos y contraseñas válidos e inválidos, incluidas letras con tilde.
+- [`login-form.test.tsx`](../frontend/src/app/login/login-form.test.tsx) y [`owner-login-form.test.tsx`](../frontend/src/app/admin/login/owner-login-form.test.tsx) prueban el comportamiento del formulario.
 - El E2E [`access-screens.spec.ts`](../tests/e2e/access-screens.spec.ts) prueba el formulario en un navegador real.
 
 ---
@@ -308,29 +308,29 @@ El perfil del dueño (`/admin`) muestra el clima actual de la zona del restauran
 
 ### 6.1 El cliente del servicio
 
-Todo el acceso a Open-Meteo está en [`apps/web/src/lib/weather.ts`](../apps/web/src/lib/weather.ts):
+Todo el acceso a Open-Meteo está en [`frontend/src/lib/weather.ts`](../frontend/src/lib/weather.ts):
 
 | Qué | Dónde |
 |---|---|
-| URLs de las dos APIs y filtro por país (Perú) | [`weather.ts:7`](../apps/web/src/lib/weather.ts#L7) a la línea 11 |
-| Parámetros de la geocodificación | [`geocodingUrl`, línea 93](../apps/web/src/lib/weather.ts#L93) |
-| Parámetros del pronóstico (°C o °F según el idioma) | [`forecastUrl`, línea 104](../apps/web/src/lib/weather.ts#L104) |
-| Validación de las respuestas del tercero | [`parsePlace`, línea 119](../apps/web/src/lib/weather.ts#L119) y [`parseCurrentWeather`, línea 131](../apps/web/src/lib/weather.ts#L131) |
-| Códigos WMO convertidos en condiciones legibles | [`weatherCondition`, línea 85](../apps/web/src/lib/weather.ts#L85) |
-| Flujo completo: geocodificar y luego pedir el clima | [`lookUpWeather`, línea 149](../apps/web/src/lib/weather.ts#L149) |
-| El `fetch` del navegador hacia Open-Meteo | [`requestJson`, línea 162](../apps/web/src/lib/weather.ts#L162) |
+| URLs de las dos APIs y filtro por país (Perú) | [`weather.ts:7`](../frontend/src/lib/weather.ts#L7) a la línea 11 |
+| Parámetros de la geocodificación | [`geocodingUrl`, línea 93](../frontend/src/lib/weather.ts#L93) |
+| Parámetros del pronóstico (°C o °F según el idioma) | [`forecastUrl`, línea 104](../frontend/src/lib/weather.ts#L104) |
+| Validación de las respuestas del tercero | [`parsePlace`, línea 119](../frontend/src/lib/weather.ts#L119) y [`parseCurrentWeather`, línea 131](../frontend/src/lib/weather.ts#L131) |
+| Códigos WMO convertidos en condiciones legibles | [`weatherCondition`, línea 85](../frontend/src/lib/weather.ts#L85) |
+| Flujo completo: geocodificar y luego pedir el clima | [`lookUpWeather`, línea 149](../frontend/src/lib/weather.ts#L149) |
+| El `fetch` del navegador hacia Open-Meteo | [`requestJson`, línea 162](../frontend/src/lib/weather.ts#L162) |
 
 ### 6.2 Dónde se usa
 
-1. [`restaurant-weather.tsx:43`](../apps/web/src/app/admin/restaurant-weather.tsx#L43) — el hook `useRestaurantWeather` llama a `lookUpWeather` en un efecto (línea 52) y cancela la consulta anterior al cambiar de ciudad (línea 65).
-2. [`restaurant-weather.tsx:72`](../apps/web/src/app/admin/restaurant-weather.tsx#L72) — `RestaurantWeatherCard` dibuja cada estado y el enlace de atribución que exige la licencia (línea 122).
-3. [`restaurant-profile-panel.tsx:53`](../apps/web/src/app/admin/restaurant-profile-panel.tsx#L53) — el panel usa el hook fuera del formulario, que se vuelve a montar al guardar; así, guardar sin cambiar la ciudad no repite la consulta. La tarjeta se monta en la línea 278 y el campo Ciudad en la 318.
-4. La ciudad se guarda en la columna `city` ([`schema.prisma:44`](../prisma/schema.prisma#L44), migración [`20260922120000_restaurant_city`](../prisma/migrations/20260922120000_restaurant_city/migration.sql)) y la API la valida en [`restaurant-profile.validation.ts:51`](../apps/api/src/restaurants/application/restaurant-profile.validation.ts#L51).
+1. [`restaurant-weather.tsx:43`](../frontend/src/app/admin/restaurant-weather.tsx#L43) — el hook `useRestaurantWeather` llama a `lookUpWeather` en un efecto (línea 52) y cancela la consulta anterior al cambiar de ciudad (línea 65).
+2. [`restaurant-weather.tsx:72`](../frontend/src/app/admin/restaurant-weather.tsx#L72) — `RestaurantWeatherCard` dibuja cada estado y el enlace de atribución que exige la licencia (línea 122).
+3. [`restaurant-profile-panel.tsx:53`](../frontend/src/app/admin/restaurant-profile-panel.tsx#L53) — el panel usa el hook fuera del formulario, que se vuelve a montar al guardar; así, guardar sin cambiar la ciudad no repite la consulta. La tarjeta se monta en la línea 278 y el campo Ciudad en la 318.
+4. La ciudad se guarda en la columna `city` ([`schema.prisma:44`](../backend/prisma/schema.prisma#L44), migración [`20260922120000_restaurant_city`](../backend/prisma/migrations/20260922120000_restaurant_city/migration.sql)) y la API la valida en [`restaurant-profile.validation.ts:51`](../backend/src/restaurants/application/restaurant-profile.validation.ts#L51).
 
 **Verificación:**
-- [`weather.test.ts`](../apps/web/src/lib/weather.test.ts) prueba las URLs, la validación de respuestas, los códigos WMO, «no encontrada», los errores HTTP y la cancelación.
-- [`restaurant-weather.test.tsx`](../apps/web/src/app/admin/restaurant-weather.test.tsx) prueba cada estado de la tarjeta y los °F en inglés.
-- [`restaurant-profile-panel.test.tsx`](../apps/web/src/app/admin/restaurant-profile-panel.test.tsx) prueba que guardar sin cambiar la ciudad no repite la consulta.
+- [`weather.test.ts`](../frontend/src/lib/weather.test.ts) prueba las URLs, la validación de respuestas, los códigos WMO, «no encontrada», los errores HTTP y la cancelación.
+- [`restaurant-weather.test.tsx`](../frontend/src/app/admin/restaurant-weather.test.tsx) prueba cada estado de la tarjeta y los °F en inglés.
+- [`restaurant-profile-panel.test.tsx`](../frontend/src/app/admin/restaurant-profile-panel.test.tsx) prueba que guardar sin cambiar la ciudad no repite la consulta.
 - El E2E [`owner-weather.spec.ts`](../tests/e2e/owner-weather.spec.ts) intercepta Open-Meteo con `page.route`, que solo ve peticiones del navegador. Además comprueba que la petición es de tipo `fetch` y sale de la página (líneas 173 y 174).
 
 ---

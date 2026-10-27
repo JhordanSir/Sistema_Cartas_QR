@@ -7,15 +7,17 @@ Las **Fases 0 a 7 están implementadas**: fundamentos, autenticación, backoffic
 ## Estructura
 
 ```text
-apps/
-  api/                 API NestJS, autenticación, restaurantes y healthchecks
-  web/                 Next.js App Router, panel del dueño y backoffice
-packages/
-  shared/              utilidades y tipos compartidos
-prisma/
-  migrations/          migraciones versionadas
-  schema.prisma        modelo multi-tenant
-docker/                Dockerfiles de producción
+backend/               API NestJS (@sirio/api): autenticación, restaurantes y healthchecks
+  prisma/
+    migrations/        migraciones versionadas
+    schema.prisma      modelo multi-tenant
+  prisma.config.ts     configuración de Prisma (lee el .env de la raíz)
+  Dockerfile           imagen de producción de la API
+frontend/              Next.js App Router (@sirio/web): carta pública, panel del dueño y backoffice
+  Dockerfile           imagen de producción de la web
+shared/                utilidades y tipos compartidos (@sirio/shared)
+docker/                gateway Nginx (nginx.conf y su Dockerfile)
+tests/                 E2E y capturas de referencia con Playwright
 compose.yml            despliegue de producción/Dokploy con gateway Nginx interno
 compose.dev.yml        puertos loopback solo para desarrollo local
 compose.nginx-host.yml publicación opcional del gateway para un Nginx externo
@@ -70,7 +72,7 @@ pnpm db:deploy
 pnpm dev
 ```
 
-Las apps leen el mismo `.env` de la raíz; no se requieren archivos `.env` dentro de `apps/api` ni `apps/web`.
+Las apps leen el mismo `.env` de la raíz; no se requieren archivos `.env` dentro de `backend` ni `frontend`.
 
 ## Validaciones
 
@@ -163,7 +165,7 @@ El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el
 
 ### Clima de la zona (Open-Meteo)
 
-La tarjeta «Clima ahora» del perfil es la única parte del frontend que llama a un tercero sin pasar por el BFF. El navegador consulta directamente la [Geocoding API](https://open-meteo.com/en/docs/geocoding-api) y la [Forecast API](https://open-meteo.com/en/docs) de Open-Meteo, que son públicas, no piden clave y aceptan CORS. La lógica vive en [`apps/web/src/lib/weather.ts`](apps/web/src/lib/weather.ts).
+La tarjeta «Clima ahora» del perfil es la única parte del frontend que llama a un tercero sin pasar por el BFF. El navegador consulta directamente la [Geocoding API](https://open-meteo.com/en/docs/geocoding-api) y la [Forecast API](https://open-meteo.com/en/docs) de Open-Meteo, que son públicas, no piden clave y aceptan CORS. La lógica vive en [`frontend/src/lib/weather.ts`](frontend/src/lib/weather.ts).
 
 - La consulta usa el campo **Ciudad** del perfil, no la dirección: la geocodificación solo entiende nombres de lugar o códigos postales, no calles. La búsqueda se limita a Perú.
 - La tarjeta muestra la región que encontró Open-Meteo junto a la ciudad guardada. Algunos distritos de Lima (Barranco, San Miguel) no existen en su base y se resuelven a pueblos homónimos de otras regiones; la región deja ver el error.

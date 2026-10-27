@@ -68,15 +68,15 @@ flowchart TD
 
 | Elemento | Archivo | Líneas / Descripción |
 |---|---|---|
-| **Capa 1: Presentación (Vistas)** | [`apps/web/src/app`](file:///e:/Sistema_Cartas_QR/apps/web/src/app) | Páginas públicas (`/{slug}`), panel del dueño (`/admin`) y backoffice. |
-| **Capa 2: BFF (Route Handler seguro)** | [`apps/web/src/app/api/owner/restaurants/[restaurantId]/profile/route.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/api/owner/restaurants/%5BrestaurantId%5D/profile/route.ts#L23-L45) | Valida `isSameOrigin`, inyecta token de la cookie y hace proxy a la API. |
-| **Capa 2: Utilidades del BFF** | [`apps/web/src/lib/api-server.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/lib/api-server.ts) | `authenticatedApiFetch`, `isSameOrigin`, `proxyApiResponse`. |
-| **Capa 3: API Presentation** | [`apps/api/src/restaurants/restaurants.controller.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/restaurants.controller.ts#L130-L155) | Controlador HTTP que valida DTO y delega al caso de uso. |
-| **Capa 3: API Application (Caso de uso)** | [`apps/api/src/restaurants/application/use-cases/update-restaurant-profile.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/application/use-cases/update-restaurant-profile.ts#L22-L60) | Orquesta las reglas de negocio sin depender de frameworks. |
-| **Capa 3: API Application (Puerto)** | [`apps/api/src/restaurants/application/ports/restaurant-profile.repository.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/application/ports/restaurant-profile.repository.ts) | Interfaz TypeScript que define las operaciones de persistencia necesarias. |
-| **Capa 3: API Domain** | [`apps/api/src/restaurants/domain/restaurant.types.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/domain/restaurant.types.ts) | Modelos y tipos de datos puros. |
-| **Capa 4: API Infrastructure (Adaptador)** | [`apps/api/src/restaurants/infrastructure/prisma-restaurant.repository.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/infrastructure/prisma-restaurant.repository.ts#L37) | Implementa el puerto utilizando Prisma ORM. |
-| **Capa 4: Esquema de Base de Datos** | [`prisma/schema.prisma`](file:///e:/Sistema_Cartas_QR/prisma/schema.prisma) | Definición de modelos en PostgreSQL. |
+| **Capa 1: Presentación (Vistas)** | [`frontend/src/app`](file:///e:/Sistema_Cartas_QR/frontend/src/app) | Páginas públicas (`/{slug}`), panel del dueño (`/admin`) y backoffice. |
+| **Capa 2: BFF (Route Handler seguro)** | [`frontend/src/app/api/owner/restaurants/[restaurantId]/profile/route.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/app/api/owner/restaurants/%5BrestaurantId%5D/profile/route.ts#L23-L45) | Valida `isSameOrigin`, inyecta token de la cookie y hace proxy a la API. |
+| **Capa 2: Utilidades del BFF** | [`frontend/src/lib/api-server.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/lib/api-server.ts) | `authenticatedApiFetch`, `isSameOrigin`, `proxyApiResponse`. |
+| **Capa 3: API Presentation** | [`backend/src/restaurants/restaurants.controller.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/restaurants.controller.ts#L130-L155) | Controlador HTTP que valida DTO y delega al caso de uso. |
+| **Capa 3: API Application (Caso de uso)** | [`backend/src/restaurants/application/use-cases/update-restaurant-profile.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/application/use-cases/update-restaurant-profile.ts#L22-L60) | Orquesta las reglas de negocio sin depender de frameworks. |
+| **Capa 3: API Application (Puerto)** | [`backend/src/restaurants/application/ports/restaurant-profile.repository.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/application/ports/restaurant-profile.repository.ts) | Interfaz TypeScript que define las operaciones de persistencia necesarias. |
+| **Capa 3: API Domain** | [`backend/src/restaurants/domain/restaurant.types.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/domain/restaurant.types.ts) | Modelos y tipos de datos puros. |
+| **Capa 4: API Infrastructure (Adaptador)** | [`backend/src/restaurants/infrastructure/prisma-restaurant.repository.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/infrastructure/prisma-restaurant.repository.ts#L37) | Implementa el puerto utilizando Prisma ORM. |
+| **Capa 4: Esquema de Base de Datos** | [`backend/prisma/schema.prisma`](file:///e:/Sistema_Cartas_QR/prisma/schema.prisma) | Definición de modelos en PostgreSQL. |
 
 ---
 
@@ -94,23 +94,23 @@ La diferencia radica en si la función/componente **guarda memoria del pasado** 
 
 #### Componentes Stateful (React)
 1. **`LoginForm`** (Formulario de login):  
-   - **Archivo:** [`apps/web/src/app/login/login-form.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/login/login-form.tsx#L15-L35)
+   - **Archivo:** [`frontend/src/app/login/login-form.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/app/login/login-form.tsx#L15-L35)
    - **Estado interno:**
      - `submitting` (`useState(false)`): recuerda si hay una petición en curso para deshabilitar el botón y evitar envíos duplicados.
      - `failure` (`useState<LoginFailure | null>(null)`): recuerda la razón del último error (credenciales incorrectas vs. error de servicio).
 2. **`PasswordField`** (Input de contraseña con botón mostrar/ocultar):  
-   - **Archivo:** [`apps/web/src/components/password-field.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/components/password-field.tsx#L20-L40)
+   - **Archivo:** [`frontend/src/components/password-field.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/components/password-field.tsx#L20-L40)
    - **Estado interno:**
      - `revealed` (`useState(false)`): conmuta dinámicamente entre `type="password"` y `type="text"`, cambiando el texto del botón entre «Mostrar» y «Ocultar».
 
 #### Componentes Stateless (React)
 1. **`Card`** (Contenedor visual):  
-   - **Archivo:** [`apps/web/src/components/surfaces.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/components/surfaces.tsx#L20-L35)
+   - **Archivo:** [`frontend/src/components/surfaces.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/components/surfaces.tsx#L20-L35)
    - **Comportamiento:** Función pura que recibe `accent`, `children`, `className` y retorna un `div` estilizado.
 2. **`StatusPill`** (Etiqueta o pastilla de estado):  
-   - **Archivo:** [`apps/web/src/components/surfaces.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/components/surfaces.tsx#L77-L100)
+   - **Archivo:** [`frontend/src/components/surfaces.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/components/surfaces.tsx#L77-L100)
    - **Comportamiento:** Transforma una propiedad `tone` ('draft' | 'muted' | 'positive') en colores de fondo y texto («Borrador», «Habilitado», «En vivo»).
-3. **Otros:** `Kicker`, `Skeleton` y `ErrorBanner` en el mismo archivo [`surfaces.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/components/surfaces.tsx).
+3. **Otros:** `Kicker`, `Skeleton` y `ErrorBanner` en el mismo archivo [`surfaces.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/components/surfaces.tsx).
 
 ---
 
@@ -138,12 +138,12 @@ flowchart LR
 
 | Elemento | Archivo | Líneas / Descripción |
 |---|---|---|
-| **Menú Desplegable (`LanguageSwitcher`)** | [`apps/web/src/components/language-switcher.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/components/language-switcher.tsx#L24-L75) | Elemento `<select>` nativo accesible que permite alternar idiomas. |
-| **Endpoint para guardar idioma** | [`apps/web/src/app/api/session/locale/route.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/api/session/locale/route.ts#L12-L35) | Recibe el idioma seleccionado y guarda la cookie `sirio-locale`. |
-| **Lectura en el servidor** | [`apps/web/src/i18n/server.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/i18n/server.ts#L9) | Función `getLocale()` que extrae el idioma de las cabeceras/cookies en Server Components. |
-| **Proveedor de Contexto Cliente** | [`apps/web/src/i18n/locale-provider.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/i18n/locale-provider.tsx#L12) | Expone el hook `useLocale()` y el hook `useCopy(dict)` para componentes cliente. |
-| **Diccionarios de traducción `{ es, en }`** | [`apps/web/src/i18n/messages/`](file:///e:/Sistema_Cartas_QR/apps/web/src/i18n/messages) | Archivos de traducción: `landing.ts`, `admin.ts`, `public-menu.ts`, `api-errors.ts`, etc. |
-| **Formato de moneda y números** | [`apps/web/src/i18n/format.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/i18n/format.ts) | Formatea `S/ 35.00` en español o `PEN 35.00` en inglés según la configuración regional. |
+| **Menú Desplegable (`LanguageSwitcher`)** | [`frontend/src/components/language-switcher.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/components/language-switcher.tsx#L24-L75) | Elemento `<select>` nativo accesible que permite alternar idiomas. |
+| **Endpoint para guardar idioma** | [`frontend/src/app/api/session/locale/route.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/app/api/session/locale/route.ts#L12-L35) | Recibe el idioma seleccionado y guarda la cookie `sirio-locale`. |
+| **Lectura en el servidor** | [`frontend/src/i18n/server.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/i18n/server.ts#L9) | Función `getLocale()` que extrae el idioma de las cabeceras/cookies en Server Components. |
+| **Proveedor de Contexto Cliente** | [`frontend/src/i18n/locale-provider.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/i18n/locale-provider.tsx#L12) | Expone el hook `useLocale()` y el hook `useCopy(dict)` para componentes cliente. |
+| **Diccionarios de traducción `{ es, en }`** | [`frontend/src/i18n/messages/`](file:///e:/Sistema_Cartas_QR/frontend/src/i18n/messages) | Archivos de traducción: `landing.ts`, `admin.ts`, `public-menu.ts`, `api-errors.ts`, etc. |
+| **Formato de moneda y números** | [`frontend/src/i18n/format.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/i18n/format.ts) | Formatea `S/ 35.00` en español o `PEN 35.00` en inglés según la configuración regional. |
 
 ---
 
@@ -194,14 +194,14 @@ sequenceDiagram
 
 | Elemento | Archivo | Líneas / Descripción |
 |---|---|---|
-| **Contrato y tipos del WebSocket** | [`packages/shared/src/realtime.ts`](file:///e:/Sistema_Cartas_QR/packages/shared/src/realtime.ts#L5-L45) | Define la ruta `/api/realtime`, tipos de mensaje y [`DigitizationProgress`](file:///e:/Sistema_Cartas_QR/packages/shared/src/realtime.ts#L37). |
-| **Servidor WebSocket (Gateway NestJS)** | [`apps/api/src/realtime/presentation/realtime.gateway.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/realtime/presentation/realtime.gateway.ts#L53-L140) | Valida el handshake con cookie `sirio_access`, orígenes y eventos `subscribe`. |
-| **Control de suscripciones en memoria** | [`apps/api/src/realtime/application/subscription-hub.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/realtime/application/subscription-hub.ts#L16) | Asocia cada socket conectado con el `progressId` correspondiente. |
-| **Emisión en el caso de uso** | [`apps/api/src/digitization/application/use-cases/digitize-menu.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/digitization/application/use-cases/digitize-menu.ts#L38) | Invoca el puerto `DigitizationProgressReporter` en cada fase del proceso. |
-| **Adaptador WebSocket del progreso** | [`apps/api/src/digitization/infrastructure/realtime-progress.reporter.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/digitization/infrastructure/realtime-progress.reporter.ts#L11) | Implementa el reporter enviando los mensajes a través del gateway. |
-| **Proxy inverso en Next.js** | [`apps/web/next.config.ts`](file:///e:/Sistema_Cartas_QR/apps/web/next.config.ts#L41) | Configura el `rewrite` de `/api/realtime` hacia el backend NestJS con soporte de WebSocket upgrade. |
-| **Hook del cliente React** | [`apps/web/src/app/admin/menu/use-digitization-progress.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/admin/menu/use-digitization-progress.ts#L30-L55) | Abre la conexión `WebSocket`, envía la suscripción y gestiona el ciclo de vida del socket. |
-| **Interfaz visual de progreso** | [`apps/web/src/app/admin/menu/menu-digitizer.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/admin/menu/menu-digitizer.tsx#L166-L470) | Renderiza el panel `ProcessingState` con barra de progreso, tiempo transcurrido y etapas reales. |
+| **Contrato y tipos del WebSocket** | [`shared/src/realtime.ts`](file:///e:/Sistema_Cartas_QR/shared/src/realtime.ts#L5-L45) | Define la ruta `/api/realtime`, tipos de mensaje y [`DigitizationProgress`](file:///e:/Sistema_Cartas_QR/shared/src/realtime.ts#L37). |
+| **Servidor WebSocket (Gateway NestJS)** | [`backend/src/realtime/presentation/realtime.gateway.ts`](file:///e:/Sistema_Cartas_QR/backend/src/realtime/presentation/realtime.gateway.ts#L53-L140) | Valida el handshake con cookie `sirio_access`, orígenes y eventos `subscribe`. |
+| **Control de suscripciones en memoria** | [`backend/src/realtime/application/subscription-hub.ts`](file:///e:/Sistema_Cartas_QR/backend/src/realtime/application/subscription-hub.ts#L16) | Asocia cada socket conectado con el `progressId` correspondiente. |
+| **Emisión en el caso de uso** | [`backend/src/digitization/application/use-cases/digitize-menu.ts`](file:///e:/Sistema_Cartas_QR/backend/src/digitization/application/use-cases/digitize-menu.ts#L38) | Invoca el puerto `DigitizationProgressReporter` en cada fase del proceso. |
+| **Adaptador WebSocket del progreso** | [`backend/src/digitization/infrastructure/realtime-progress.reporter.ts`](file:///e:/Sistema_Cartas_QR/backend/src/digitization/infrastructure/realtime-progress.reporter.ts#L11) | Implementa el reporter enviando los mensajes a través del gateway. |
+| **Proxy inverso en Next.js** | [`frontend/next.config.ts`](file:///e:/Sistema_Cartas_QR/frontend/next.config.ts#L41) | Configura el `rewrite` de `/api/realtime` hacia el backend NestJS con soporte de WebSocket upgrade. |
+| **Hook del cliente React** | [`frontend/src/app/admin/menu/use-digitization-progress.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/app/admin/menu/use-digitization-progress.ts#L30-L55) | Abre la conexión `WebSocket`, envía la suscripción y gestiona el ciclo de vida del socket. |
+| **Interfaz visual de progreso** | [`frontend/src/app/admin/menu/menu-digitizer.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/app/admin/menu/menu-digitizer.tsx#L166-L470) | Renderiza el panel `ProcessingState` con barra de progreso, tiempo transcurrido y etapas reales. |
 | **Soporte en Nginx** | [`docker/nginx.conf`](file:///e:/Sistema_Cartas_QR/docker/nginx.conf#L40) | Configuración de cabeceras `Upgrade` y `Connection` para producción en Docker. |
 
 ---
@@ -260,15 +260,15 @@ sequenceDiagram
 
 | Elemento | Archivo | Líneas / Descripción |
 |---|---|---|
-| **Definición de RegEx de credenciales** | [`packages/shared/src/credentials-policy.ts`](file:///e:/Sistema_Cartas_QR/packages/shared/src/credentials-policy.ts#L1-L32) | Declaración de `EMAIL_PATTERN`, `PASSWORD_POLICY_PATTERN`, `isValidEmailFormat` y `meetsPasswordPolicy`. |
-| **Definición de RegEx para Slugs** | [`packages/shared/src/slug.ts`](file:///e:/Sistema_Cartas_QR/packages/shared/src/slug.ts#L1-L37) | `COMBINING_MARKS_PATTERN`, `NON_ALPHANUMERIC_PATTERN` y función `normalizeSlug`. |
-| **Conector de mensajes en Frontend** | [`apps/web/src/lib/credentials-feedback.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/lib/credentials-feedback.ts#L10-L24) | Mapea las validaciones de las regex a claves de mensajes traducibles (`emailFormat`, `passwordPolicy`). |
-| **Hook de validación en Cliente** | [`apps/web/src/lib/use-credentials-validation.ts`](file:///e:/Sistema_Cartas_QR/apps/web/src/lib/use-credentials-validation.ts#L23-L65) | Hook que valida en tiempo real (`onBlur`) y bloquea/aprueba el envío (`approveSubmission`). |
-| **Formulario de Admin (Frontend)** | [`apps/web/src/app/login/login-form.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/login/login-form.tsx#L25-L60) | Usa `noValidate` en el `<form>` para que las regex del hook gestionen las alertas. |
-| **Formulario de Dueño (Frontend)** | [`apps/web/src/app/admin/login/owner-login-form.tsx`](file:///e:/Sistema_Cartas_QR/apps/web/src/app/admin/login/owner-login-form.tsx#L25-L60) | Formulario de acceso del dueño validado con las mismas regex. |
-| **Validación en Backend (Alta restaurante)** | [`apps/api/src/restaurants/application/restaurant.validation.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/restaurants/application/restaurant.validation.ts#L28-L55) | `normalizeOwnerEmail` y `assertInitialPassword` validan con las regex del shared antes de guardar. |
-| **Validación en Backend (Cambio de contraseña)** | [`apps/api/src/auth/application/auth.utils.ts`](file:///e:/Sistema_Cartas_QR/apps/api/src/auth/application/auth.utils.ts#L24-L31) | Aplica `meetsPasswordPolicy` en reseteo o cambio de clave. |
-| **Pruebas unitarias de las RegEx** | [`packages/shared/tests/credentials-policy.test.ts`](file:///e:/Sistema_Cartas_QR/packages/shared/tests/credentials-policy.test.ts) | Suite de pruebas exhaustiva para verificar correos válidos/inválidos y contraseñas con caracteres Unicode. |
+| **Definición de RegEx de credenciales** | [`shared/src/credentials-policy.ts`](file:///e:/Sistema_Cartas_QR/shared/src/credentials-policy.ts#L1-L32) | Declaración de `EMAIL_PATTERN`, `PASSWORD_POLICY_PATTERN`, `isValidEmailFormat` y `meetsPasswordPolicy`. |
+| **Definición de RegEx para Slugs** | [`shared/src/slug.ts`](file:///e:/Sistema_Cartas_QR/shared/src/slug.ts#L1-L37) | `COMBINING_MARKS_PATTERN`, `NON_ALPHANUMERIC_PATTERN` y función `normalizeSlug`. |
+| **Conector de mensajes en Frontend** | [`frontend/src/lib/credentials-feedback.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/lib/credentials-feedback.ts#L10-L24) | Mapea las validaciones de las regex a claves de mensajes traducibles (`emailFormat`, `passwordPolicy`). |
+| **Hook de validación en Cliente** | [`frontend/src/lib/use-credentials-validation.ts`](file:///e:/Sistema_Cartas_QR/frontend/src/lib/use-credentials-validation.ts#L23-L65) | Hook que valida en tiempo real (`onBlur`) y bloquea/aprueba el envío (`approveSubmission`). |
+| **Formulario de Admin (Frontend)** | [`frontend/src/app/login/login-form.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/app/login/login-form.tsx#L25-L60) | Usa `noValidate` en el `<form>` para que las regex del hook gestionen las alertas. |
+| **Formulario de Dueño (Frontend)** | [`frontend/src/app/admin/login/owner-login-form.tsx`](file:///e:/Sistema_Cartas_QR/frontend/src/app/admin/login/owner-login-form.tsx#L25-L60) | Formulario de acceso del dueño validado con las mismas regex. |
+| **Validación en Backend (Alta restaurante)** | [`backend/src/restaurants/application/restaurant.validation.ts`](file:///e:/Sistema_Cartas_QR/backend/src/restaurants/application/restaurant.validation.ts#L28-L55) | `normalizeOwnerEmail` y `assertInitialPassword` validan con las regex del shared antes de guardar. |
+| **Validación en Backend (Cambio de contraseña)** | [`backend/src/auth/application/auth.utils.ts`](file:///e:/Sistema_Cartas_QR/backend/src/auth/application/auth.utils.ts#L24-L31) | Aplica `meetsPasswordPolicy` en reseteo o cambio de clave. |
+| **Pruebas unitarias de las RegEx** | [`shared/tests/credentials-policy.test.ts`](file:///e:/Sistema_Cartas_QR/shared/tests/credentials-policy.test.ts) | Suite de pruebas exhaustiva para verificar correos válidos/inválidos y contraseñas con caracteres Unicode. |
 
 
 ---
