@@ -231,6 +231,8 @@ Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 
 El informe [docs/stream-objetos.md](docs/stream-objetos.md) (también en [Word](docs/stream-objetos.docx)) explica cómo se hace un stream de objetos en Node.js y cómo funciona este ejemplo, con capturas del navegador, de DevTools, de curl y del registro de la API.
 
+La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
+
 ### CSV del restaurante
 
 Desde Carta, «Abrir un CSV» lleva a `/admin/csv`. Un Web Worker lee el archivo por partes (RFC 4180, con comillas y saltos de línea dentro de los campos), detecta el separador (coma, punto y coma o tabulador) y la codificación (UTF-8 o Windows-1252, la del CSV de Excel en español), marca las filas con otra cantidad de columnas y se queda con los datos: la página solo le pide la página que muestra, y el orden y la búsqueda también ocurren en el worker. El dueño puede guardar el CSV con **Guardar** (se conserva solo el último, hasta 20 MB) y la página lo vuelve a abrir al entrar.
@@ -239,7 +241,7 @@ Desde Carta, «Abrir un CSV» lleva a `/admin/csv`. Un Web Worker lee el archivo
 - `PUT /api/owner/restaurants/:restaurantId/csv`: multipart con el campo `file`. Acepta `.csv`, `.tsv` o `.txt` de texto (sin bytes NUL) y reemplaza el anterior.
 - `GET /api/owner/restaurants/:restaurantId/csv/content`: el archivo tal como se guardó, enviado por partes para que el worker lo procese mientras llega.
 
-La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
+El informe [docs/csv-web-workers.md](docs/csv-web-workers.md) (también en [Word](docs/csv-web-workers.docx)) explica qué es un Web Worker y cómo funciona este ejemplo, con capturas de la página y de DevTools y mediciones con archivos de 1, 5 y 20 MB.
 
 ## Código QR y carta pública
 
