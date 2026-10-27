@@ -227,6 +227,7 @@ Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 - `POST /products`, `PATCH|DELETE /products/:productId` y `PATCH /products/:productId/availability`.
 - `PUT /categories/:categoryId/products-order`.
 - `PUT|GET|DELETE /products/:productId/image`.
+- `GET /products/stream?delayMs=0..1000`: todos los productos del borrador como NDJSON (`application/x-ndjson`), un objeto por línea, leídos de PostgreSQL por lotes mientras el cliente los consume. `delayMs` agrega una pausa entre objetos para poder verlos llegar; si el cliente se desconecta, la API deja de leer. La página `/admin/stream`, enlazada desde Carta, los muestra a medida que llegan.
 
 La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
 
