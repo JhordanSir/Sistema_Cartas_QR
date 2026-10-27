@@ -160,6 +160,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
     await page.getByRole('button', { name: 'Publicar cambios' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
     await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await expect(publicPage).toHaveURL(publicUrl);
@@ -170,6 +171,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await page.getByRole('button', { name: 'Publicar cambios' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
     await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
 
@@ -181,6 +183,7 @@ test.describe.serial('gestión completa de carta de la Fase 5', () => {
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toBeVisible();
     await page.getByRole('button', { name: 'Publicar cambios' }).click();
     await page.getByRole('dialog').getByRole('button', { name: 'Sí, publicar carta' }).click();
+    await expect(page.getByText('La carta pública se actualizó. El QR sigue siendo el mismo.')).toBeVisible();
     await publicPage.reload({ waitUntil: 'networkidle' });
     await expect(publicPage.getByRole('heading', { name: 'Hamburguesa Sirio' })).toHaveCount(0);
     await expect(publicPage).toHaveURL(publicUrl);
