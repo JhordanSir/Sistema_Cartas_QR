@@ -16,7 +16,7 @@ interface CardProps {
   className?: string;
 }
 
-/** Raised paper surface used by every panel, registry and placard. */
+
 export function Card({ accent, children, className }: CardProps) {
   return (
     <div
