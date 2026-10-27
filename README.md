@@ -229,6 +229,8 @@ Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 - `PUT|GET|DELETE /products/:productId/image`.
 - `GET /products/stream?delayMs=0..1000`: todos los productos del borrador como NDJSON (`application/x-ndjson`), un objeto por línea, leídos de PostgreSQL por lotes mientras el cliente los consume. `delayMs` agrega una pausa entre objetos para poder verlos llegar; si el cliente se desconecta, la API deja de leer. La página `/admin/stream`, enlazada desde Carta, los muestra a medida que llegan.
 
+El informe [docs/stream-objetos.md](docs/stream-objetos.md) (también en [Word](docs/stream-objetos.docx)) explica cómo se hace un stream de objetos en Node.js y cómo funciona este ejemplo, con capturas del navegador, de DevTools, de curl y del registro de la API.
+
 La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
 
 ## Código QR y carta pública
