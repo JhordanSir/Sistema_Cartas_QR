@@ -7,6 +7,7 @@ import type {
   CategoryManagementRepository,
   ProductImageReadRepository,
   ProductManagementRepository,
+  ProductStreamRepository,
 } from './application/ports/menu-management.repositories.js';
 import type { ProductImageStorage } from './application/ports/product-image.storage.js';
 import {
@@ -28,6 +29,7 @@ import {
   SetProductAvailability,
   UpdateProduct,
 } from './application/use-cases/product.use-cases.js';
+import { StreamOwnedProducts } from './application/use-cases/product-stream.use-cases.js';
 import { LocalProductImageStorage } from './infrastructure/local-product-image.storage.js';
 import { PrismaMenuManagementRepository } from './infrastructure/prisma-menu-management.repository.js';
 import { MenuManagementController, PublicProductImageController } from './menu-management.controller.js';
@@ -43,16 +45,19 @@ import {
   PRODUCT_IMAGE_READ_REPOSITORY,
   PRODUCT_IMAGE_STORAGE,
   PRODUCT_REPOSITORY,
+  PRODUCT_STREAM_REPOSITORY,
   REORDER_CATEGORIES,
   REORDER_PRODUCTS,
   SET_PRODUCT_AVAILABILITY,
+  STREAM_OWNED_PRODUCTS,
   UPDATE_CATEGORY,
   UPDATE_PRODUCT,
   UPLOAD_PRODUCT_IMAGE,
 } from './menu-management.tokens.js';
+import { ProductStreamController } from './product-stream.controller.js';
 
 @Module({
-  controllers: [MenuManagementController, PublicProductImageController],
+  controllers: [MenuManagementController, ProductStreamController, PublicProductImageController],
   imports: [AuthModule],
   providers: [
     {
@@ -71,6 +76,12 @@ import {
       inject: [PrismaService],
       provide: PRODUCT_IMAGE_READ_REPOSITORY,
       useFactory: (prisma: PrismaService): ProductImageReadRepository =>
+        new PrismaMenuManagementRepository(prisma),
+    },
+    {
+      inject: [PrismaService],
+      provide: PRODUCT_STREAM_REPOSITORY,
+      useFactory: (prisma: PrismaService): ProductStreamRepository =>
         new PrismaMenuManagementRepository(prisma),
     },
     {
@@ -155,6 +166,12 @@ import {
         repository: ProductImageReadRepository,
         storage: ProductImageStorage,
       ): GetOwnedProductImage => new GetOwnedProductImage(repository, storage),
+    },
+    {
+      inject: [PRODUCT_STREAM_REPOSITORY],
+      provide: STREAM_OWNED_PRODUCTS,
+      useFactory: (repository: ProductStreamRepository): StreamOwnedProducts =>
+        new StreamOwnedProducts(repository),
     },
     {
       inject: [PRODUCT_IMAGE_READ_REPOSITORY, PRODUCT_IMAGE_STORAGE],

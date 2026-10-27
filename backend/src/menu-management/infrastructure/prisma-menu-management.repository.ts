@@ -7,10 +7,14 @@ import type {
   ProductDeletionResult,
   ProductImageReadRepository,
   ProductManagementRepository,
+  ProductStreamRepository,
 } from '../application/ports/menu-management.repositories.js';
 import type {
   ProductAssetRecord,
   ProductPatch,
+  ProductStreamCategory,
+  ProductStreamCursor,
+  ProductStreamRow,
   ProductValues,
 } from '../domain/menu-management.types.js';
 import type { PublishedMenu } from '../../digitization/domain/menu.types.js';
@@ -25,7 +29,8 @@ export class PrismaMenuManagementRepository
   implements
     CategoryManagementRepository,
     ProductManagementRepository,
-    ProductImageReadRepository
+    ProductImageReadRepository,
+    ProductStreamRepository
 {
   constructor(private readonly prisma: PrismaService) {}
 
@@ -362,6 +367,78 @@ export class PrismaMenuManagementRepository
       },
     });
     return product?.imagePath ?? null;
+  }
+
+  async findStreamCategories(
+    ownerId: string,
+    restaurantId: string,
+  ): Promise<ProductStreamCategory[] | null> {
+    const restaurant = await this.prisma.restaurant.findFirst({
+      select: {
+        categories: {
+          orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+          select: { id: true, name: true },
+        },
+      },
+      where: { id: restaurantId, owners: { some: { ownerId } } },
+    });
+    return restaurant ? restaurant.categories : null;
+  }
+
+  /**
+   * Keyset pagination: the next batch starts right after the last product read,
+   * by (sortOrder, id), so every query uses the (restaurantId, categoryId,
+   * sortOrder) index instead of skipping rows the way OFFSET would.
+   */
+  async findProductBatch(
+    restaurantId: string,
+    categoryId: string,
+    after: ProductStreamCursor | null,
+    limit: number,
+  ): Promise<ProductStreamRow[]> {
+    const products = await this.prisma.product.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+      select: {
+        basePrice: true,
+        description: true,
+        extras: { orderBy: { sortOrder: 'asc' }, select: { name: true, price: true } },
+        id: true,
+        imagePath: true,
+        isAvailable: true,
+        name: true,
+        sortOrder: true,
+        updatedAt: true,
+        variants: { orderBy: { sortOrder: 'asc' }, select: { name: true, price: true } },
+      },
+      take: limit,
+      where: {
+        categoryId,
+        restaurantId,
+        ...(after
+          ? {
+              OR: [
+                { sortOrder: { gt: after.sortOrder } },
+                { id: { gt: after.id }, sortOrder: after.sortOrder },
+              ],
+            }
+          : {}),
+      },
+    });
+    return products.map((product) => ({
+      basePrice: product.basePrice.toFixed(2),
+      description: product.description,
+      extras: product.extras.map((extra) => ({ name: extra.name, price: extra.price.toFixed(2) })),
+      hasImage: product.imagePath !== null,
+      id: product.id,
+      isAvailable: product.isAvailable,
+      name: product.name,
+      sortOrder: product.sortOrder,
+      updatedAt: product.updatedAt.toISOString(),
+      variants: product.variants.map((variant) => ({
+        name: variant.name,
+        price: variant.price.toFixed(2),
+      })),
+    }));
   }
 
   private async findMenu(ownerId: string, restaurantId: string): Promise<PublishedMenu | null> {

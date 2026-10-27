@@ -2,6 +2,9 @@ import type { CategoryLayout, PublishedMenu } from '../../../digitization/domain
 import type {
   ProductAssetRecord,
   ProductPatch,
+  ProductStreamCategory,
+  ProductStreamCursor,
+  ProductStreamRow,
   ProductValues,
 } from '../../domain/menu-management.types.js';
 
@@ -45,4 +48,16 @@ export interface ProductManagementRepository {
 export interface ProductImageReadRepository {
   findPublicProductImage(slug: string, productId: string): Promise<string | null>;
   findProductForOwner(ownerId: string, restaurantId: string, productId: string): Promise<ProductAssetRecord | null>;
+}
+
+export interface ProductStreamRepository {
+  /** The restaurant's categories in menu order, or null when it is not the owner's. */
+  findStreamCategories(ownerId: string, restaurantId: string): Promise<ProductStreamCategory[] | null>;
+  /** Up to `limit` products of a category that come after `after`, in menu order. */
+  findProductBatch(
+    restaurantId: string,
+    categoryId: string,
+    after: ProductStreamCursor | null,
+    limit: number,
+  ): Promise<ProductStreamRow[]>;
 }

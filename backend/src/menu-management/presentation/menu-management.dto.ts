@@ -2,12 +2,16 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 
 import type { CategoryLayout } from '../../digitization/domain/menu.types.js';
+import { PRODUCT_STREAM_LIMITS } from '../domain/menu-management.types.js';
 
 // These DTOs only check type and shape. Lengths, price format, UUIDs, layouts, option
 // limits and ordering rules live in menu-management.validation.ts, which answers with a
@@ -100,4 +104,13 @@ export class UpdateProductDto {
 export class ProductAvailabilityDto {
   @IsBoolean()
   isAvailable!: boolean;
+}
+
+/** The pause between two objects of the product stream: a presentation knob only. */
+export class ProductStreamQueryDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @Max(PRODUCT_STREAM_LIMITS.maximumDelayMs)
+  delayMs = 0;
 }
