@@ -141,6 +141,11 @@
     -webkit-font-smoothing: antialiased;
   }
 
+  /* Preflight zeroes every margin, including the auto margin that centres a modal dialog. */
+  dialog:modal {
+    margin: auto;
+  }
+
   :root[data-theme='dark'] {
     color-scheme: dark;
   }
