@@ -221,6 +221,12 @@ describe('MenuDigitizer', () => {
     );
   });
 
+  it('links to the page that reads a CSV with a Web Worker', async () => {
+    render(<MenuDigitizer />);
+
+    expect(await screen.findByRole('link', { name: 'Abrir un CSV' })).toHaveAttribute('href', '/admin/csv');
+  });
+
   it('creates the first section from an empty menu', async () => {
     (global.fetch as jest.Mock).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

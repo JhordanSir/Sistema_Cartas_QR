@@ -238,6 +238,9 @@ export function MenuDigitizer() {
               <ButtonLink href="/admin/stream" tone="quiet">
                 {copy.streamLink}
               </ButtonLink>
+              <ButtonLink href="/admin/csv" tone="quiet">
+                {copy.csvLink}
+              </ButtonLink>
               <RestaurantSwitcher
                 onChange={(event) => void switchRestaurant(event)}
                 restaurants={restaurants}

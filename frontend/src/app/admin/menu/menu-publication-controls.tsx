@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/button';
 import { Kicker, StatusPill } from '@/components/surfaces';
+import { useDialog } from '@/components/use-dialog';
 import { formatCurrency } from '@/i18n/format';
 import { useCopy, useLocale } from '@/i18n/locale-provider';
 import { ownerMenuCopy } from '@/i18n/messages/owner-menu';
@@ -231,25 +232,4 @@ export function MenuPublicationControls({
       </dialog>
     </>
   );
-}
-
-function useDialog(
-  ref: React.RefObject<HTMLDialogElement | null>,
-  open: boolean,
-  setOpen: (open: boolean) => void,
-): void {
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open, ref]);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    const onCancel = () => setOpen(false);
-    dialog.addEventListener('cancel', onCancel);
-    return () => dialog.removeEventListener('cancel', onCancel);
-  }, [ref, setOpen]);
 }

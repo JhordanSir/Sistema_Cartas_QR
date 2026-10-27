@@ -63,6 +63,8 @@ interface OwnerMenuCopy {
       title: string;
       validating: string;
     };
+    /** Link to the page that shows a CSV read by a Web Worker. */
+    csvLink: string;
     published: string;
     /** Link to the page that receives the products as a stream of objects. */
     streamLink: string;
@@ -216,6 +218,7 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
         title: 'Gemini is reading your menu',
         validating: 'Checking sections, dishes and prices…',
       },
+      csvLink: 'Open a CSV',
       published: 'Your public menu is updated. The QR code stays the same.',
       streamLink: 'Watch products stream in',
       templateApplied: "Template applied to the draft. Publish it when you're happy with it.",
@@ -405,6 +408,7 @@ export const ownerMenuCopy: Record<Locale, OwnerMenuCopy> = {
         title: 'Gemini está interpretando tu carta',
         validating: 'Validando secciones, platos y precios…',
       },
+      csvLink: 'Abrir un CSV',
       published: 'La carta pública se actualizó. El QR sigue siendo el mismo.',
       streamLink: 'Ver productos en streaming',
       templateApplied: 'Plantilla aplicada al borrador. Publícala cuando estés conforme.',
