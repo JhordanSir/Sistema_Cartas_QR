@@ -231,6 +231,14 @@ Endpoints de gestión bajo `/api/owner/restaurants/:restaurantId/menu`:
 
 El informe [docs/stream-objetos.md](docs/stream-objetos.md) (también en [Word](docs/stream-objetos.docx)) explica cómo se hace un stream de objetos en Node.js y cómo funciona este ejemplo, con capturas del navegador, de DevTools, de curl y del registro de la API.
 
+### CSV del restaurante
+
+Desde Carta, «Abrir un CSV» lleva a `/admin/csv`. Un Web Worker lee el archivo por partes (RFC 4180, con comillas y saltos de línea dentro de los campos), detecta el separador (coma, punto y coma o tabulador) y la codificación (UTF-8 o Windows-1252, la del CSV de Excel en español), marca las filas con otra cantidad de columnas y se queda con los datos: la página solo le pide la página que muestra, y el orden y la búsqueda también ocurren en el worker. El dueño puede guardar el CSV con **Guardar** (se conserva solo el último, hasta 20 MB) y la página lo vuelve a abrir al entrar.
+
+- `GET /api/owner/restaurants/:restaurantId/csv`: nombre, tamaño y fecha del CSV guardado; `404` si todavía no hay.
+- `PUT /api/owner/restaurants/:restaurantId/csv`: multipart con el campo `file`. Acepta `.csv`, `.tsv` o `.txt` de texto (sin bytes NUL) y reemplaza el anterior.
+- `GET /api/owner/restaurants/:restaurantId/csv/content`: el archivo tal como se guardó, enviado por partes para que el worker lo procese mientras llega.
+
 La imagen pública se sirve únicamente si el restaurante y el producto están habilitados. Las eliminaciones de producto o sección retiran también sus archivos del volumen persistente.
 
 ## Código QR y carta pública
