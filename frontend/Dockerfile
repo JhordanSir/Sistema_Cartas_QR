@@ -13,10 +13,10 @@ WORKDIR /app
 FROM base AS dependencies
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY prisma ./prisma
-COPY apps/api/package.json ./apps/api/package.json
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/shared/package.json ./packages/shared/package.json
+COPY backend/prisma ./backend/prisma
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY shared/package.json ./shared/package.json
 
 RUN pnpm install --frozen-lockfile
 
@@ -39,12 +39,12 @@ ENV PORT=3000
 
 WORKDIR /app
 
-COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
-COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=build --chown=node:node /app/apps/web/public ./apps/web/public
+COPY --from=build --chown=node:node /app/frontend/.next/standalone ./
+COPY --from=build --chown=node:node /app/frontend/.next/static ./frontend/.next/static
+COPY --from=build --chown=node:node /app/frontend/public ./frontend/public
 
 USER node
 
 EXPOSE 3000
 
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "frontend/server.js"]

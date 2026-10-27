@@ -13,10 +13,10 @@ WORKDIR /app
 FROM base AS dependencies
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY prisma ./prisma
-COPY apps/api/package.json ./apps/api/package.json
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/shared/package.json ./packages/shared/package.json
+COPY backend/prisma ./backend/prisma
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY shared/package.json ./shared/package.json
 
 RUN pnpm install --frozen-lockfile
 
@@ -37,20 +37,24 @@ ENV STORAGE_PATH=/app/storage
 COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=build --chown=node:node /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=build --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/prisma ./prisma
-COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
-COPY --from=build --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
-COPY --from=build --chown=node:node /app/packages/shared/package.json ./packages/shared/package.json
-COPY --from=build --chown=node:node /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build --chown=node:node /app/backend/package.json ./backend/package.json
+COPY --from=build --chown=node:node /app/backend/prisma.config.ts ./backend/prisma.config.ts
+COPY --from=build --chown=node:node /app/backend/prisma ./backend/prisma
+COPY --from=build --chown=node:node /app/backend/node_modules ./backend/node_modules
+COPY --from=build --chown=node:node /app/backend/dist ./backend/dist
+COPY --from=build --chown=node:node /app/shared/package.json ./shared/package.json
+COPY --from=build --chown=node:node /app/shared/dist ./shared/dist
 
 RUN mkdir -p "${STORAGE_PATH}" \
     && chown -R node:node "${STORAGE_PATH}"
 
 USER node
 
+# prisma.config.ts is looked up in the working directory, and the API resolves
+# the workspace root (/app) from the backend package as in local development.
+WORKDIR /app/backend
+
 EXPOSE 3001
 
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node apps/api/dist/bootstrap/seed-initial-admin.js && exec node apps/api/dist/main.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy && node dist/bootstrap/seed-initial-admin.js && exec node dist/main.js"]

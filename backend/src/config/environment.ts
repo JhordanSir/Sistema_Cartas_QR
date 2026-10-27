@@ -157,11 +157,9 @@ function parseStoragePath(value: unknown): string {
 }
 
 export function resolveRootEnvFile(currentDirectory: string): string {
-  const isApiPackage =
-    basename(currentDirectory) === 'api' &&
-    basename(dirname(currentDirectory)) === 'apps';
+  const isApiPackage = basename(currentDirectory) === 'backend';
   const workspaceRoot = isApiPackage
-    ? resolve(currentDirectory, '..', '..')
+    ? resolve(currentDirectory, '..')
     : currentDirectory;
 
   return resolve(workspaceRoot, '.env');

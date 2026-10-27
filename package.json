@@ -18,11 +18,11 @@
     "test:coverage": "pnpm db:generate && pnpm -r --if-present test:coverage",
     "test:e2e": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
-    "db:generate": "prisma generate",
-    "db:validate": "prisma validate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio",
+    "db:generate": "pnpm --filter @sirio/api db:generate",
+    "db:validate": "pnpm --filter @sirio/api db:validate",
+    "db:migrate": "pnpm --filter @sirio/api db:migrate",
+    "db:deploy": "pnpm --filter @sirio/api db:deploy",
+    "db:studio": "pnpm --filter @sirio/api db:studio",
     "seed:admin": "pnpm db:generate && pnpm --filter @sirio/api seed:admin",
     "compose:config": "docker compose --env-file .env config --quiet",
     "compose:up": "docker compose --env-file .env up -d --build --wait",
@@ -34,7 +34,6 @@
     "@playwright/test": "1.62.1",
     "dotenv": "17.4.2",
     "knip": "6.34.0",
-    "prisma": "7.10.0",
     "typescript": "6.0.3"
   }
 }

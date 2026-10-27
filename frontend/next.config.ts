@@ -5,7 +5,7 @@ import { config as loadEnv } from "dotenv";
 import type { NextConfig } from "next";
 
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
-const workspaceRoot = path.resolve(appDirectory, "../..");
+const workspaceRoot = path.resolve(appDirectory, "..");
 
 loadEnv({
   path: path.join(workspaceRoot, ".env"),

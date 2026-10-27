@@ -4,7 +4,7 @@ import {
   createE2EOwnerFixture,
   type E2EOwnerFixture,
   removeE2EOwnerFixture,
-} from '../../apps/api/src/testing/e2e-owner.fixture.js';
+} from '../../backend/src/testing/e2e-owner.fixture.js';
 
 const apiUrl = process.env.E2E_API_URL ?? 'http://127.0.0.1:3000/api';
 

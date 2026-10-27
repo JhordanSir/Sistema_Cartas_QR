@@ -9,6 +9,7 @@ export default tseslint.config(
       'dist/**',
       'eslint.config.js',
       'jest.config.cjs',
+      'prisma.config.ts',
       'src/generated/prisma/**',
     ],
   },

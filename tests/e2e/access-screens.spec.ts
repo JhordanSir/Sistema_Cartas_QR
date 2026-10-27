@@ -3,7 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import {
   createE2EOwnerFixture,
   removeE2EOwnerFixture,
-} from '../../apps/api/src/testing/e2e-owner.fixture.js';
+} from '../../backend/src/testing/e2e-owner.fixture.js';
 
 const directApiUrl = process.env.E2E_DIRECT_API_URL ?? 'http://127.0.0.1:3001/api';
 const webUrl = process.env.E2E_WEB_URL ?? 'http://127.0.0.1:3000';

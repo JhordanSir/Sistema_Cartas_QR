@@ -12,10 +12,10 @@ export default createJestConfig({
   coverageDirectory: "coverage",
   coverageProvider: "v8",
   // @sirio/shared resolves to its source, as in the API suite, so the tests never
-  // depend on a stale packages/shared/dist. Its NodeNext imports carry .js suffixes.
+  // depend on a stale shared/dist. Its NodeNext imports carry .js suffixes.
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
-    "^@sirio/shared$": "<rootDir>/../../packages/shared/src/index.ts",
+    "^@sirio/shared$": "<rootDir>/../shared/src/index.ts",
     "^(\\.{1,2}/.*)\\.js$": "$1",
   },
   modulePathIgnorePatterns: ["<rootDir>/.next/"],

@@ -1,6 +1,7 @@
 packages:
-  - apps/*
-  - packages/*
+  - backend
+  - frontend
+  - shared
 
 allowBuilds:
   "@prisma/engines": true

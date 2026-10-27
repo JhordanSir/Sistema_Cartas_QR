@@ -143,7 +143,7 @@ describe('resolveRootEnvFile', () => {
 
   it('resolves from the API package during local execution', () => {
     const workspaceRoot = resolve('workspace');
-    const apiPackage = resolve(workspaceRoot, 'apps', 'api');
+    const apiPackage = resolve(workspaceRoot, 'backend');
 
     expect(resolveRootEnvFile(apiPackage)).toBe(resolve(workspaceRoot, '.env'));
   });
