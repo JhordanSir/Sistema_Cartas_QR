@@ -88,6 +88,17 @@ describe('proxyApiStream', () => {
     await expect(reader.read()).resolves.toEqual({ done: true, value: undefined });
   });
 
+  it('keeps the length of a file download so the reader can show progress', async () => {
+    const upstream = new Response('nombre;precio', {
+      headers: { 'content-length': '13', 'content-type': 'text/csv' },
+    });
+
+    const response = await proxyApiStream(upstream);
+
+    expect(response.headers.get('content-length')).toBe('13');
+    await expect(response.text()).resolves.toBe('nombre;precio');
+  });
+
   it('answers an API error as the usual small JSON document', async () => {
     const upstream = Response.json({ code: 'RESTAURANT_NOT_FOUND' }, { status: 404 });
 

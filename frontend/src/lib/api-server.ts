@@ -168,8 +168,11 @@ export async function proxyApiStream(response: Response): Promise<Response> {
     'cache-control': 'no-store, no-transform',
     'x-accel-buffering': 'no',
   });
-  const contentType = response.headers.get('content-type');
-  if (contentType) headers.set('content-type', contentType);
+  // The length lets the reader show how much of a file has arrived.
+  for (const name of ['content-length', 'content-type']) {
+    const value = response.headers.get(name);
+    if (value) headers.set(name, value);
+  }
   return new Response(response.body, { headers, status: response.status });
 }
 
