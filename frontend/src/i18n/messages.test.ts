@@ -1,6 +1,7 @@
 import { backofficeCopy } from './messages/backoffice';
 import { landingCopy } from './messages/landing';
 import { loginCopy } from './messages/login';
+import { ownerCountriesCopy } from './messages/owner-countries';
 import { ownerCsvCopy } from './messages/owner-csv';
 import { ownerHelpCopy } from './messages/owner-help';
 import { ownerMenuCopy } from './messages/owner-menu';
@@ -17,6 +18,7 @@ const TABLES = {
   backoffice: backofficeCopy,
   landing: landingCopy,
   login: loginCopy,
+  ownerCountries: ownerCountriesCopy,
   ownerCsv: ownerCsvCopy,
   ownerHelp: ownerHelpCopy,
   ownerMenu: ownerMenuCopy,
@@ -31,7 +33,7 @@ const TABLES = {
 };
 
 // Names that legitimately read the same in both languages.
-const SAME_IN_BOTH = new Set(['Casual', 'Miraflores, Lima', 'Original', 'Premium', 'QR', 'Web Workers']);
+const SAME_IN_BOTH = new Set(['Asia', 'Capital', 'Casual', 'Miraflores, Lima', 'Original', 'Premium', 'QR', 'Web Workers']);
 
 /** Flattens a message table into [path, text] pairs; message functions are called. */
 function entries(value: unknown, path = ''): Array<[string, unknown]> {

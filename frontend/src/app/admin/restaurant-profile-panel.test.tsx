@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 import { LocaleProvider } from '@/i18n/locale-provider';
 
@@ -66,6 +66,15 @@ describe('RestaurantProfilePanel', () => {
     expect(screen.getByRole('region', { name: 'Clima ahora' })).toHaveTextContent(
       'Agrega la ciudad de tu local para ver el clima de tu zona.',
     );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('enlaza la vista de países desde una tarjeta bajo el clima', async () => {
+    render(<RestaurantProfilePanel />);
+
+    const card = await screen.findByRole('region', { name: 'Países del mundo' });
+    expect(within(card).getByRole('link', { name: 'Explorar países' })).toHaveAttribute('href', '/admin/countries');
+    // The card only links: the profile asks countries.dev nothing.
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 

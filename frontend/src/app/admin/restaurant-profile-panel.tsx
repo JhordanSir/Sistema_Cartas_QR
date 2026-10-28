@@ -24,6 +24,7 @@ import { ownerPanelCopy } from '@/i18n/messages/owner-panel';
 import { ownerProfileCopy } from '@/i18n/messages/owner-profile';
 import type { RestaurantProfile } from '@/lib/restaurant-types';
 
+import { CountriesCard } from './countries/countries-card';
 import { OwnerNavigation } from './owner-navigation';
 import { RestaurantWeatherCard, useRestaurantWeather, type WeatherState } from './restaurant-weather';
 
@@ -276,6 +277,7 @@ function ProfileForm({
           <small className="mt-2 text-[10px] text-ink-muted">{copy.logo.hint}</small>
         </Card>
         <RestaurantWeatherCard city={profile.city} state={weather} />
+        <CountriesCard />
       </div>
 
       <Card className="overflow-hidden">
