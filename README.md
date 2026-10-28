@@ -185,6 +185,8 @@ La tarjeta «Países del mundo» del perfil lleva a `/admin/countries`, un ejemp
 - Los países y los idiomas se nombran en el idioma del panel con `Intl.DisplayNames`. Los continentes salen de los mensajes, porque Chrome no trae nombres para sus códigos M.49.
 - La última región y el último país se recuerdan en `localStorage`, solo en ese dispositivo.
 
+El informe [docs/llamadas-asincronas.md](docs/llamadas-asincronas.md) (también en [Word](docs/llamadas-asincronas.docx)) explica las promesas, `async/await`, `fetch` y su cancelación, y cómo funciona este ejemplo, con capturas de la vista y de DevTools.
+
 ## Digitalización con Gemini
 
 El dueño digitaliza su carta desde `/admin/menu`. Puede enviar de 1 a 5 fotografías JPG, PNG o WebP, con un máximo de 3 MB por archivo y 12 MB totales. La API valida también la firma binaria antes de enviar las imágenes inline a Gemini. Las fotos se procesan en memoria y no se almacenan en Sirio.
