@@ -165,7 +165,7 @@ El logo admite PNG, JPG o WebP con un máximo de 2 MB. La API comprueba tanto el
 
 ### Clima de la zona (Open-Meteo)
 
-La tarjeta «Clima ahora» del perfil es la única parte del frontend que llama a un tercero sin pasar por el BFF. El navegador consulta directamente la [Geocoding API](https://open-meteo.com/en/docs/geocoding-api) y la [Forecast API](https://open-meteo.com/en/docs) de Open-Meteo, que son públicas, no piden clave y aceptan CORS. La lógica vive en [`frontend/src/lib/weather.ts`](frontend/src/lib/weather.ts).
+La tarjeta «Clima ahora» del perfil es una de las dos partes del frontend que llaman a un tercero sin pasar por el BFF; la otra es la vista de países, más abajo. El navegador consulta directamente la [Geocoding API](https://open-meteo.com/en/docs/geocoding-api) y la [Forecast API](https://open-meteo.com/en/docs) de Open-Meteo, que son públicas, no piden clave y aceptan CORS. La lógica vive en [`frontend/src/lib/weather.ts`](frontend/src/lib/weather.ts).
 
 - La consulta usa el campo **Ciudad** del perfil, no la dirección: la geocodificación solo entiende nombres de lugar o códigos postales, no calles. La búsqueda se limita a Perú.
 - La tarjeta muestra la región que encontró Open-Meteo junto a la ciudad guardada. Algunos distritos de Lima (Barranco, San Miguel) no existen en su base y se resuelven a pueblos homónimos de otras regiones; la región deja ver el error.
@@ -174,6 +174,16 @@ La tarjeta «Clima ahora» del perfil es la única parte del frontend que llama 
 - **El plan gratuito es solo para uso no comercial** (menos de 10 000 llamadas al día). Antes de cobrar a los restaurantes hay que contratar una clave comercial de Open-Meteo.
 
 La carta pública muestra la ciudad a continuación de la dirección.
+
+### Países e idiomas (countries.dev)
+
+La tarjeta «Países del mundo» del perfil lleva a `/admin/countries`, un ejemplo de llamadas asíncronas con `fetch` y `async/await` desde el navegador. Al elegir una región se recarga la lista de países. Al elegir un país aparece una tabla con sus idiomas, cada uno con su nombre en esa lengua, bajo el nombre nativo del país, su bandera y su capital. La lógica vive en [`frontend/src/lib/countries.ts`](frontend/src/lib/countries.ts).
+
+- La fuente es [countries.dev](https://countries.dev), antes apicountries.com: pública, sin clave y con CORS. restcountries.com v3.1 ya no responde, y su v5 exige cuenta y clave.
+- Son tres llamadas encadenadas: `GET /regions`, `GET /region/{región}` y `GET /alpha/{código}`. Una elección nueva cancela con `AbortController` la llamada que reemplaza, y una llamada que falla ofrece «Reintentar».
+- Se ocultan Antarctic, Antarctic Ocean y Polar, que tienen un solo territorio cada una.
+- Los países y los idiomas se nombran en el idioma del panel con `Intl.DisplayNames`. Los continentes salen de los mensajes, porque Chrome no trae nombres para sus códigos M.49.
+- La última región y el último país se recuerdan en `localStorage`, solo en ese dispositivo.
 
 ## Digitalización con Gemini
 
