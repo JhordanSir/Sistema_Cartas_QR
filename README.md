@@ -86,11 +86,26 @@ pnpm build
 pnpm exec playwright install chromium webkit
 pnpm test:e2e
 pnpm test:visual
+pnpm test:paralelo
 ```
 
 La suite E2E presupone que el Compose está levantado y corre en tres perfiles: Chromium de escritorio, Chrome móvil (Pixel 7) y Safari móvil (iPhone 14). WebKit se instala aparte, de ahí el `webkit` en el comando de instalación.
 
 `pnpm test:visual` no hace aserciones: recorre las doce pantallas a 390, 768 y 1280 px y escribe PNG en `artifacts/capturas/<VISUAL_LABEL>/` para revisión de diseño.
+
+### Pruebas en paralelo
+
+`pnpm test:paralelo` ejecuta [`tests/paralelo/`](tests/paralelo/), 17 pruebas de solo lectura (portada, accesos, carta inexistente y health check) con su propia configuración, [`playwright.paralelo.config.ts`](playwright.paralelo.config.ts). Sirven para ver cómo Playwright reparte el trabajo entre workers, así que la configuración no fija nada y todo se elige al ejecutar:
+
+```powershell
+pnpm test:paralelo --workers=1                    # en serie
+pnpm test:paralelo --workers=4 --fully-parallel   # 4 workers, reparto por prueba
+pnpm test:paralelo --fully-parallel --shard=1/2 "--reporter=blob,line"
+```
+
+Sin `--workers`, Playwright usa la mitad de los núcleos lógicos. Cada corrida deja, además del reporte HTML en `artifacts/paralelo/html/`, una línea de tiempo con una fila por worker y una barra por prueba en `artifacts/paralelo/<corrida>/timeline.html`. Necesitan el Compose levantado. La suite funcional (`pnpm test:e2e`) sigue en serie.
+
+El informe [docs/pruebas-paralelas.md](docs/pruebas-paralelas.md) (también en [Word](docs/pruebas-paralelas.docx)) explica cómo funciona la ejecución paralela en Playwright y muestra las mediciones, las líneas de tiempo y los reportes de este ejemplo.
 
 `pnpm peers check` permite confirmar que las versiones fijadas no tienen peer dependencies incompatibles.
 
