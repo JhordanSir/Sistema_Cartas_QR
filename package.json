@@ -17,6 +17,7 @@
     "test": "pnpm db:generate && pnpm -r --if-present test",
     "test:coverage": "pnpm db:generate && pnpm -r --if-present test:coverage",
     "test:e2e": "playwright test",
+    "test:paralelo": "playwright test --config playwright.paralelo.config.ts",
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "db:generate": "pnpm --filter @sirio/api db:generate",
     "db:validate": "pnpm --filter @sirio/api db:validate",
