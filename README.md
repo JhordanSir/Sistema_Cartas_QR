@@ -150,6 +150,8 @@ Las contraseñas usan Argon2id. Cambiar o resetear una contraseña revoca todas 
 
 La web conserva access y refresh tokens en cookies `HttpOnly`, `SameSite=Strict`; el navegador no expone los JWT a JavaScript. Los Route Handlers de Next.js actúan como BFF, validan el origen de las mutaciones y renuevan la sesión cuando corresponde.
 
+El informe [docs/autenticacion-jwt.md](docs/autenticacion-jwt.md) (también en [Word](docs/autenticacion-jwt.docx)) explica cómo se firman y verifican los tokens, y muestra la evidencia de cada caso contra el sistema real: login, bearer token (`200`, `401` y `403`), el contenido del token, la rotación con detección de reutilización, el logout y las cookies del navegador.
+
 ## Backoffice y restaurantes
 
 El administrador ingresa por `/login` y gestiona los restaurantes en `/backoffice`. El alta solicita nombre, correo del dueño y contraseña inicial; crea transaccionalmente la cuenta, la relación, un slug único e inmutable y el QR permanente (payload público, PNG y SVG).
