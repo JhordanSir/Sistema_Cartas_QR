@@ -23,6 +23,10 @@ const currencyFormat = perLocale(
 const dateFormat = perLocale((tag) => new Intl.DateTimeFormat(tag, { dateStyle: 'medium' }));
 const numberFormat = perLocale((tag) => new Intl.NumberFormat(tag));
 const pluralRules = perLocale((tag) => new Intl.PluralRules(tag));
+const collator = perLocale((tag) => new Intl.Collator(tag));
+// fallback "none": an unknown code gives undefined instead of the code itself.
+const regionNames = perLocale((tag) => new Intl.DisplayNames([tag], { fallback: 'none', type: 'region' }));
+const languageNames = perLocale((tag) => new Intl.DisplayNames([tag], { fallback: 'none', type: 'language' }));
 
 /** Prices are always soles; only their presentation follows the interface language. */
 export function formatCurrency(amount: number | string, locale: Locale): string {
@@ -46,4 +50,32 @@ export function formatCount(
 ): string {
   const form = pluralRules(locale).select(count) === 'one' ? forms.one : forms.other;
   return `${formatNumber(count, locale)} ${form}`;
+}
+
+/** Orders names as the interface language does: "Perú" right after "Paraguay". */
+export function compareNames(left: string, right: string, locale: Locale): number {
+  return collator(locale).compare(left, right);
+}
+
+/**
+ * The browser's own name for an ISO 3166 country: "PE" → "Perú". Undefined when it
+ * has none, so callers keep their fallback. Chrome ships no names for UN M.49 areas
+ * such as "019", so continents come from the message tables instead.
+ */
+export function displayRegion(code: string, locale: Locale): string | undefined {
+  try {
+    return regionNames(locale).of(code);
+  } catch {
+    // A code that is not even well formed throws instead of returning undefined.
+    return undefined;
+  }
+}
+
+/** The browser's own name for an ISO 639 language: "qu" → "quechua". */
+export function displayLanguage(code: string, locale: Locale): string | undefined {
+  try {
+    return languageNames(locale).of(code);
+  } catch {
+    return undefined;
+  }
 }
