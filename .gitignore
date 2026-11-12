@@ -62,3 +62,7 @@ Thumbs.db
 .gemini/
 CLAUDE.md
 ads/
+
+# Python (rabbitmq/ tutorial)
+.venv/
+__pycache__/

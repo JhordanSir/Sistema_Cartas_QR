@@ -18,6 +18,7 @@ frontend/              Next.js App Router (@sirio/web): carta pública, panel de
 shared/                utilidades y tipos compartidos (@sirio/shared)
 docker/                gateway Nginx (nginx.conf y su Dockerfile)
 tests/                 E2E y capturas de referencia con Playwright
+rabbitmq/              tutorial productor/consumidor de RabbitMQ en Python (aparte de la app)
 compose.yml            despliegue de producción/Dokploy con gateway Nginx interno
 compose.dev.yml        puertos loopback solo para desarrollo local
 compose.nginx-host.yml publicación opcional del gateway para un Nginx externo
@@ -296,6 +297,12 @@ La carta pública está en `/{slug}`, no requiere inicio de sesión y se sirve s
 Los payloads y documentos QR se guardan en PostgreSQL junto al restaurante, no en `uploads_data`.
 
 Ambos son volúmenes Docker nombrados y sobreviven a recreaciones de contenedores.
+
+## Productor y consumidor con RabbitMQ
+
+[`rabbitmq/`](rabbitmq/) recrea el tutorial oficial «Hello World!» de RabbitMQ en Python: `send.py` publica un mensaje en la cola `hello` y `receive.py` lo consume. RabbitMQ corre en la imagen oficial de Docker (`rabbitmq:4.4-management`). Es un ejemplo aparte: la aplicación de cartas no usa RabbitMQ. Los pasos están en [`rabbitmq/README.md`](rabbitmq/README.md).
+
+El informe [docs/rabbitmq-productor-consumidor.md](docs/rabbitmq-productor-consumidor.md) (también en [Word](docs/rabbitmq-productor-consumidor.docx)) explica los conceptos y el código, y muestra dos pruebas con capturas de las terminales y de la interfaz de gestión. En la primera, el consumidor recibe cada mensaje en cuanto se envía. En la segunda, la cola guarda tres mensajes hasta que se conecta el consumidor.
 
 ## Checklist académico
 
